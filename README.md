@@ -1,4 +1,4 @@
-![Logo BeeFlux](assets/logo.png)
+# BeeFlux
 
 O **BeeFlux** é um sistema web para gerenciamento de confeitarias, desenvolvido como projeto acadêmico do curso de **Análise e Desenvolvimento de Sistemas (ADS)**.
 
