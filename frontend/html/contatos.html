@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BeeFlux | Contatos</title>
+
+    <link rel="stylesheet" href="../css/global.css">
+    <link rel="stylesheet" href="../css/contatos.css">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300..700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header>
+        <div class="container-header">
+            <a href="#inicio" class="logo">
+                <div class="logo-icone">&#x1F41D;</div>
+                <span class="logo-texto">BeeFlux</span>
+            </a>
+            <nav class="desktop-nav">
+                <ul>
+                    <li><a href="../index.html"><i class="fa-solid fa-house"></i> Início</a></li>
+                    <li><a href="#"><i class="fa-solid fa-box-open"></i> Produtos</a></li>
+                    <li><a href="contatos.html"><i class="fa-solid fa-users"></i> Contatos</a></li>
+                    <li><a href="#"><i class="fa-solid fa-chart-pie"></i> Financeiro</a></li>
+                    <li><a href="#"><i class="fa-solid fa-gear"></i> Configurações</a></li>
+                </ul>
+            </nav>
+            <div class="user-profile">
+                <div class="avatar-placeholder" id="user-initials"></div>
+                <span class="status-dot"></span>
+            </div>
+            <button id="menu-btn" class="menu-sanduiche">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+        </div>
+        <div id="mobile-menu" class="menu-mobile">
+            <a href="../index.html"><i class="fa-solid fa-house"></i>Início</a>
+            <a href="#"><i class="fa-solid fa-box-open"></i>Produtos</a>
+            <a href="#"><i class="fa-solid fa-book-open"></i> Receitas</a>
+            <a href="contatos.html"><i class="fa-solid fa-users"></i> Contatos</a>
+            <a href="#"><i class="fa-solid fa-chart-pie"></i> Financeiro</a>
+            <a href="#"><i class="fa-solid fa-gear"></i> Configurações</a>
+        </div>
+    </header>
+    
+    <main>
+        <!-- Cabeçalho -->
+        <section class="cabeçalho">
+                <div class="titulo">
+                    <h1>Seus Contatos <i class="fa-solid fa-users"></i></h1>
+                    <p>Informações dos clientes e fornecedores. Acompanhe o histórico de pedidos de cada cliente.</p>
+                </div>
+                <button class="botao-primario" id="open-new-client-modal">
+                    <i class="fa-solid fa-user-plus"></i> Novo Contato
+                </button>
+        </section>
+        <!-- Barra de Pesquisa-->
+        <div class="filter-bar">
+            <div class="caixa-pesquisa">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" id="search-contact" placeholder="Buscar por nome ou telefone...">
+            </div>
+            <div class="total">
+                <div class="total-clientes">
+                    <span>Total de clientes: <strong id="total-clients-count">0</strong></span>
+                </div>
+                <div class="total-fornecedores">
+                    <span>Total de fornecedores: <strong id="total-suppliers-count">0</strong></span>
+                </div>
+            </div>
+        </div>
+        <!-- Filtros -->
+        <div class="filter-buttons" style="display: flex; gap: 10px; margin-bottom: 2rem;">
+            <button class="botao-primario filter-btn active" data-filter="todos" style="cursor: pointer;">Todos</button>
+            <button class="btn-secondary filter-btn" data-filter="clientes" style="cursor: pointer;">Só Clientes</button>
+            <button class="btn-secondary filter-btn" data-filter="fornecedores" style="cursor: pointer;">Só Fornecedores</button>
+        </div>
+        <!-- Tabela de Clientes -->
+        <section class="card card-tabela" id="section-clients">
+                <h2>Seus clientes</h2>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Cliente</th>
+                                <th>Telefone / WhatsApp</th>
+                                <th>Aniversário</th>
+                                <th>Total Gasto</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="clients-table-body">
+                            <!-- Preenchido dinamicamente via JS -->
+                        </tbody>
+                    </table>
+                </div>
+        </section>
+        <!-- Tabela de Fornecedores -->
+        <section class="card card-tabela" id="section-suppliers">
+                <h2>Seus fornecedores</h2>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Fornecedor</th>
+                                <th>Telefone / WhatsApp</th>
+                                <th>Produto consumido</th>
+                                <th>Total Gasto</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="supplier-table-body">
+                            <!-- Preenchido dinamicamente via JS -->
+                        </tbody>
+                    </table>
+                </div>
+        </section>
+        <!-- Modal de Novo Contato -->
+        <div class="modal-overlay" id="contact-modal">
+            <div class="modal-card">
+                <button class="close-modal" id="close-modal-btn"><i class="fa-solid fa-xmark"></i></button>
+                
+                <div class="modal-header">
+                    <h2 id="modal-title">Cadastrar Novo Contato</h2>
+                    <p>Adicione as informações de clientes ou fornecedores.</p>
+                </div>
+                <form id="client-form">
+                    <div class="input-group">
+                        <label for="contact-type">Tipo de Contato</label>
+                        <select id="contact-type">
+                            <option value="cliente">Cliente</option>
+                            <option value="fornecedor">Fornecedor</option>
+                        </select>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="client-name">Nome Completo</label>
+                        <input type="text" id="client-name" required placeholder="Ex: Mariana Silva">
+                    </div>
+
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label for="client-phone">WhatsApp / Telefone</label>
+                            <input type="text" id="client-phone" required placeholder="(11) 99999-9999">
+                        </div>
+                        <!-- Campo dinâmico: Aniversário (Cliente) ou Produto (Fornecedor) -->
+                        <div class="input-group" id="dynamic-field-container">
+                            <label for="client-birthday" id="dynamic-label">Data de Aniversário</label>
+                            <input type="date" id="client-birthday">
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="client-notes">Observações / Preferências</label>
+                        <textarea id="client-notes" placeholder="Ex: Alérgica a lactose..."></textarea>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn-secondary" id="cancel-modal-btn">Cancelar</button>
+                        <button type="submit" class="botao-primario" id="save-btn-text">Salvar Cliente</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <!-- Modal de Detalhes / Histórico -->
+        <div class="modal-overlay" id="history-modal">
+            <div class="modal-card">
+                <button class="close-modal" id="close-history-modal"><i class="fa-solid fa-xmark"></i></button>
+                
+                <div class="modal-header">
+                    <span class="badge-category" id="history-badge">Histórico</span>
+                    <h2 id="history-client-name">Nome</h2>
+                    <p id="history-client-phone"><i class="fa-brands fa-whatsapp text-success"></i> (00) 00000-0000</p>
+                    <!-- Exibir as observações cadastradas -->
+                    <div class="history-observacoes" style="margin-top: 12px; background: rgba(255,255,255,0.5); padding: 10px 14px; border-radius: 8px; border-left: 3px solid var(--pink-escuro);">
+                        <strong style="font-size: 0.85rem; display: block; color: var(--cor-corpo-texto); margin-bottom: 2px;">Observações / Preferências:</strong>
+                        <span id="history-client-notes" style="font-size: 0.9rem; color: var(--text-main);">-</span>
+                    </div>
+                </div>
+
+                <div class="modal-body-history">
+                    <h3 id="history-section-title">Últimos Pedidos Realizados</h3>
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th id="th-col-1">Produto</th>
+                                    <th>Data</th>
+                                    <th>Valor</th>
+                                </tr>
+                            </thead>
+                            <tbody id="history-orders-body">
+                                <!-- Preenchido via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" id="close-history-btn">Fechar</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+                <div class="redes-sociais">
+                    <div class="rede">
+                        <i class="fa-brands fa-youtube"></i>
+                        <a href="#" aria-label="Youtube">Youtube</a>
+                    </div>
+                    <div class="rede">
+                        <i class="fa-brands fa-facebook"></i>
+                        <a href="#" aria-label="Facebook">Facebok</a>
+                    </div>
+                    <div class="rede">
+                        <i class="fa-brands fa-instagram"></i>
+                        <a href="#" aria-label="Instagram">Instagram</a>
+                    </div>
+                    <div class="secao-sair">
+                        <button id="logout-btn"><i class="fa-solid fa-right-from-bracket"></i> Sair</button>
+                    </div>
+                </div>
+                <p>&copy; 2026 BeeFlux, todos os direitos reservados</p>
+            </div>
+    </footer>
+
+    <script src="../js/global.js" defer></script>
+    <script src="../js/contatos.js" defer></script>
+   
+</body>
+</html>

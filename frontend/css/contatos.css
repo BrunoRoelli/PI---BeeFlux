@@ -1,0 +1,251 @@
+:root {
+    --bg-color: #f8f9fa;
+    --primary-light: #ffe3e9;
+}
+/* Início */
+.cabeçalho{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+.titulo h1 { font-size: 1.75rem; font-weight: 700; }
+.titulo p { color: var( --cor-corpo-texto); font-size: 1rem; margin-top: 4px; }
+.botao-primario {
+    background-color: var(--pink-escuro);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: var(--borda-botao);
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: var(--transicao);
+}
+.botao-primario:hover { background-color: var(--aviso);}
+
+
+.btn-secondary {
+    background-color: var(--bg-color);
+    color: var(--cor-corpo-texto);
+    border: 1px solid var(--pink-escuro);
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transicao);
+}
+.btn-secondary:hover { background-color: var(--primary-light); }
+
+/* Filtros */
+.filter-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    gap: 2rem;
+    flex-wrap: wrap;
+}
+.caixa-pesquisa{
+    display: flex;
+    align-items: center;
+    background: var(--bg-color);
+    border: 1px solid var(--cor-corpo-texto);
+    padding: 10px 16px;
+    border-radius: var(--borda-botao);
+    width: 320px;
+    gap: 10px;
+}
+.caixa-pesquisa input {
+    border: none;
+    outline: none;
+    width: 100%;
+    font-size: 0.9rem;
+    background: transparent;
+}
+.caixa-pesquisa i { color: var(--cor-corpo-texto); }
+.total {
+    font-size: 1rem;
+    color: var(--cor-corpo-texto);
+}
+.total strong { color:var(--Black);}
+
+/* Card e Tabela */
+.card {
+    background-color: var(--bg-color);
+    border: 3px solid var(--pink-escuro);
+    border-radius: var(--borda-suave);
+    padding: 20px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+    margin-bottom: 2rem;
+}
+.card h2 {
+    color: var(--pink-escuro);
+    margin-bottom: 1rem;
+    text-align: center;
+}
+.table-responsive {
+    overflow-x: auto;
+}
+table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: 0.9rem;
+}
+th {
+    font-weight: 500;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--pink-escuro);
+}
+td {
+    padding: 14px 0;
+    border-bottom: 1px solid var(--pink-escuro);
+    color: var(--cor-corpo-texto);
+}
+tr:last-child td { border-bottom: none; }
+.info-name {
+    font-weight: 600;
+}
+
+/* Ações na Tabela */
+.action-icon-btn {
+    background: var(--bg-color);
+    border: 1px solid var(--pink-escuro);
+    width: 34px;
+    height: 34px;
+    border-radius: 6px;
+    cursor: pointer;
+    color: var(--cor-corpo-texto);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    margin-right: 4px;
+}
+
+.action-icon-btn:hover {
+    background-color: var(--primary-light);
+    color: var(--pink-escuro);
+    border-color: var(--pink-escuro);
+}
+
+/* Modais */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.35s ease, visibility 0.35s ease;
+}
+.modal-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+.modal-card {
+    background-color: var(--Creme); /* ou rgb(232, 175, 232) */
+    width: 100%;
+    max-width: 550px;
+    border-radius: 16px;
+    padding: 30px;
+    position: relative;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    transform: translateY(20px);
+    transition: var(--transicao);
+}
+.modal-overlay.active .modal-card {
+    transform: translateY(0);
+}
+
+.close-modal {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: var(--bg-color);
+    border: none;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--cor-corpo-texto);
+    font-size: 1.1rem;
+    transition: var(--transicao);
+}
+.close-modal:hover { background-color: var(--pink-escuro); color: var(--Black); }
+
+.modal-header { margin-bottom: 20px; padding-right: 30px; }
+.modal-header h2 { font-size: 1.4rem; font-weight: 700; margin-bottom: 4px; }
+.modal-header p { font-size: 0.85rem; color: var(--cor-corpo-texto); }
+
+/* Formulário do Modal */
+form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.input-group label {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--cor-corpo-texto);
+}
+
+.contact-type , .input-group input, .input-group textarea {
+    background-color: var(--bg-color);
+    border: 1px solid var(--pink-escuro);
+    padding: 10px 14px;
+    border-radius: var(--borda-botao);
+    font-size: 0.95rem;
+    outline: none;
+    color: var(--cor-corpo-texto);
+}
+
+.input-group textarea { resize: vertical; height: 80px; }
+.input-group input:focus, .input-group textarea:focus { border-color: var(--pink-escuro); box-shadow: 0 0 0 3px var(--primary-light);}
+
+.input-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.badge-category {
+    display: inline-block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 4px 10px;
+    background-color: var(--primary-light);
+    color: var(--pink-escuro);
+    border-radius: 6px;
+    margin-bottom: 8px;
+}
+
+.text-success { color: var(--sucesso); }

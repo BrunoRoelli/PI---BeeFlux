@@ -50,7 +50,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 });
 function irParaLogin() {
-    const caminhoLogin = window.location.pathname.includes("/paginas/")
+    const caminhoLogin = window.location.pathname.includes("/html/")
         ? "login.html"
         : "html/login.html";
     window.location.href = caminhoLogin;
