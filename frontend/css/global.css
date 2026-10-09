@@ -16,6 +16,7 @@
     /* Espaçamentos e Layout */
     --font-base: 16px;
     --spacing-base: 1rem;
+    --font-family: Quicksand, Tahoma, Geneva, Verdana, sans-serif;
     /* transições */
     --transicao: all 0.3s ease;
     /* Bordas e Arredondamentos */
@@ -34,7 +35,7 @@ html{
     scroll-behavior: smooth;
 }
 body{
-    font-family: Quicksand, Tahoma, Geneva, Verdana, sans-serif;
+    font-family: var(--font-family);
     line-height:1.6;/* define o espaçamento vertical */
     color: var(--cor-corpo-texto);
     background: var(--Creme);
