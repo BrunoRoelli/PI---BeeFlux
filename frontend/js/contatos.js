@@ -74,6 +74,12 @@ document.addEventListener("DOMContentLoaded", () => {
     //variavel filtro de exibição 
     let currentFilter = "todos";
 
+    // Verificar se veio do index.html para abrir o modal automaticamente
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get("abrirModal") === "true") {
+        clientModal.classList.add("active");
+    }
+
     // Alternar campos do modal conforme seleção (Cliente vs Fornecedor)
     contactTypeSelect.addEventListener("change", (e) => {
         const type = e.target.value;
