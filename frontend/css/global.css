@@ -1,0 +1,293 @@
+:root{
+    /* Cores */
+    --pastelPink: #FFD1DC;
+    --Yellow: #FFF1B6;
+    --Black:black;
+    --cor-botao:#FFFDF9 ;
+    --pink-escuro:#FF8FAB;
+    --aviso: #ff4757;
+    --sucesso:#2ed573;
+    --mediano: #ffa502;
+    --Blue: #21cae0;
+    --Purple: #d9a9f3;
+    --Creme: #fbecdb;
+    --cor-texto: #5a4a4b;
+    --cor-corpo-texto: #4A4045;
+    /* Espaçamentos e Layout */
+    --font-base: 16px;
+    --spacing-base: 1rem;
+    /* transições */
+    --transicao: all 0.3s ease;
+    /* Bordas e Arredondamentos */
+    --borda-suave: 10px;      /* para produtos / cards */
+    --borda-botao: 8px;       /* para botões comuns e inputs */
+    /* Linhas e Divisores */
+    --borda-linha: 1px solid #e5e7eb; /* para linhas divisórias */
+}
+*{
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+html{
+    font-size: var(--font-base);
+    scroll-behavior: smooth;
+}
+body{
+    font-family: Quicksand, Tahoma, Geneva, Verdana, sans-serif;
+    line-height:1.6;/* define o espaçamento vertical */
+    color: var(--cor-corpo-texto);
+    background: var(--Creme);
+    /* Suavizam a renderização das fontes para deixá-las mais nítidas e agradáveis visualmente */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+main{
+    padding: 30px;
+}
+a{
+    text-decoration: none;
+    transition: color var(--transicao);
+    color: var(--cor-texto);
+    font-weight: bold;
+}
+ul{
+    list-style: none;
+}
+/*  ==============================
+    HEADER
+    ============================== */
+header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background-color: var(--pastelPink);
+    backdrop-filter: blur(12px);/* Desfoca o contúdo atrás */
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+    transition: var(--transicao);
+}
+.container-header {
+    max-width: 1280px; 
+    margin: 0 auto;
+    padding: 0 16px;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+/*  ==============================
+    LOGO
+    ============================== */
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-weight: bold;
+}
+.logo-icone {
+  width: 3rem;  /* 48px */
+  height: 3rem;
+  border-radius:50%;
+  background-color: var(--Yellow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size:24px;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  transition: transform var(--transicao);
+}
+.logo:hover .logo-icone{
+  transform: rotate(20deg);
+}
+.logo-texto {
+  font-size: 24px;
+  letter-spacing: -0.025em;
+  transition: color var(--transicao);
+}
+.logo:hover .logo-texto {
+  color: var(--Black);
+}
+/*  ==============================
+    MENU DESKTOP
+    ============================== */
+.desktop-nav{
+    display: none;
+    align-items: center;
+    gap: 2rem;
+    font-weight: bold;
+}
+.desktop-nav ul {
+    display: flex;
+    flex-direction:row;
+    gap: 8px;
+}
+.desktop-nav ul li {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 5px;
+}
+.desktop-nav a:hover, .desktop-nav a.active {
+    color: var(--Black);
+}
+/*  ==============================
+    USER PROFILE
+    ============================== */
+.user-profile {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+.avatar-placeholder {
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, #ff6584,#6c5ce7);
+    color: white;
+    font-weight: 600;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    box-shadow: 0 4px 10px rgba(255, 101, 132, 0.3);
+}
+.status-dot {
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    width: 12px;
+    height: 12px;
+    background-color: var(--sucesso);
+    border: 2px solid white;
+    border-radius: 50%;
+}
+/*  ==============================
+    MENU SANDUICHE
+    ============================== */
+.menu-sanduiche {
+    border: 0;
+    background: none;
+    color: var(--cor-texto);
+    font-size: 1.5rem; /*24px */   
+    cursor: pointer;
+    padding: 1rem;
+    border-radius: var(--borda-suave);
+}
+.menu-sanduiche:hover {
+    background: var(--cor-botao);  
+}
+/*  ==============================
+    MENU MOBILE
+    ============================== */
+.menu-mobile{
+    display: none;
+    padding: 16px 24px;
+    background-color: white;
+    border-bottom: var(--borda-linha);
+    font-weight: bold;
+}
+.menu-mobile.active {
+    display: block;
+}
+.menu-mobile a {
+    display: block;
+    padding: 4px 0;
+    transition: color var(--transicao);
+}
+.menu-mobile a:hover {
+    color: #ff5c8a;
+}
+/*  ==============================
+    FOOTER
+    ============================== */
+.footer {
+    padding: 3rem 0;
+    background: var(--pastelPink);
+    color: var(--cor-texto);
+    text-align: center;
+}
+.redes-sociais {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    flex-direction: column;
+}
+.redes-sociais a:hover {
+    color: var(--Black);
+}
+.rede {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+}
+.footer p {
+    font-size: 0.875rem;
+    opacity: 0.7;
+}
+/*  ==============================
+    SAIR DO SITE
+    ============================== */
+.secao-sair button {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    background: var(--cor-botao);
+    color: var(--aviso);
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+    border-radius: var(--borda-botao);
+    transition: background 0.2s;
+}
+.secao-sair button:hover {
+    border-color: var(--pink-escuro);
+    background-color: var(--Yellow);
+}
+/* ===========================
+    Media Queries 
+    =============================*/
+@media (min-width: 900px) {
+
+    .container-header{
+        padding-left: 2rem;
+        padding-right: 2rem;
+    }
+    .desktop-nav {
+        display: flex;
+    }
+    .menu-sanduiche {
+        display: none;
+    }
+    .menu-mobile {
+        display: none !important;
+    }
+    .redes-sociais{
+        flex-direction:row;
+    }
+}
+@media (min-width: 1024px) {
+
+    .container-header{
+        height: 80px;
+        padding: 0 32px;
+    }
+    .desktop-nav {
+        gap: 40px;
+    }
+}
+@media (min-width: 1280px) {
+
+    .container-header{
+        padding: 0;
+    }
+    .desktop-nav {
+        gap: 48px;
+    }
+}

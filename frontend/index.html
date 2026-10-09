@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BeeFlux | Página inicial</title>
+
+    <link rel="stylesheet" href="./css/global.css">
+    <link rel="stylesheet" href="./css/index.css">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300..700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <header>
+        <div class="container-header">
+            <a href="#" class="logo">
+                <div class="logo-icone">&#x1F41D;</div>
+                <span class="logo-texto">BeeFlux</span>
+            </a>
+            <nav class="desktop-nav">
+                <ul>
+                    <li><a href="#"><i class="fa-solid fa-house"></i>Início</a></li>
+                    <li><a href="#"><i class="fa-solid fa-box-open"></i>Produtos</a></li>
+                    <li><a href="#"><i class="fa-solid fa-users"></i> Contatos</a></li>
+                    <li><a href="#"><i class="fa-solid fa-chart-pie"></i>Financeiro</a></li>
+                    <li><a href="#"><i class="fa-solid fa-gear"></i>Configurações</a></li>
+                </ul>
+            </nav>
+            <div class="user-profile">
+                <div class="avatar-placeholder" id="user-initials"></div>
+                <span class="status-dot"></span>
+            </div>
+            <button id="menu-btn" class="menu-sanduiche">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+        </div>
+        <div id="mobile-menu" class="menu-mobile">
+            <a href="#"><a href="#"><i class="fa-solid fa-house"></i>Início</a>
+            <a href="#"><i class="fa-solid fa-box-open"></i>Produtos</a>
+            <a href="#"><i class="fa-solid fa-book-open"></i> Receitas</a>
+            <a href="#"><i class="fa-solid fa-users"></i> Contatos</a>
+            <a href="#"><i class="fa-solid fa-chart-pie"></i> Financeiro</a>
+            <a href="#"><i class="fa-solid fa-gear"></i> Configurações</a>
+        </div>
+    </header>
+    <main>
+        <section class="topo">
+            <div class="bem-vindo">
+                    <h1>Olá, confeiteira <span id="user-name"></span>!</h1>
+                    <p>Bem vinda à página inicial.</p>
+            </div>
+        </section>
+        <section class="dashboard-grid">
+                <div class="card metric-card">
+                    <div class="metric-icon pink">
+                        <i class="fa-solid fa-bag-shopping"></i>
+                    </div>
+                    <div class="metric-info">
+                        <h3>Pedidos Hoje</h3>
+                        <span class="value">6</span>
+                        <span class="trend positive">+2 que ontem</span>
+                    </div>
+                </div>
+
+                <div class="card metric-card">
+                    <div class="metric-icon purple">
+                        <i class="fa-solid fa-wallet"></i>
+                    </div>
+                    <div class="metric-info">
+                        <h3>Faturamento do Mês</h3>
+                        <span class="value">R$ 4.280,00</span>
+                        <span class="trend positive">+15% vs mês passado</span>
+                    </div>
+                </div>
+
+                <div class="card metric-card">
+                    <div class="metric-icon orange">
+                        <i class="fa-solid fa-book-bookmark"></i>
+                    </div>
+                    <div class="metric-info">
+                        <h3>Receitas Cadastradas</h3>
+                        <span class="value">24</span>
+                        <span class="trend neutral">Todas atualizadas</span>
+                    </div>
+                </div>
+
+                <div class="card metric-card">
+                    <div class="metric-icon green">
+                        <i class="fa-solid fa-user-group"></i>
+                    </div>
+                    <div class="metric-info">
+                        <h3>Clientes Ativos</h3>
+                        <span class="value">142</span>
+                        <span class="trend positive">+8 novos esta semana</span>
+                    </div>
+                </div>
+        </section>
+        <section  class="atalhos">
+            <div class="acesso-rapido">
+                    <h2>Acesso Rápido</h2>
+                <div class="seçao-açoes">
+                    <button class="botao-acao" onclick="abrirNovoPedido()"><i class="fa-solid fa-plus-circle"></i>Novo Pedido</button>
+                    <button class="botao-acao" onclick="abrirCadastroContato()"><i class="fa-solid fa-user-plus"></i>Cadastrar Contato</button>
+                    <button class="botao-acao" onclick="abrirReceitas()"><i class="fa-solid fa-utensils"></i>Ver Receitas</button>
+                    <button class="botao-acao" onclick="abrirPrecificador()"><i class="fa-solid fa-calculator"></i>Precificar Produto</button>
+                </div>
+            </div>
+            <div class="encomendas-recentes">
+                <h2>Próximas Encomendas do Dia</h2>
+                <div class="tabela-responsiva">
+                    <table>
+                        <thead>
+                                <tr>
+                                    <th>Cliente</th>
+                                    <th>Produto</th>
+                                    <th>Horário</th>
+                                    <th>Status</th>
+                                </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                    <td>Ana Souza</td>
+                                    <td>Bolo de Chocolate c/ Morango</td>
+                                    <td>14:00</td>
+                                    <td><span class="badge warning">Em Produção</span></td>
+                            </tr>
+                            <tr>
+                                    <td>Carlos Lima</td>
+                                    <td>Caixa com 12 Brigadeiros Gourmet</td>
+                                    <td>16:30</td>
+                                    <td><span class="badge info">Pronto</span></td>
+                            </tr>
+                            <tr>
+                                    <td>Beatriz Costa</td>
+                                    <td>Bolo Red Velvet (Festa)</td>
+                                    <td>18:00</td>
+                                    <td><span class="badge pending">Aguardando</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+                <div class="redes-sociais">
+                    <div class="rede">
+                        <i class="fa-brands fa-youtube"></i>
+                        <a href="#" aria-label="Youtube">Youtube</a>
+                    </div>
+                    <div class="rede">
+                        <i class="fa-brands fa-facebook"></i>
+                        <a href="#" aria-label="Facebook">Facebok</a>
+                    </div>
+                    <div class="rede">
+                        <i class="fa-brands fa-instagram"></i>
+                        <a href="#" aria-label="Instagram">Instagram</a>
+                    </div>
+                    <div class="secao-sair">
+                        <button id="logout-btn"><i class="fa-solid fa-right-from-bracket"></i> Sair</button>
+                    </div>
+                </div>
+                <p>&copy; 2026 BeeFlux, todos os direitos reservados</p>
+            </div>
+    </footer>
+    <script src="js/global.js" defer></script>
+    <script>
+    </script>
+</body>
+</html>

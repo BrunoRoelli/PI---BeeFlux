@@ -1,0 +1,161 @@
+/*  ==============================
+    BEM-VINDO
+    ============================== */
+.topo{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+}
+.bem-vindo h1 {
+    font-size: 3rem;
+    font-weight: bold;
+    color:var(--pink-escuro); 
+}
+.bem-vindo p {
+    color: var(--cor-corpo-texto);
+    font-size: 2rem;
+    margin-top: 4px;
+}
+/* Dashboard Grid (Métricas) */
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+.card {
+    background-color: var(--cor-botao);
+    border: 1px solid var(--cor-texto);
+    border-radius: var(--borda-suave);
+    padding: 20px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+}
+.metric-card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+.metric-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+}
+.metric-icon.pink { background-color: #ffe3e9; color: var(--pink-escuro); }
+.metric-icon.purple { background-color: #ede9fe; color: var(--Blue); }
+.metric-icon.orange { background-color: #fef3c7; color: var(--mediano); }
+.metric-icon.green { background-color: #d1fae5; color: var(--sucesso); }
+
+.metric-info h3 {
+    font-size: 0.85rem;
+    color: var(--cor-corpo-texto);
+    font-weight: 500;
+}
+.metric-info .value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    display: block;
+    margin: 2px 0;
+}
+.trend {
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+.trend.positive, .trend.neutral { 
+    color: var(--cor-corpo-texto); 
+}
+/* ==============================
+   Acesso Rápido e Encomendas
+   ============================== */
+.atalhos {
+    display: grid;
+    grid-template-columns: 1fr; 
+    gap: 20px;
+}
+.acesso-rapido, .encomendas-recentes {
+    background-color: var(--cor-botao);
+    border: 1px solid rgba(90, 74, 75, 0.15);
+    border-radius: var(--borda-suave);
+    padding: 24px; 
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+}
+.acesso-rapido h2, .encomendas-recentes h2 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+.seçao-açoes {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+}
+.botao-acao {
+    background-color: var(--cor-botao);
+    border: 1px solid var(--cor-corpo-texto);
+    padding: 16px;
+    border-radius: var(--borda-botao);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--cor-corpo-texto);
+    cursor: pointer;
+    transition: var(--transicao);
+}
+.botao-acao i {
+    font-size: 1.25rem;
+    color: var(--Blue);
+}
+.botao-acao:hover {
+    border-color: var(--Blue);
+    background-color: var(--Yellow);
+    transform: translateY(-2px);
+}
+.tabela-responsiva {
+    overflow-x: auto;
+}
+table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: 0.9rem;
+}
+th {
+    color: var(--cor-corpo-texto);
+    font-weight: 500;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--cor-corpo-texto);
+}
+td {
+    padding: 12px 0;
+    border-bottom: var(--borda-linha); 
+}
+tr:last-child td {
+    border-bottom: none;
+}
+/* Badges de Status */
+.badge {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.badge.warning { background-color: #fef3c7; color: #d97706; }
+.badge.info { background-color: #e0f2fe; color: #0284c7; }
+.badge.pending { background-color: #f1f5f9; color: #64748b; }
+/* ===========================
+        Media Queries 
+    =============================*/
+@media (min-width: 768px) {
+    .atalhos {
+        grid-template-columns: 1fr 2fr;
+        gap: 30px;
+    }
+}
