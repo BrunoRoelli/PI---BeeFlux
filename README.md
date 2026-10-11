@@ -2,86 +2,99 @@
 
 O **BeeFlux** é um sistema web para gerenciamento de confeitarias, desenvolvido como projeto acadêmico do curso de **Análise e Desenvolvimento de Sistemas (ADS)**.
 
-A plataforma tem como foco a integração dos módulos de **Estoque, Compras, Receita e Custos**, centralizando informações e auxiliando no controle e organização dos processos da confeitaria.
+O sistema tem como objetivo centralizar informações e auxiliar na organização dos processos de uma confeitaria, integrando os módulos de **Estoque, Compras, Receitas e Custos**.
 
-**Tecnologias:** TypeScript, HTML, CSS, MySQL e Vitest.
+## Tecnologias utilizadas
+
+- **TypeScript:** desenvolvimento da lógica e do backend.
+- **HTML:** estrutura das páginas do sistema.
+- **CSS:** estilização e organização visual da interface.
+- **MySQL:** armazenamento e gerenciamento dos dados.
+- **Vitest:** criação e execução de testes automatizados.
+- **Node.js:** ambiente de execução do backend.
 
 ## Configuração inicial do projeto
-1. Inicialização do projeto
+
+Os comandos abaixo devem ser executados no terminal, na raiz do projeto, onde está localizado o `package.json`.
+
+### 1. Inicialização do projeto
+
+```bash
 npm init -y
+```
 
-Cria o arquivo package.json, que armazena as informações do projeto, scripts e dependências utilizadas.
+Cria o arquivo `package.json`, responsável por armazenar informações do projeto, dependências e scripts de execução.
 
-2. Instalação do TypeScript
-npm i -D typescript
+*Se o arquivo já existir no repositório, não é necessário executar esse comando novamente.*
 
-Instala o TypeScript como dependência de desenvolvimento, permitindo escrever, verificar e compilar arquivos .ts.
+### 2. Instalação das dependências
 
-3. Tipos do Node.js
-npm i -D @types/node
+```bash
+npm install -D typescript tsx @types/node vitest
+npm install mysql2 dotenv
+```
 
-Adiciona as definições de tipos do Node.js para que o TypeScript reconheça recursos e módulos do ambiente Node.
+- `typescript`: permite escrever, verificar e compilar arquivos TypeScript.
+- `tsx`: executa arquivos TypeScript durante o desenvolvimento.
+- `@types/node`: fornece definições de tipos para o Node.js.
+- `vitest`: executa os testes automatizados.
+- `mysql2`: permite a comunicação entre o backend e o MySQL.
+- `dotenv`: carrega as variáveis de ambiente definidas no arquivo `.env`.
 
-4. Instalação do Vitest
-npm i -D vitest
+### 3. Criação do arquivo de configuração TypeScript
 
-Instala o Vitest, utilizado para criar e executar os testes automatizados do projeto.
-
-5. Criação do tsconfig.json
+```bash
 npx tsc --init
+```
 
-Cria o arquivo tsconfig.json, responsável pelas configurações do compilador TypeScript.
+Cria o arquivo `tsconfig.json`, responsável por definir as configurações do compilador TypeScript.
 
-6. Configuração do TypeScript
+### 4. Configuração do TypeScript
 
-No tsconfig.json, foram configuradas as opções relacionadas à entrada e saída da compilação:
+O `tsconfig.json` deve ser ajustado de acordo com a estrutura do projeto.
 
-rootDir — define a pasta onde estão os arquivos TypeScript do projeto.
-outDir — define a pasta onde os arquivos JavaScript compilados serão gerados.
-"verbatimModuleSyntax": false — permite que o TypeScript faça os ajustes necessários nos imports e exports durante a compilação.
-"strict": true — ativa verificações mais rigorosas do TypeScript para ajudar a encontrar erros durante o desenvolvimento.
+Principais opções:
 
-7. Configuração do .gitignore
+- `rootDir`: define a pasta dos arquivos TypeScript de origem.
+- `outDir`: define onde os arquivos JavaScript compilados serão gerados.
+- `strict`: ativa verificações rigorosas de tipos.
+- `include`: define os arquivos TypeScript incluídos na compilação.
+- `exclude`: exclui pastas que não devem ser compiladas.
 
-O arquivo .gitignore impede que arquivos desnecessários sejam enviados para o GitHub:
+Como o backend está planejado para ficar em `backend/src/`, os caminhos devem considerar essa estrutura.
 
-node_modules — contém as dependências instaladas pelo npm e pode ser recriado usando npm install.
-dist — contém os arquivos JavaScript gerados pela compilação e não precisa ser versionado.
+### 5. Configuração dos scripts
 
-8. Compilação do projeto
-npx tsc
+No `package.json`, os scripts podem ser definidos assim, considerando o backend em `backend/src/index.ts`:
 
-Executa o compilador TypeScript e transforma os arquivos .ts em arquivos .js, colocando o resultado na pasta definida em outDir.
+```json
+"scripts": {
+  "dev": "tsx backend/src/index.ts",
+  "build": "tsc",
+  "test": "vitest run"
+}
+```
 
-9. Execução do projeto compilado
-node dist/index.js
+- `npm run dev`: executa o backend durante o desenvolvimento.
+- `npm run build`: compila o TypeScript.
+- `npm test`: executa os testes automatizados uma vez.
 
-Executa com o Node.js o arquivo index.js gerado após a compilação.
+### 6. Configuração do `.gitignore`
 
-10. Verificação do TypeScript
-npx tsc --noEmit
+O arquivo `.gitignore` define quais arquivos e pastas não devem ser enviados ao GitHub.
 
-Verifica se existem erros de TypeScript sem gerar os arquivos .js. Essa verificação é utilizada para confirmar que o projeto está compilando corretamente.
+```gitignore
+node_modules/
+backend/dist/
+.env
+```
 
-11. Execução dos testes
-npm test
+- `node_modules/`: contém as dependências instaladas pelo npm.
+- `backend/dist/`: contém os arquivos JavaScript gerados pela compilação.
+- `.env`: contém configurações locais e dados sensíveis.
 
-Executa os testes automatizados do projeto utilizando o Vitest.
+!A SER PREENCHIDO!
 
-12. Execução durante o desenvolvimento
-npm run dev
+## Objetivo do projeto
 
-Executa o src/index.ts diretamente utilizando o script dev configurado no package.json.
-
-## Estrutura do projeto
-+ src/tipos.ts — Contém a interface Despesa e o tipo Categoria.
-+ src/despesas.ts — Contém as funções para adicionar, remover, filtrar e calcular despesas.
-+ src/relatorio.ts — Contém as funções responsáveis pela descrição das categorias, matriz de gastos e formatação do relatório.
-+ src/index.ts — Contém as despesas de exemplo e executa o relatório principal.
-+ src/*.test.ts — Contém os testes automatizados das funções.
-
-## Arquivos de configuração
-+ package.json — Define as dependências, scripts do projeto e informações do projeto.
-+ tsconfig.json — Configura o TypeScript, incluindo o modo strict.
-+ .gitignore — Define arquivos e pastas que não devem ser enviados para o Git.
-+ vitest.config.ts — Configura o Vitest para execução dos testes, caso presente no projeto.
+O BeeFlux busca integrar as principais operações de uma confeitaria em um único sistema web, facilitando a organização dos dados, o acompanhamento das atividades e o gerenciamento das informações utilizadas no dia a dia.
