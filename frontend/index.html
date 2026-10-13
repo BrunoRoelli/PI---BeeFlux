@@ -24,7 +24,7 @@
             <nav class="desktop-nav">
                 <ul>
                     <li><a href="#"><i class="fa-solid fa-house"></i>Início</a></li>
-                    <li><a href="#"><i class="fa-solid fa-box-open"></i>Produtos</a></li>
+                    <li><a href="html/estoque.html"><i class="fa-solid fa-box-open"></i> Estoque</a></li>
                     <li><a href="html/contatos.html"><i class="fa-solid fa-users"></i> Contatos</a></li>
                     <li><a href="#"><i class="fa-solid fa-chart-pie"></i>Financeiro</a></li>
                     <li><a href="#"><i class="fa-solid fa-gear"></i>Configurações</a></li>
@@ -40,7 +40,7 @@
         </div>
         <div id="mobile-menu" class="menu-mobile">
             <a href="#"><a href="#"><i class="fa-solid fa-house"></i>Início</a>
-            <a href="#"><i class="fa-solid fa-box-open"></i>Produtos</a>
+            <a href="html/estoque.html"><i class="fa-solid fa-box-open"></i> Estoque</a>
             <a href="#"><i class="fa-solid fa-book-open"></i> Receitas</a>
             <a href="html/contatos.html"><i class="fa-solid fa-users"></i> Contatos</a>
             <a href="#"><i class="fa-solid fa-chart-pie"></i> Financeiro</a>
@@ -107,6 +107,7 @@
                     <button class="botao-acao" onclick="abrirCadastroContato()"><i class="fa-solid fa-user-plus"></i>Cadastrar Contato</button>
                     <button class="botao-acao" onclick="abrirReceitas()"><i class="fa-solid fa-utensils"></i>Ver Receitas</button>
                     <button class="botao-acao" onclick="abrirPrecificador()"><i class="fa-solid fa-calculator"></i>Precificar Produto</button>
+                    <button class="botao-acao" onclick="abrirEstoque()"><i class="fa-solid fa-boxes-stacked"></i>Ver estoque</button>
                 </div>
             </div>
             <div class="encomendas-recentes">
@@ -174,6 +175,9 @@
         // Função que abre modal de cadastro dos contatos!
         function abrirCadastroContato() {
             window.location.href = "html/contatos.html?abrirModal=true"; 
+        }
+        function abrirEstoque(){
+            window.location.href = "html/estoque.html?abrirModal=true";
         }
     </script>
 </body>
