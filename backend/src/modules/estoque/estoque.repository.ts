@@ -1,0 +1,1 @@
+import type { Estoque } from "./estoque.types";
