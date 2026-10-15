@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BeeFlux | Estoque</title>
+
+    <link rel="stylesheet" href="../css/global.css">
+    <link rel="stylesheet" href="../css/estoque.css">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300..700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <header>
+        <div class="container-header">
+            <a href="#" class="logo">
+                <div class="logo-icone">&#x1F41D;</div>
+                <span class="logo-texto">BeeFlux</span>
+            </a>
+            <nav class="desktop-nav">
+                <ul>
+                    <li><a href="../index.html"><i class="fa-solid fa-house"></i>Início</a></li>
+                    <li><a href="#"><i class="fa-solid fa-box-open"></i> Estoque</a></li>
+                    <li><a href="contatos.html"><i class="fa-solid fa-users"></i> Contatos</a></li>
+                    <li><a href="#"><i class="fa-solid fa-chart-pie"></i>Financeiro</a></li>
+                    <li><a href="#"><i class="fa-solid fa-gear"></i>Configurações</a></li>
+                </ul>
+            </nav>
+            <div class="user-profile">
+                <div class="avatar-placeholder" id="user-initials"></div>
+                <span class="status-dot"></span>
+            </div>
+            <button id="menu-btn" class="menu-sanduiche">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+        </div>
+        <div id="mobile-menu" class="menu-mobile">
+            <a href="../index.html"><i class="fa-solid fa-house"></i>Início</a>
+            <a href="#"><i class="fa-solid fa-box-open"></i> Estoque</a>
+            <a href="#"><i class="fa-solid fa-book-open"></i> Receitas</a>
+            <a href="contatos.html"><i class="fa-solid fa-users"></i> Contatos</a>
+            <a href="#"><i class="fa-solid fa-chart-pie"></i> Financeiro</a>
+            <a href="#"><i class="fa-solid fa-gear"></i> Configurações</a>
+        </div>
+    </header>
+    <main>
+        <section class="topo">
+            <div class="section-title">
+                <h1>Controle de Estoque</h1>
+                <p>Monitore seu ingredientes e embalagens, controlando quantidade e cadastrando-os.</p>
+            </div>
+            <button class="botao-primario" id="open-new-item-modal">
+                <i class="fa-solid fa-plus"></i> Novo Item
+            </button>
+        </section>
+        <!-- Cards de Resumo Rápido -->
+        <section class="dashboard-grid">
+            <div class="card metric-card">
+                <div class="metric-icon pink">
+                    <i class="fa-solid fa-boxes-stacked"></i>
+                </div>
+                <div class="metric-info">
+                    <h3>Total de Itens</h3>
+                    <span class="value" id="total-items-count">0</span>
+                    <span class="trend neutral">Cadastrados</span>
+                </div>
+            </div>
+            <div class="card metric-card">
+                <div class="metric-icon orange">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+                <div class="metric-info">
+                    <h3>Estoque Baixo</h3>
+                    <span class="value text-warning" id="low-stock-count">0</span>
+                    <span class="trend warning">Precisam de reposição</span>
+                </div>
+            </div>
+        </section>
+        <!-- Barra de Pesquisa e Filtros -->
+        <div class="filter-bar">
+            <div class="caixa-pesquisa">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" id="search-item" placeholder="Buscar ingrediente ou embalagem...">
+            </div>
+            <div class="filter-tags">
+                <button class="botao-primario" id="tag" data-filter="all">Todos</button>
+                <button class="btn-secondary" id="tag" data-filter="ingrediente">Ingredientes</button>
+                <button class="btn-secondary" id="tag" data-filter="embalagem">Embalagens</button>
+            </div>
+        </div>
+        <!-- Tabela de Estoque -->
+        <section class="card table-card">
+            <h2>Estoque</h2>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Item</th>
+                            <th>Categoria</th>
+                            <th>Quantidade Atual</th>
+                            <th>Mínimo Ideal</th>
+                            <th>Status</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="inventory-table-body">
+                        <!-- Preenchido via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Modal de Novo Item -->
+        <div class="modal-overlay" id="item-modal">
+            <div class="modal-card">
+                <button class="close-modal" id="close-modal-btn"><i class="fa-solid fa-xmark"></i></button>
+                
+                <div class="modal-header">
+                    <h2>Adicionar Novo Insumo</h2>
+                    <p>Cadastre um novo ingrediente ou embalagem no seu estoque.</p>
+                </div>
+
+                <form id="item-form">
+                    <div class="input-group">
+                        <label for="item-name">Nome do Item</label>
+                        <input type="text" id="item-name" required placeholder="Ex: Leite Condensado / Caixa para Bolo">
+                    </div>
+
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label for="item-category">Categoria</label>
+                            <select id="item-category" required>
+                                <option value="ingrediente">Ingrediente</option>
+                                <option value="embalagem">Embalagem</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label for="item-unit">Unidade de Medida</label>
+                            <input type="text" id="item-unit" required placeholder="Ex: un, kg, litros, cx">
+                        </div>
+                    </div>
+
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label for="item-qty">Quantidade Atual</label>
+                            <input type="number" id="item-qty" required step="0.1" placeholder="10">
+                        </div>
+                        <div class="input-group">
+                            <label for="item-min">Estoque Mínimo</label>
+                            <input type="number" id="item-min" required step="0.1" placeholder="3">
+                        </div>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn-secondary" id="cancel-modal-btn">Cancelar</button>
+                        <button type="submit" class="botao-primario">Salvar Item</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+                <div class="redes-sociais">
+                    <div class="rede">
+                        <i class="fa-brands fa-youtube"></i>
+                        <a href="#" aria-label="Youtube">Youtube</a>
+                    </div>
+                    <div class="rede">
+                        <i class="fa-brands fa-facebook"></i>
+                        <a href="#" aria-label="Facebook">Facebok</a>
+                    </div>
+                    <div class="rede">
+                        <i class="fa-brands fa-instagram"></i>
+                        <a href="#" aria-label="Instagram">Instagram</a>
+                    </div>
+                    <div class="secao-sair">
+                        <button id="logout-btn"><i class="fa-solid fa-right-from-bracket"></i> Sair</button>
+                    </div>
+                </div>
+                <p>&copy; 2026 BeeFlux, todos os direitos reservados</p>
+            </div>
+    </footer>
+    <script src="../js/global.js" defer></script>
+    <script src="../js/estoque.js" defer></script>
+</body>
+</html>
