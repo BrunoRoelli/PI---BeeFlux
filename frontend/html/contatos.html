@@ -26,12 +26,24 @@
                     <li><a href="estoque.html"><i class="fa-solid fa-box-open"></i> Estoque</a></li>
                     <li><a href="contatos.html"><i class="fa-solid fa-users"></i> Contatos</a></li>
                     <li><a href="#"><i class="fa-solid fa-chart-pie"></i> Financeiro</a></li>
-                    <li><a href="#"><i class="fa-solid fa-gear"></i> Configurações</a></li>
+                    <li><a href="#"><i class="fa-solid fa-book-open"></i> Receitas</a></li>
+                    <li><a href="#"><i class="fa-solid fa-list-check"></i> Pedidos</a></li>
                 </ul>
             </nav>
             <div class="user-profile">
-                <div class="avatar-placeholder" id="user-initials"></div>
-                <span class="status-dot"></span>
+                <button id="user-menu-btn" class="avatar-btn" aria-label="Menu do Usuário">
+                    <div class="avatar-placeholder" id="user-initials"></div>
+                    <span class="status-dot"></span>
+                </button>
+                <div id="user-dropdown" class="user-dropdown-menu hidden">
+                    <a href="#" class="dropdown-item">
+                        <i class="fa-solid fa-gear"></i> Configurações
+                    </a>
+                    <div class="dropdown-divider"></div>
+                    <button id="logout-btn" class="dropdown-item logout">
+                        <i class="fa-solid fa-right-from-bracket"></i> Sair
+                    </button>
+                </div>
             </div>
             <button id="menu-btn" class="menu-sanduiche">
                 <i class="fa-solid fa-bars"></i>
@@ -40,10 +52,10 @@
         <div id="mobile-menu" class="menu-mobile">
             <a href="../index.html"><i class="fa-solid fa-house"></i>Início</a>
             <a href="estoque.html"><i class="fa-solid fa-box-open"></i> Estoque</a>
-            <a href="#"><i class="fa-solid fa-book-open"></i> Receitas</a>
             <a href="contatos.html"><i class="fa-solid fa-users"></i> Contatos</a>
             <a href="#"><i class="fa-solid fa-chart-pie"></i> Financeiro</a>
-            <a href="#"><i class="fa-solid fa-gear"></i> Configurações</a>
+            <a href="#"><i class="fa-solid fa-book-open"></i> Receitas</a>
+            <a href="#"><i class="fa-solid fa-list-check"></i> Pedidos</a>
         </div>
     </header>
     
