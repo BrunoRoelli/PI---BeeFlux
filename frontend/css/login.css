@@ -92,7 +92,25 @@ body {
     gap: 8px;
     box-shadow: 0 4px 12px rgba(255, 143, 171, 0.3);
 }
-.btn-submit:hover {
+.btn-submit-cadastro {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    background: linear-gradient(135deg, #ff6584, #ff8da1);
+    color: white;
+    font-size: 1rem;
+    font-weight: bold;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    box-shadow: 0 4px 12px rgba(255, 101, 132, 0.3);
+    margin-top: 10px;
+}
+.btn-submit:hover, .btn-submit-cadastro:hover {
     opacity: 0.95;
     transform: translateY(-3px);
     box-shadow: 0 4px 10px rgb(39, 38, 38);
