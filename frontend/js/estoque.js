@@ -205,7 +205,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
         totalItemsCount.textContent = estoqueData.length;
-        const countLow = estoqueData.filter(i => i.quantidade <= i.minimo).length;
+        const countLow = estoqueData.filter(i => i.quantidade < i.minimo).length;
         lowStockCount.textContent = countLow;
 
         if (filtered.length === 0) {
