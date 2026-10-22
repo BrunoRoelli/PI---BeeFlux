@@ -7,13 +7,57 @@ O sistema tem como objetivo centralizar informações e auxiliar na organizaçã
 ## Tecnologias utilizadas
 
 - **TypeScript:** desenvolvimento da lógica e do backend.
+- **Node.js:** ambiente de execução do backend.
+- **Express:** criação das rotas e gerenciamento das requisições HTTP.
 - **HTML:** estrutura das páginas do sistema.
 - **CSS:** estilização e organização visual da interface.
-- **MySQL:** armazenamento e gerenciamento dos dados.
+- **JavaScript:** interações do frontend e comunicação com a API.
+- **MySQL:** banco de dados planejado para o armazenamento das informações.
 - **Vitest:** criação e execução de testes automatizados.
-- **Node.js:** ambiente de execução do backend.
+- **bcryptjs:** geração e verificação de hashes de senhas.
+- **CORS:** configuração da comunicação entre frontend e backend.
+- **dotenv:** gerenciamento de variáveis de ambiente.
 
-## Configuração inicial do projeto
+## Funcionalidades em desenvolvimento
+
+- **Cadastro de usuários:** recebimento e validação dos dados de cadastro pela API.
+- **Login:** autenticação das credenciais cadastradas pelo backend.
+- **Criptografia de senhas:** armazenamento das senhas em formato de hash utilizando `bcryptjs`.
+- **Interface web:** páginas de login, cadastro e módulos do sistema.
+- **Gerenciamento de confeitaria:** desenvolvimento dos módulos de Estoque, Compras, Receitas e Custos.
+
+> **Estado atual:** o cadastro e o login já se comunicam com o backend. Os usuários ainda são armazenados temporariamente em memória, e a persistência no MySQL e a proteção completa das páginas e rotas privadas ainda precisam ser implementadas.
+
+## Estrutura do projeto
+
+A organização geral do projeto segue a seguinte estrutura:
+
+```text
+BeeFlux/
+├── backend/
+│   └── src/
+│       ├── modules/
+│       │   └── auth/
+│       │   └── compras/
+│       │   └── custos/
+│       │   └── estoque/
+│       │   └── receitas/
+│       ├── tests/
+│       └── index.ts
+├── frontend/
+│   ├── css/
+│   ├── html/
+│   ├── js/
+│   └── index.html
+├── .gitignore
+├── package.json
+├── package-lock.json
+└── tsconfig.json
+```
+
+A estrutura apresentada é uma referência baseada na organização atual do projeto e poderá ser ampliada conforme os módulos forem implementados.
+
+## Configuração do ambiente de desenvolvimento
 
 Os comandos abaixo devem ser executados no terminal, na raiz do projeto, onde está localizado o `package.json`.
 
@@ -29,29 +73,41 @@ Cria o arquivo `package.json`, responsável por armazenar informações do proje
 
 ### 2. Instalação das dependências
 
+As dependências utilizadas pelo backend e pelos testes incluem:
+
 ```bash
-npm install -D typescript tsx @types/node vitest
-npm install mysql2 dotenv
+npm install express cors bcryptjs dotenv
+npm install -D typescript tsx @types/node @types/express @types/cors vitest
 ```
 
-- `typescript`: permite escrever, verificar e compilar arquivos TypeScript.
-- `tsx`: executa arquivos TypeScript durante o desenvolvimento.
-- `@types/node`: fornece definições de tipos para o Node.js.
-- `vitest`: executa os testes automatizados.
-- `mysql2`: permite a comunicação entre o backend e o MySQL.
-- `dotenv`: carrega as variáveis de ambiente definidas no arquivo `.env`.
+O suporte a sessões, caso seja adotado posteriormente, deverá ser instalado quando essa funcionalidade for implementada.
 
-### 3. Criação do arquivo de configuração TypeScript
+Principais dependências:
+
+- `express`: criação do servidor e das rotas da API.
+- `cors`: configuração do acesso do frontend à API.
+- `bcryptjs`: geração e comparação de hashes de senhas.
+- `dotenv`: leitura das variáveis de ambiente.
+- `typescript`: tipagem estática e compilação do código.
+- `tsx`: execução dos arquivos TypeScript durante o desenvolvimento.
+- `@types/node`, `@types/express` e `@types/cors`: definições de tipos para o TypeScript.
+- `vitest`: execução dos testes automatizados.
+
+Para a futura integração com MySQL, também será necessário instalar o driver `mysql2`:
+
+```bash
+npm install mysql2
+```
+
+### 3. Configuração do TypeScript
+
+Caso o arquivo `tsconfig.json` ainda não exista, ele pode ser criado com:
 
 ```bash
 npx tsc --init
 ```
 
-Cria o arquivo `tsconfig.json`, responsável por definir as configurações do compilador TypeScript.
-
-### 4. Configuração do TypeScript
-
-O `tsconfig.json` deve ser ajustado de acordo com a estrutura do projeto.
+O `tsconfig.json` define as configurações do compilador TypeScript.
 
 Principais opções:
 
@@ -61,9 +117,9 @@ Principais opções:
 - `include`: define os arquivos TypeScript incluídos na compilação.
 - `exclude`: exclui pastas que não devem ser compiladas.
 
-Como o backend está planejado para ficar em `backend/src/`, os caminhos devem considerar essa estrutura.
+Como o backend está organizado em `backend/src/`, os caminhos devem ser configurados de acordo com a estrutura real do projeto.
 
-### 5. Configuração dos scripts
+### 4. Configuração dos scripts
 
 No `package.json`, os scripts podem ser definidos assim, considerando o backend em `backend/src/index.ts`:
 
@@ -76,12 +132,16 @@ No `package.json`, os scripts podem ser definidos assim, considerando o backend 
 ```
 
 - `npm run dev`: executa o backend durante o desenvolvimento.
-- `npm run build`: compila o TypeScript.
+- `npm run build`: compila o TypeScript conforme as configurações do `tsconfig.json`.
 - `npm test`: executa os testes automatizados uma vez.
 
-### 6. Configuração do `.gitignore`
+*Se esses scripts já estiverem configurados, mantenha a configuração existente e ajuste apenas o necessário.*
+
+### 5. Configuração do `.gitignore`
 
 O arquivo `.gitignore` define quais arquivos e pastas não devem ser enviados ao GitHub.
+
+Exemplo:
 
 ```gitignore
 node_modules/
@@ -90,11 +150,35 @@ backend/dist/
 ```
 
 - `node_modules/`: contém as dependências instaladas pelo npm.
-- `backend/dist/`: contém os arquivos JavaScript gerados pela compilação.
+- `backend/dist/`: contém os arquivos gerados pela compilação, caso essa seja a pasta definida em `outDir`.
 - `.env`: contém configurações locais e dados sensíveis.
 
-!A SER PREENCHIDO!
+### 6. Execução do backend
+
+Após instalar as dependências e configurar o ambiente, execute:
+
+```bash
+npm run dev
+```
+
+Se tudo estiver configurado corretamente, o terminal deverá indicar que a API está rodando em:
+
+```text
+http://localhost:3000
+```
+
+Para verificar se o servidor está funcionando, acesse esse endereço no navegador. A resposta esperada é:
+
+```json
+{
+  "mensagem": "API do BeeFlux funcionando!"
+}
+```
+
+**Observação:** o frontend deve ser aberto por um servidor de desenvolvimento local, como o Live Server do VS Code, para facilitar a comunicação com a API.
 
 ## Objetivo do projeto
 
 O BeeFlux busca integrar as principais operações de uma confeitaria em um único sistema web, facilitando a organização dos dados, o acompanhamento das atividades e o gerenciamento das informações utilizadas no dia a dia.
+
+O projeto também permite aplicar, na prática, os conhecimentos adquiridos durante o curso de Análise e Desenvolvimento de Sistemas, envolvendo desenvolvimento web, organização de código, APIs, bancos de dados e testes automatizados.
