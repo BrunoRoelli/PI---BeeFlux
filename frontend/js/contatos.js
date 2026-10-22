@@ -56,14 +56,14 @@ document.addEventListener("DOMContentLoaded", () => {
     const clientModal = document.getElementById("contact-modal");
     const openNewClientModalBtn = document.getElementById("open-new-client-modal");
     const closeModalBtn = document.getElementById("close-modal-btn");
-    const cancelModalBtn = document.getElementById("cancel-modal-btn");
+    //const cancelModalBtn = document.getElementById("cancel-modal-btn");
     const clientForm = document.getElementById("client-form");
     const contactTypeSelect = document.getElementById("contact-type");
     const dynamicFieldContainer = document.getElementById("dynamic-field-container");
 
     const historyModal = document.getElementById("history-modal");
     const closeHistoryModal = document.getElementById("close-history-modal");
-    const closeHistoryBtn = document.getElementById("close-history-btn");
+    //const closeHistoryBtn = document.getElementById("close-history-btn");
     
     const historyClientName = document.getElementById("history-client-name");
     const historyClientPhone = document.getElementById("history-client-phone");
@@ -151,7 +151,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         <td><strong>${client.totalGasto}</strong></td>
                         <td>
                             <button class="action-icon-btn history-btn" title="Ver Histórico e Observações" data-type="cliente" data-id="${client.id}">
-                                <i class="fa-solid fa-clock-rotate-left"></i>
+                                <i class="fa-regular fa-circle-user"></i>
                             </button>
                             <button class="action-icon-btn whatsapp-btn" title="WhatsApp" data-phone="${client.telefone}">
                                 <i class="fa-brands fa-whatsapp"></i>
@@ -176,7 +176,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         <td><strong>${supplier.totalGasto}</strong></td>
                         <td>
                             <button class="action-icon-btn history-btn" title="Ver Histórico e Observações" data-type="fornecedor" data-id="${supplier.id}">
-                                <i class="fa-solid fa-clock-rotate-left"></i>
+                                <i class="fa-regular fa-circle-user"></i>
                             </button>
                             <button class="action-icon-btn whatsapp-btn" title="WhatsApp" data-phone="${supplier.telefone}">
                                 <i class="fa-brands fa-whatsapp"></i>
@@ -267,9 +267,9 @@ document.addEventListener("DOMContentLoaded", () => {
     // Controle de Abertura/Fechamento de Modais
     openNewClientModalBtn.addEventListener("click", () => clientModal.classList.add("active"));
     closeModalBtn.addEventListener("click", () => clientModal.classList.remove("active"));
-    cancelModalBtn.addEventListener("click", () => clientModal.classList.remove("active"));
+    //cancelModalBtn.addEventListener("click", () => clientModal.classList.remove("active"));
     closeHistoryModal.addEventListener("click", () => historyModal.classList.remove("active"));
-    closeHistoryBtn.addEventListener("click", () => historyModal.classList.remove("active"));
+    //closeHistoryBtn.addEventListener("click", () => historyModal.classList.remove("active"));
 
     window.addEventListener("click", (e) => {
         if (e.target === clientModal) clientModal.classList.remove("active");
