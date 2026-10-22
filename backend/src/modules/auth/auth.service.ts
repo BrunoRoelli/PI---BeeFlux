@@ -46,3 +46,26 @@ export async function cadastrarUsuario(
 
   return usuario;
 }
+
+export async function autenticarUsuario(
+  email: string,
+  senha: string
+): Promise<Omit<Usuario, "senhaHash">> {
+  const emailNormalizado = email.trim().toLowerCase();
+
+  const usuario = buscarUsuarioPorEmail(emailNormalizado);
+
+  if (!usuario) {
+    throw new Error("E-mail ou senha incorretos.");
+  }
+
+  const senhaValida = await bcrypt.compare(senha, usuario.senhaHash);
+
+  if (!senhaValida) {
+    throw new Error("E-mail ou senha incorretos.");
+  }
+
+  const { senhaHash, ...usuarioSemSenha } = usuario;
+
+  return usuarioSemSenha;
+}
