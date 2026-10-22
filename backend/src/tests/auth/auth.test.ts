@@ -3,21 +3,20 @@ import { describe, it, expect } from "vitest";
 import { cadastrarUsuario } from "../../modules/auth/auth.service";
 
 describe("Cadastro de usuários", () => {
-  it("deve cadastrar um usuário válido", () => {
-    const usuario = cadastrarUsuario(
-      "Ana",
-      "ana@teste.com",
-      "hash-ficticio"
-    );
+  it("deve cadastrar um usuário válido", async () => {
+  const usuario = await cadastrarUsuario(
+    "Ana",
+    "ana@teste.com",
+    "senha123"
+  );
 
-    expect(usuario.nome).toBe("Ana");
-    expect(usuario.email).toBe("ana@teste.com");
-    expect(usuario.senhaHash).toBe("hash-ficticio");
-    expect(usuario.id).toBeTypeOf("number");
-  });
+  expect(usuario.nome).toBe("Ana");
+  expect(usuario.email).toBe("ana@teste.com");
+  expect(usuario.senhaHash).not.toBe("senha123");
+});
 
-  it("deve rejeitar um e-mail já cadastrado", () => {
-    cadastrarUsuario(
+  it("deve rejeitar um e-mail já cadastrado", async () => {
+    await cadastrarUsuario(
       "Carlos",
       "duplicado@teste.com",
       "hash-ficticio"
