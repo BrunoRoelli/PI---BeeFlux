@@ -33,9 +33,19 @@ export async function cadastrarUsuario(
     throw new Error("A senha é obrigatória.");
   }
 
-  if (senha.length < 6) {
-    throw new Error("A senha deve ter pelo menos 6 caracteres.");
-  }
+  
+if (senha.length < 8) {
+  throw new Error("A senha deve ter pelo menos 8 caracteres.");
+}
+
+if (!/[A-Z]/.test(senha)) {
+  throw new Error("A senha deve conter pelo menos uma letra maiúscula.");
+}
+
+if (!/[^A-Za-z0-9]/.test(senha)) {
+  throw new Error("A senha deve conter pelo menos um símbolo.");
+}
+
 
   const senhaHash = await bcrypt.hash(senha, 10);
 
