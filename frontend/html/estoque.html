@@ -7,6 +7,7 @@
 
     <link rel="stylesheet" href="../css/global.css">
     <link rel="stylesheet" href="../css/estoque.css">
+    <link rel="stylesheet" href="../css/modal.css">
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -151,8 +152,23 @@
                             </select>
                         </div>
                         <div class="input-group">
-                            <label for="item-unit">Unidade de Medida</label>
-                            <input type="text" id="item-unit" required placeholder="Ex: un, kg, litros, cx">
+                            <label for="item-unit-select">Unidade de Medida</label>
+                            <select id="item-unit-select" required>
+                                <option value="" disabled selected>Selecione...</option>
+                                <option value="un">Unidade (un)</option>
+                                <option value="kg">Quilograma (kg)</option>
+                                <option value="g">Grama (g)</option>
+                                <option value="litros">Litros (l)</option>
+                                <option value="ml">Mililitros (ml)</option>
+                                <option value="cx">Caixa (cx)</option>
+                                <option value="pct">Pacote (pct)</option>
+                                <option value="outro">Outro (Digitar...)</option>
+                            </select>
+                        </div>
+                        <!-- Campo de texto extra que aparece apenas se escolher "Outro" -->
+                        <div class="input-group" id="custom-unit-group" style="display: none;">
+                            <label for="item-custom-unit">Digite a Unidade Personalizada</label>
+                            <input type="text" id="item-custom-unit" placeholder="Ex: pote, lata, balde">
                         </div>
                     </div>
 
@@ -168,8 +184,33 @@
                     </div>
 
                     <div class="modal-footer">
-                        <button type="button" class="btn-secondary" id="cancel-modal-btn">Cancelar</button>
+                        <!-- <button type="button" class="btn-secondary" id="cancel-modal-btn">Cancelar</button> -->
                         <button type="submit" class="botao-primario">Salvar Item</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Modal de Atualização Rápida de Quantidade -->
+        <div class="modal-overlay" id="edit-qty-modal">
+            <div class="modal-card">
+                <button class="close-modal" id="close-edit-modal-btn"><i class="fa-solid fa-xmark"></i></button>
+                
+                <div class="modal-header">
+                    <h2>Atualizar Quantidade</h2>
+                    <p id="edit-modal-item-name">Nome do Insumo</p>
+                </div>
+
+                <form id="edit-qty-form">
+                    <input type="hidden" id="edit-item-id">
+                    
+                    <div class="input-group">
+                        <label for="edit-item-qty">Nova Quantidade (<span id="edit-item-unit-label">un</span>)</label>
+                        <input type="number" id="edit-item-qty" required step="any" placeholder="Ex: 100">
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="submit" class="botao-primario">Salvar Alteração</button>
                     </div>
                 </form>
             </div>

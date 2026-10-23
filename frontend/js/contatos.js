@@ -6,10 +6,10 @@ let clientesData = [
         telefone: "(11) 98765-4321",
         aniversario: "1994-05-12",
         observacoes: "Alérgica a lactose, prefere recheios de Ninho.",
-        totalGasto: "R\$ 380,00",
+        totalGasto: "R$ 380,00",
         historico: [
-            { produto: "Bolo de Chocolate c/ Morango", data: "28/05/2026", valor: "R\$ 95,00" },
-            { produto: "Caixa 12 Brigadeiros Gourmet", data: "14/04/2026", valor: "R\$ 45,00" }
+            { produto: "Bolo de Chocolate c/ Morango", data: "28/05/2026", valor: "R$ 95,00" },
+            { produto: "Caixa 12 Brigadeiros Gourmet", data: "14/04/2026", valor: "R$ 45,00" }
         ]
     },
     {
@@ -18,9 +18,9 @@ let clientesData = [
         telefone: "(11) 91234-5678",
         aniversario: "1988-11-20",
         observacoes: "Prefere entrega no período da manhã.",
-        totalGasto: "R\$ 150,00",
+        totalGasto: "R$ 150,00",
         historico: [
-            { produto: "Caixa 12 Brigadeiros Gourmet", data: "10/05/2026", valor: "R\$ 45,00" }
+            { produto: "Caixa 12 Brigadeiros Gourmet", data: "10/05/2026", valor: "R$ 45,00" }
         ]
     }
 ];
@@ -30,11 +30,11 @@ let fornecedoresData = [
         nome: "Distribuidora Doces & Cia",
         telefone: "(11) 93333-4444",
         produtoConsumido: "Leite Condensado e Chocolate",
-        observacoes: "Entrega toda terça-feira. Pedido mínimo de R\$ 300.",
-        totalGasto: "R\$ 1.250,00",
+        observacoes: "Entrega toda terça-feira. Pedido mínimo de R$ 300.",
+        totalGasto: "R$ 1.250,00",
         historico: [
-            { produto: "Caixa Leite Condensado (24un)", data: "01/06/2026", valor: "R\$ 180,00" },
-            { produto: "Chocolate Nobre 2kg", data: "15/05/2026", valor: "R\$ 110,00" }
+            { produto: "Caixa Leite Condensado (24un)", data: "01/06/2026", valor: "R$ 180,00" },
+            { produto: "Chocolate Nobre 2kg", data: "15/05/2026", valor: "R$ 110,00" }
         ]
     }
 ];
@@ -56,22 +56,20 @@ document.addEventListener("DOMContentLoaded", () => {
     const clientModal = document.getElementById("contact-modal");
     const openNewClientModalBtn = document.getElementById("open-new-client-modal");
     const closeModalBtn = document.getElementById("close-modal-btn");
-    const cancelModalBtn = document.getElementById("cancel-modal-btn");
     const clientForm = document.getElementById("client-form");
     const contactTypeSelect = document.getElementById("contact-type");
     const dynamicFieldContainer = document.getElementById("dynamic-field-container");
 
     const historyModal = document.getElementById("history-modal");
     const closeHistoryModal = document.getElementById("close-history-modal");
-    const closeHistoryBtn = document.getElementById("close-history-btn");
     
     const historyClientName = document.getElementById("history-client-name");
     const historyClientPhone = document.getElementById("history-client-phone");
-    const historyClientNotes = document.getElementById("history-client-notes"); // Campo de obs no modal
+    const historyClientNotes = document.getElementById("history-client-notes");
     const historyOrdersBody = document.getElementById("history-orders-body");
     const historyBadge = document.getElementById("history-badge");
     const historySectionTitle = document.getElementById("history-section-title");
-    //variavel filtro de exibição 
+    
     let currentFilter = "todos";
 
     // Verificar se veio do index.html para abrir o modal automaticamente
@@ -83,7 +81,6 @@ document.addEventListener("DOMContentLoaded", () => {
     // Alternar campos do modal conforme seleção (Cliente vs Fornecedor)
     contactTypeSelect.addEventListener("change", (e) => {
         const type = e.target.value;
-        //se cliente, aparece data de aniversario
         if (type === "cliente") {
             dynamicFieldContainer.innerHTML = `
                 <label for="client-birthday">Data de Aniversário</label>
@@ -91,9 +88,7 @@ document.addEventListener("DOMContentLoaded", () => {
             `;
             document.getElementById("modal-title").textContent = "Cadastrar Novo Cliente";
             document.getElementById("save-btn-text").textContent = "Salvar Cliente";
-        }
-        //se fornecedor, aparece produto consumido/ fornecido
-        else {
+        } else {
             dynamicFieldContainer.innerHTML = `
                 <label for="client-product">Produto Consumido / Fornecido</label>
                 <input type="text" id="client-product" required placeholder="Ex: Embalagens, Leite Condensado">
@@ -102,6 +97,7 @@ document.addEventListener("DOMContentLoaded", () => {
             document.getElementById("save-btn-text").textContent = "Salvar Fornecedor";
         }
     });
+
     // Função para renderizar as tabelas aplicando busca e o filtro de botões
     function renderContacts(search = "") {
         clientsTableBody.innerHTML = "";
@@ -131,7 +127,8 @@ document.addEventListener("DOMContentLoaded", () => {
             sectionClients.style.display = "none";
             sectionSuppliers.style.display = "block";
         }
-        // Renderizar Clientes (se a seção estiver visível)
+
+        // Renderizar Clientes
         if (sectionClients.style.display !== "none") {
             if (filteredClients.length === 0) {
                 clientsTableBody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 20px;">Nenhum cliente encontrado.</td></tr>`;
@@ -150,8 +147,8 @@ document.addEventListener("DOMContentLoaded", () => {
                         <td>${aniversarioFormatado}</td>
                         <td><strong>${client.totalGasto}</strong></td>
                         <td>
-                            <button class="action-icon-btn history-btn" title="Ver Histórico e Observações" data-type="cliente" data-id="${client.id}">
-                                <i class="fa-solid fa-clock-rotate-left"></i>
+                            <button class="action-icon-btn history-btn" title="Ver Detalhes, Telefone e Histórico" data-type="cliente" data-id="${client.id}">
+                                <i class="fa-regular fa-circle-user"></i>
                             </button>
                             <button class="action-icon-btn whatsapp-btn" title="WhatsApp" data-phone="${client.telefone}">
                                 <i class="fa-brands fa-whatsapp"></i>
@@ -162,7 +159,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 });
             }
         }
-        // Renderizar Fornecedores (se a seção estiver visível)
+
+        // Renderizar Fornecedores
         if (sectionSuppliers.style.display !== "none") {
             if (filteredSuppliers.length === 0) {
                 supplierTableBody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 20px;">Nenhum fornecedor encontrado.</td></tr>`;
@@ -175,8 +173,8 @@ document.addEventListener("DOMContentLoaded", () => {
                         <td>${supplier.produtoConsumido}</td>
                         <td><strong>${supplier.totalGasto}</strong></td>
                         <td>
-                            <button class="action-icon-btn history-btn" title="Ver Histórico e Observações" data-type="fornecedor" data-id="${supplier.id}">
-                                <i class="fa-solid fa-clock-rotate-left"></i>
+                            <button class="action-icon-btn history-btn" title="Ver Detalhes, Telefone e Histórico" data-type="fornecedor" data-id="${supplier.id}">
+                                <i class="fa-regular fa-circle-user"></i>
                             </button>
                             <button class="action-icon-btn whatsapp-btn" title="WhatsApp" data-phone="${supplier.telefone}">
                                 <i class="fa-brands fa-whatsapp"></i>
@@ -189,7 +187,8 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         attachEventListeners();
     }
-    // Eventos dos botões de filtro (Todos, Só Clientes, Só Fornecedores)
+
+    // Eventos dos botões de filtro
     filterButtons.forEach(btn => {
         btn.addEventListener("click", (e) => {
             filterButtons.forEach(b => {
@@ -204,9 +203,8 @@ document.addEventListener("DOMContentLoaded", () => {
             renderContacts(searchContactInput.value);
         });
     });
-    //botoes na tabela
+
     function attachEventListeners() {
-        //botao para saber mais detalhes do contato
         document.querySelectorAll(".history-btn").forEach(btn => {
             btn.addEventListener("click", (e) => {
                 const id = parseInt(e.currentTarget.getAttribute("data-id"));
@@ -214,7 +212,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 openHistoryModal(id, type);
             });
         });
-        //botao para entrar em contato
+
         document.querySelectorAll(".whatsapp-btn").forEach(btn => {
             btn.addEventListener("click", (e) => {
                 const phone = e.currentTarget.getAttribute("data-phone").replace(/\D/g, "");
@@ -223,7 +221,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // Abrir Modal de Histórico e exibir Observações
+    // Abrir Modal de Histórico incluindo telefone e total gasto completo
     function openHistoryModal(id, type) {
         let contact = type === "cliente" 
             ? clientesData.find(c => c.id === id) 
@@ -232,9 +230,13 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!contact) return;
 
         historyClientName.textContent = contact.nome;
-        historyClientPhone.innerHTML = `<i class="fa-brands fa-whatsapp text-success"></i> ${contact.telefone}`;
         
-        // Exibe a observação cadastrada ou um traço se estiver vazia
+        // Exibe o telefone e o total gasto acumulado com destaque dentro do modal
+        historyClientPhone.innerHTML = `
+            <div style="margin-bottom: 6px;"><i class="fa-brands fa-whatsapp text-success"></i> ${contact.telefone}</div>
+            <div style="font-size: 0.85rem; color: var(--cor-corpo-texto);">Total Gasto: <strong>${contact.totalGasto}</strong></div>
+        `;
+        
         historyClientNotes.textContent = contact.observacoes && contact.observacoes.trim() !== "" 
             ? contact.observacoes 
             : "Nenhuma observação cadastrada.";
@@ -264,18 +266,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
         historyModal.classList.add("active");
     }
+
     // Controle de Abertura/Fechamento de Modais
     openNewClientModalBtn.addEventListener("click", () => clientModal.classList.add("active"));
     closeModalBtn.addEventListener("click", () => clientModal.classList.remove("active"));
-    cancelModalBtn.addEventListener("click", () => clientModal.classList.remove("active"));
     closeHistoryModal.addEventListener("click", () => historyModal.classList.remove("active"));
-    closeHistoryBtn.addEventListener("click", () => historyModal.classList.remove("active"));
 
     window.addEventListener("click", (e) => {
         if (e.target === clientModal) clientModal.classList.remove("active");
         if (e.target === historyModal) historyModal.classList.remove("active");
     });
-    // Salvar Novo Contato (Salvando corretamente as observações)
+
+    // Salvar Novo Contato
     clientForm.addEventListener("submit", (e) => {
         e.preventDefault();
         const type = contactTypeSelect.value;
@@ -291,7 +293,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 telefone,
                 aniversario,
                 observacoes,
-                totalGasto: "R\$ 0,00",
+                totalGasto: "R$ 0,00",
                 historico: []
             });
             alert("Cliente cadastrado com sucesso!");
@@ -303,7 +305,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 telefone,
                 produtoConsumido,
                 observacoes,
-                totalGasto: "R\$ 0,00",
+                totalGasto: "R$ 0,00",
                 historico: []
             });
             alert("Fornecedor cadastrado com sucesso!");
@@ -315,10 +317,12 @@ document.addEventListener("DOMContentLoaded", () => {
         contactTypeSelect.dispatchEvent(new Event("change"));
         clientModal.classList.remove("active");
     });
+
     // Pesquisa em tempo real
     searchContactInput.addEventListener("input", (e) => {
         renderContacts(e.target.value);
     });
+
     // Inicialização
     renderContacts();
 });

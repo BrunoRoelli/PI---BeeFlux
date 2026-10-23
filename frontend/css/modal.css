@@ -1,0 +1,117 @@
+/* Modais */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.35s ease, visibility 0.35s ease;
+    padding: 16px; /* Evita que o modal cole nas bordas da tela no celular */
+}
+.modal-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+.modal-card {
+    background-color: var(--Creme);
+    width: 100%;
+    max-width: 550px;
+    border-radius: 16px;
+    padding: 30px;
+    position: relative;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    transform: translateY(20px);
+    transition: var(--transicao);
+    box-sizing: border-box; /* Garante que o padding não estoure a largura */
+}
+.modal-overlay.active .modal-card {transform: translateY(0);}
+
+.close-modal {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: var(--bg-color);
+    border: none;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--cor-corpo-texto);
+    font-size: 1.1rem;
+}
+.close-modal:hover { background-color: var(--pink-escuro); color: var(--Black); }
+.modal-header { margin-bottom: 20px; padding-right: 30px; }
+.modal-header h2 { font-size: 1.4rem; font-weight: 700; margin-bottom: 4px; }
+.modal-header p { font-size: 0.85rem; color: var(--cor-corpo-texto); }
+/* formulario do modal */
+form { display: flex; flex-direction: column; gap: 16px; }
+.input-group { display: flex; flex-direction: column; gap: 6px; }
+.input-group label {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--cor-corpo-texto);
+}
+.contact-type, .input-group input, .input-group textarea, .input-group select {
+    background-color: var(--bg-color);
+    border: 1px solid var(--pink-escuro);
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    outline: none;
+    color: var(--cor-corpo-texto);
+    width: 100%; /* Garante que ocupem todo o espaço disponível */
+    box-sizing: border-box;
+}
+.input-group input:focus, .input-group select:focus, .input-group textarea:focus { border-color: var(--Black); }
+
+.input-group input:focus::placeholder {color: transparent;}
+
+.input-group textarea { resize: vertical; height: 80px; }
+.input-group input:focus, .input-group textarea:focus { border-color: var(--pink-escuro); }
+/* Linha de inputs que vira coluna em telas menores */
+.input-row { 
+    display: grid; 
+    grid-template-columns: 1fr 1fr; 
+    gap: 12px; 
+}
+.badge-category {
+    display: inline-block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 4px 10px;
+    background-color: var(--primary-light);
+    color: var(--Black);
+    border-radius: 6px;
+    margin-bottom: 8px;
+}
+.modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px; }
+.text-warning { color: var(--warning); }
+.text-success { color: var(--sucesso); }
+td button.action-icon-btn {
+    vertical-align: middle;
+}
+/* ==========================================
+   RESPONSIVIDADE DO MODAL (Correção do Scroll)
+   ========================================== */
+@media (max-width: 576px) {
+    .modal-card {
+        padding: 20px 16px; /* Reduz o padding lateral em telas pequenas */
+        max-height: 95vh;
+    }
+    /* Faz os campos lado a lado virarem uma coluna única no celular */
+    .input-row {
+        grid-template-columns: 1fr; 
+    }
+}
