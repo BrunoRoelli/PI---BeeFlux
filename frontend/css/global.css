@@ -25,6 +25,14 @@
     /* Linhas e Divisores */
     --borda-linha: 1px solid #e5e7eb; /* para linhas divisórias */
 }
+
+@font-face {
+    font-family: "Neue Machinima";
+    src: url("../fonts/NeueMachinima.woff2") format("woff2");
+    font-weight: normal;
+    font-style: normal;
+}
+
 *{
     box-sizing: border-box;
     margin: 0;
@@ -81,32 +89,57 @@ header {
     ============================== */
 .logo {
     display: flex;
+    flex-direction: row;
     align-items: center;
     gap: 12px;
     font-weight: bold;
+    text-decoration: none;
+    width: fit-content;
 }
+
 .logo-icone {
-  width: 3rem;  /* 48px */
-  height: 3rem;
-  border-radius:50%;
-  background-color: var(--Yellow);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size:24px;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  transition: transform var(--transicao);
+    position: relative;
+    flex-shrink: 0;
+    width: 3rem;
+    height: 3rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
 }
-.logo:hover .logo-icone{
-  transform: rotate(20deg);
+
+.logo-icone img {
+    max-width: 110%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    object-fit: contain;
 }
+
+.logo-icone img.logo-hover {
+    position: absolute;
+    opacity: 0;
+}
+
+.logo:hover .logo-icone img:first-child {
+    opacity: 0;
+}
+
+.logo:hover .logo-icone img.logo-hover {
+    opacity: 1;
+}
+
+    
 .logo-texto {
+  font-family: "Neue Machinima", sans-serif;
   font-size: 24px;
   letter-spacing: -0.025em;
+  color:#ffbd59;
   transition: color var(--transicao);
 }
 .logo:hover .logo-texto {
-  color: var(--Black);
+  color:#ff8fab;
 }
 /*  ==============================
     MENU DESKTOP
