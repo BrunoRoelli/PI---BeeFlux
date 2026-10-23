@@ -130,6 +130,30 @@ header {
     opacity: 1;
 }
 
+.logo-icone {
+    transition: transform 0.6s ease-in-out;
+}
+
+.logo-icone img {
+    transition: opacity 0.5s ease-in-out;
+}
+
+.logo-icone {
+    transition: transform 0.5s ease-in-out;
+}
+
+.logo:hover .logo-icone {
+    animation: pulsar 0.8s ease-in-out infinite;
+}
+
+@keyframes pulsar {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.08);
+    }
+}
     
 .logo-texto {
   font-family: "Neue Machinima", sans-serif;
@@ -137,9 +161,12 @@ header {
   letter-spacing: -0.025em;
   color:#ffbd59;
   transition: color var(--transicao);
+  transition: color 0.5s ease-in-out,
+  transform 0.5s ease-in-out;
 }
 .logo:hover .logo-texto {
   color:#ff8fab;
+  transform: scale(1.05);
 }
 /*  ==============================
     MENU DESKTOP
@@ -173,19 +200,34 @@ header {
     display: flex;
     align-items: center;
 }
+
 .avatar-placeholder {
     width: 48px;
-    height: 48px;
-    background: linear-gradient(135deg, #ff6584,#6c5ce7);
+    height: 41.64px;
+    clip-path: polygon(
+        25% 0%,
+        75% 0%,
+        100% 50%,
+        75% 100%,
+        25% 100%,
+        0% 50%
+    );
+    background: #ffbd59;
     color: white;
     font-weight: 600;
     font-size: 1.2rem;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 50%;
-    box-shadow: 0 4px 10px rgba(255, 101, 132, 0.3);
+    flex-shrink: 0;
+    transition: background 0.5s ease-in-out, transform 0.3s ease-in-out;
 }
+
+.avatar-placeholder:hover {
+    background: #ff8fab;
+    transform: scale(1.05);
+}
+
 .status-dot {
     position: absolute;
     bottom: 2px;
