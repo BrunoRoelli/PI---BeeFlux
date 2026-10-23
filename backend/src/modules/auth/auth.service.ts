@@ -2,7 +2,7 @@ import bcrypt from "bcryptjs";
 import type { Usuario } from "./auth.types";
 import {
   buscarUsuarioPorEmail,
-  salvarUsuario
+  salvarUsuario,
 } from "./auth.repository";
 
 export async function cadastrarUsuario(
@@ -21,7 +21,11 @@ export async function cadastrarUsuario(
     throw new Error("E-mail inválido.");
   }
 
-  if (buscarUsuarioPorEmail(emailNormalizado)) {
+  const usuarioExistente = await buscarUsuarioPorEmail(
+    emailNormalizado
+  );
+
+  if (usuarioExistente) {
     throw new Error("Este e-mail já está cadastrado.");
   }
 
@@ -35,14 +39,11 @@ export async function cadastrarUsuario(
 
   const senhaHash = await bcrypt.hash(senha, 10);
 
-  const usuario: Usuario = {
-    id: Date.now(),
+  const usuario = await salvarUsuario({
     nome: nomeNormalizado,
     email: emailNormalizado,
-    senhaHash
-  };
-
-  salvarUsuario(usuario);
+    senhaHash,
+  });
 
   return usuario;
 }
@@ -53,13 +54,20 @@ export async function autenticarUsuario(
 ): Promise<Omit<Usuario, "senhaHash">> {
   const emailNormalizado = email.trim().toLowerCase();
 
-  const usuario = buscarUsuarioPorEmail(emailNormalizado);
+  if (!emailNormalizado || !senha) {
+    throw new Error("E-mail ou senha incorretos.");
+  }
+
+  const usuario = await buscarUsuarioPorEmail(emailNormalizado);
 
   if (!usuario) {
     throw new Error("E-mail ou senha incorretos.");
   }
 
-  const senhaValida = await bcrypt.compare(senha, usuario.senhaHash);
+  const senhaValida = await bcrypt.compare(
+    senha,
+    usuario.senhaHash
+  );
 
   if (!senhaValida) {
     throw new Error("E-mail ou senha incorretos.");
