@@ -1,10 +1,14 @@
 import express from "express";
 import { cadastrarUsuario, autenticarUsuario } from "./modules/auth/auth.service";
 import cors from "cors";
+import { userConfigRoutes } from "./modules/auth/User_config/userConfig.routes";
+
 
 const app = express();
 const PORT = 3000;
 app.use(cors());
+
+app.use("/api/usuarios/config", userConfigRoutes);
 
 // Permite receber requisições com corpo JSON
 app.use(express.json());
@@ -52,7 +56,7 @@ app.post("/api/auth/cadastro", async (req, res) => {
       "O nome é obrigatório.",
       "E-mail inválido.",
       "A senha é obrigatória.",
-      "A senha deve ter pelo menos 6 caracteres.",
+      "A senha deve ter pelo menos 8 caracteres.",
       "Este e-mail já está cadastrado."
     ];
 
@@ -97,6 +101,9 @@ app.post("/api/auth/login", async (req, res) => {
   }
 });
 
+app.use("/api/usuarios/config", userConfigRoutes);
+
+// Inicialização do servidor
 app.listen(PORT, () => {
   console.log(`BeeFlux API rodando em http://localhost:${PORT}`);
 });

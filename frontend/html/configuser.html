@@ -1,0 +1,597 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BeeFlux | Configurações</title>
+
+    <link rel="stylesheet" href="../css/global.css">
+
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300..700&display=swap"
+          rel="stylesheet">
+
+    <style>
+        .config-container {
+            max-width: 650px;
+            margin: 30px auto;
+            padding: 0 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        .config-card {
+            background: #fff;
+            border: 2px solid #ff8fab;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+
+        .config-card h2 {
+            color: #4a4045;
+            font-size: 22px;
+            margin-bottom: 20px;
+        }
+
+        .config-card h2 i {
+            color: #ff8fab;
+            margin-right: 8px;
+        }
+
+        .info-atual {
+            background: #fbecdb;
+            border-left: 4px solid #ff8fab;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 20px;
+        }
+
+        .form-grupo {
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+            margin-bottom: 18px;
+        }
+
+        .form-grupo label {
+            font-weight: 600;
+            color: #4a4045;
+        }
+
+        .form-grupo input {
+            padding: 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 15px;
+        }
+
+        .form-grupo input:focus {
+            outline: none;
+            border-color: #ff8fab;
+        }
+
+        .btn-salvar {
+            background: #ff8fab;
+            color: #fff;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-family: inherit;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .btn-salvar:hover {
+            background: #fb6f92;
+        }
+
+        .btn-salvar:disabled {
+            opacity: 0.6;
+            cursor: wait;
+        }
+
+        .mensagem {
+            display: none;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .sucesso {
+            display: block;
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .erro {
+            display: block;
+            background: #ffe4e6;
+            color: #be123c;
+        }
+
+        .aviso {
+            display: block;
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .topo-config {
+            text-align: center;
+            margin-top: 35px;
+        }
+
+        .topo-config h1 {
+            color: #4a4045;
+        }
+
+        .topo-config p {
+            margin-top: 8px;
+            color: #777;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <div class="container-header">
+
+            <a href="../index.html" class="logo">
+                <div class="logo-icone">
+                    <img src="../assets/logo.png" alt="Logo BeeFlux">
+                    <img src="../assets/logo-hover.png"
+                         alt="" class="logo-hover">
+                </div>
+
+                <span class="logo-texto">BeeFlux</span>
+            </a>
+
+            <nav class="desktop-nav">
+                <ul>
+                    <li>
+                        <a href="../index.html">
+                            <i class="fa-solid fa-house"></i> Início
+                        </a>
+                    </li>
+
+                    <li>
+                        <a href="estoque.html">
+                            <i class="fa-solid fa-box-open"></i> Estoque
+                        </a>
+                    </li>
+
+                    <li>
+                        <a href="contatos.html">
+                            <i class="fa-solid fa-users"></i> Contatos
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+
+            <div class="user-profile">
+                <button id="user-menu-btn"
+                        class="avatar-btn"
+                        aria-label="Menu do Usuário">
+
+                    <div class="avatar-placeholder"
+                         id="user-initials">U</div>
+
+                    <span class="status-dot"></span>
+                </button>
+
+                <div id="user-dropdown"
+                     class="user-dropdown-menu hidden">
+
+                    <a href="configuracoes.html"
+                       class="dropdown-item">
+                        <i class="fa-solid fa-gear"></i>
+                        Configurações
+                    </a>
+
+                    <div class="dropdown-divider"></div>
+
+                    <button id="logout-btn"
+                            class="dropdown-item logout">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                        Sair
+                    </button>
+                </div>
+            </div>
+
+            <button id="menu-btn" class="menu-sanduiche">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+
+        </div>
+
+        <div id="mobile-menu" class="menu-mobile">
+            <a href="../index.html">Início</a>
+            <a href="estoque.html">Estoque</a>
+            <a href="contatos.html">Contatos</a>
+            <a href="configuracoes.html">Configurações</a>
+        </div>
+    </header>
+
+    <main>
+
+        <section class="topo-config">
+            <h1>Configurações do Usuário</h1>
+            <p>Gerencie suas informações e a segurança da conta.</p>
+        </section>
+
+        <div class="config-container">
+
+            <!-- ALTERAR NOME -->
+
+            <section class="config-card">
+
+                <h2>
+                    <i class="fa-solid fa-user-pen"></i>
+                    Alterar Nome
+                </h2>
+
+                <div class="info-atual">
+                    Nome cadastrado atualmente:
+                    <strong id="nome-atual">Carregando...</strong>
+                </div>
+
+                <div id="mensagem-nome" class="mensagem"></div>
+
+                <form id="form-nome">
+
+                    <div class="form-grupo">
+                        <label for="novo-nome">Novo nome</label>
+
+                        <input
+                            type="text"
+                            id="novo-nome"
+                            placeholder="Digite seu novo nome"
+                            maxlength="100"
+                            required
+                        >
+                    </div>
+
+                    <button type="submit" class="btn-salvar">
+                        <i class="fa-solid fa-floppy-disk"></i>
+                        Salvar Nome
+                    </button>
+
+                </form>
+
+            </section>
+
+            <!-- ALTERAR SENHA -->
+
+            <section class="config-card">
+
+                <h2>
+                    <i class="fa-solid fa-lock"></i>
+                    Alterar Senha
+                </h2>
+
+                <div id="mensagem-senha" class="mensagem"></div>
+
+                <form id="form-senha">
+
+                    <div class="form-grupo">
+                        <label for="senha-atual">Senha atual</label>
+
+                        <input
+                            type="password"
+                            id="senha-atual"
+                            placeholder="Digite sua senha atual"
+                            autocomplete="current-password"
+                            required
+                        >
+                    </div>
+
+                    <div class="form-grupo">
+                        <label for="nova-senha">Nova senha</label>
+
+                        <input
+                            type="password"
+                            id="nova-senha"
+                            placeholder="Mínimo 8 caracteres, maiúscula e símbolo"
+                            autocomplete="new-password"
+                            required
+                        >
+                    </div>
+
+                    <div class="form-grupo">
+                        <label for="confirmar-senha">
+                            Confirmar nova senha
+                        </label>
+
+                        <input
+                            type="password"
+                            id="confirmar-senha"
+                            placeholder="Digite novamente a nova senha"
+                            autocomplete="new-password"
+                            required
+                        >
+                    </div>
+
+                    <button type="submit" class="btn-salvar">
+                        <i class="fa-solid fa-key"></i>
+                        Atualizar Senha
+                    </button>
+
+                </form>
+
+            </section>
+
+        </div>
+
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2026 BeeFlux, todos os direitos reservados.</p>
+        </div>
+    </footer>
+
+    <script src="../js/global.js" defer></script>
+
+    <script>
+        // ==========================================
+        // CONFIGURAÇÕES DO USUÁRIO - BEEFLUX
+        // ==========================================
+
+        const API_URL = "http://localhost:3000/api/usuarios/config";
+
+        // Dados armazenados pelo login
+        const usuarioId = Number(
+            localStorage.getItem("beeflux_usuario_id")
+        );
+
+        const nomeArmazenado =
+            localStorage.getItem("beeflux_nome_usuario") || "Usuário";
+
+        const nomeAtual = document.getElementById("nome-atual");
+
+        nomeAtual.textContent = nomeArmazenado;
+
+        // Atualiza a inicial do avatar
+        const avatar = document.getElementById("user-initials");
+
+        if (avatar) {
+            avatar.textContent = nomeArmazenado.charAt(0).toUpperCase();
+        }
+
+        // ==========================================
+        // MENSAGENS
+        // ==========================================
+
+        function mostrarMensagem(id, texto, tipo) {
+            const elemento = document.getElementById(id);
+
+            elemento.textContent = texto;
+            elemento.className = "mensagem " + tipo;
+        }
+
+        // Verifica se existe um ID de usuário
+        const usuarioValido =
+            Number.isSafeInteger(usuarioId) && usuarioId > 0;
+
+        if (!usuarioValido) {
+            mostrarMensagem(
+                "mensagem-nome",
+                "ID do usuário não encontrado. Faça login novamente.",
+                "aviso"
+            );
+
+            mostrarMensagem(
+                "mensagem-senha",
+                "Faça login novamente antes de alterar sua senha.",
+                "aviso"
+            );
+
+            document.querySelectorAll(".btn-salvar")
+                .forEach(botao => botao.disabled = true);
+        }
+
+        // ==========================================
+        // ALTERAR NOME
+        // ==========================================
+
+        document.getElementById("form-nome")
+            .addEventListener("submit", async (evento) => {
+
+                evento.preventDefault();
+
+                if (!usuarioValido) return;
+
+                const novoNome = document
+                    .getElementById("novo-nome")
+                    .value.trim();
+
+                if (!novoNome) {
+                    mostrarMensagem(
+                        "mensagem-nome",
+                        "Digite um nome válido.",
+                        "erro"
+                    );
+                    return;
+                }
+
+                if (!confirm("Deseja realmente alterar seu nome?")) {
+                    return;
+                }
+
+                try {
+                    const resposta = await fetch(
+                        `${API_URL}/${usuarioId}/nome`,
+                        {
+                            method: "PATCH",
+                            headers: {
+                                "Content-Type": "application/json"
+                            },
+                            body: JSON.stringify({
+                                nome: novoNome
+                            })
+                        }
+                    );
+
+                    const tipoResposta = resposta.headers.get("content-type") || "";
+
+                    if (!tipoResposta.includes("application/json")) {
+                        throw new Error(
+                            `A API retornou uma resposta inválida. HTTP ${resposta.status}. Verifique a rota e o servidor.`
+                        );
+                    }
+
+                    const dados = await resposta.json();
+
+                    if (!resposta.ok) {
+                        throw new Error(
+                            dados.mensagem || "Erro ao atualizar nome."
+                        );
+                    }
+
+                    const nomeAtualizado = dados.nome || novoNome;
+
+                    // Atualiza o nome na tela
+                    nomeAtual.textContent = nomeAtualizado;
+
+                    // Atualiza o nome salvo no navegador
+                    localStorage.setItem(
+                        "beeflux_nome_usuario",
+                        nomeAtualizado
+                    );
+
+                    // Atualiza o avatar
+                    if (avatar) {
+                        avatar.textContent =
+                            nomeAtualizado.charAt(0).toUpperCase();
+                    }
+
+                    document.getElementById("novo-nome").value = "";
+
+                    mostrarMensagem(
+                        "mensagem-nome",
+                        "Nome atualizado com sucesso!",
+                        "sucesso"
+                    );
+
+                } catch (erro) {
+                    mostrarMensagem(
+                        "mensagem-nome",
+                        erro.message,
+                        "erro"
+                    );
+                }
+            });
+
+        // ==========================================
+        // ALTERAR SENHA
+        // ==========================================
+
+        document.getElementById("form-senha")
+            .addEventListener("submit", async (evento) => {
+
+                evento.preventDefault();
+
+                if (!usuarioValido) return;
+
+                const senhaAtual = document
+                    .getElementById("senha-atual").value;
+
+                const novaSenha = document
+                    .getElementById("nova-senha").value;
+
+                const confirmarSenha = document
+                    .getElementById("confirmar-senha").value;
+
+                if (novaSenha !== confirmarSenha) {
+                    mostrarMensagem(
+                        "mensagem-senha",
+                        "As senhas não coincidem.",
+                        "erro"
+                    );
+                    return;
+                }
+
+                if (novaSenha.length < 8) {
+                    mostrarMensagem(
+                        "mensagem-senha",
+                        "A senha deve ter no mínimo 8 caracteres.",
+                        "erro"
+                    );
+                    return;
+                }
+
+                if (!/[A-Z]/.test(novaSenha)) {
+                    mostrarMensagem(
+                        "mensagem-senha",
+                        "A senha precisa de uma letra maiúscula.",
+                        "erro"
+                    );
+                    return;
+                }
+
+                if (!/[^A-Za-z0-9]/.test(novaSenha)) {
+                    mostrarMensagem(
+                        "mensagem-senha",
+                        "A senha precisa de um símbolo especial.",
+                        "erro"
+                    );
+                    return;
+                }
+
+                if (!confirm("Deseja realmente alterar sua senha?")) {
+                    return;
+                }
+
+                try {
+                    const resposta = await fetch(
+                        `${API_URL}/${usuarioId}/senha`,
+                        {
+                            method: "PATCH",
+                            headers: {
+                                "Content-Type": "application/json"
+                            },
+                            body: JSON.stringify({
+                                senhaAtual,
+                                novaSenha
+                            })
+                        }
+                    );
+
+                    const dados = await resposta.json();
+
+                    if (!resposta.ok) {
+                        throw new Error(
+                            dados.mensagem || "Erro ao atualizar senha."
+                        );
+                    }
+
+                    mostrarMensagem(
+                        "mensagem-senha",
+                        "Senha atualizada com sucesso!",
+                        "sucesso"
+                    );
+
+                    document.getElementById("form-senha").reset();
+
+                } catch (erro) {
+                    mostrarMensagem(
+                        "mensagem-senha",
+                        erro.message,
+                        "erro"
+                    );
+                }
+            });
+    </script>
+
+</body>
+</html>

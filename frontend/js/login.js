@@ -54,7 +54,12 @@ document.addEventListener("DOMContentLoaded", () => {
                 "beeflux_nome_usuario",
                 dados.usuario.nome
             );
-
+            
+            localStorage.setItem(
+                "beeflux_usuario_id",
+                dados.usuario.id
+            );
+        
             window.location.href = "../index.html";
         } catch (erro) {
             mostrarMensagem(
