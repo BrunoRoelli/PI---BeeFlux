@@ -64,14 +64,20 @@
         </div>
     </header>
     <main>
+        <!-- Topo da Tela -->
         <section class="topo">
             <div class="section-title">
                 <h1>Controle de Estoque</h1>
-                <p>Monitore seu ingredientes e embalagens, controlando quantidade e cadastrando-os.</p>
+                <p>Monitore seus insumos, cadastre lotes e acompanhe a validade dos produtos.</p>
             </div>
-            <button class="botao-primario" id="open-new-item-modal">
-                <i class="fa-solid fa-plus"></i> Novo Item
-            </button>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <button class="botao-primario" id="open-new-batch-modal">
+                    <i class="fa-solid fa-calendar-plus"></i> Cadastrar Lote
+                </button>
+                <button class="btn-secondary" id="open-new-item-modal">
+                    <i class="fa-solid fa-plus"></i> Novo Item
+                </button>
+            </div>
         </section>
         <!-- Cards de Resumo Rápido -->
         <section class="dashboard-grid">
@@ -80,9 +86,8 @@
                     <i class="fa-solid fa-boxes-stacked"></i>
                 </div>
                 <div class="metric-info">
-                    <h3>Total de Itens</h3>
+                    <h3>Itens Cadastrados</h3>
                     <span class="value" id="total-items-count">0</span>
-                    <span class="trend neutral">Cadastrados</span>
                 </div>
             </div>
             <div class="card metric-card">
@@ -96,29 +101,58 @@
                 </div>
             </div>
         </section>
-        <!-- Barra de Pesquisa e Filtros -->
-        <div class="filter-bar">
-            <div class="caixa-pesquisa">
-                <i class="fa-solid fa-magnifying-glass"></i>
-                <input type="text" id="search-item" placeholder="Buscar ingrediente ou embalagem...">
-            </div>
-            <div class="filter-tags">
-                <button class="botao-primario" id="tag" data-filter="all">Todos</button>
-                <button class="btn-secondary" id="tag" data-filter="ingrediente">Ingredientes</button>
-                <button class="btn-secondary" id="tag" data-filter="embalagem">Embalagens</button>
-            </div>
-        </div>
-        <!-- Tabela de Estoque -->
-        <section class="card table-card">
-            <h2>Estoque</h2>
+ 
+        <!-- SEÇÃO: Itens Próximos a Vencer (Avisa 5 dias antes) -->
+        <section class="card" style="border-color: var(--aviso);">
+            <h2 style="color: var(--aviso); text-align: left; font-size: 1.2rem; display: flex; align-items: center; gap: 8px;">
+                <i class="fa-solid fa-clock-rotate-left"></i> Itens Próximos a Vencer (Aviso de 5 dias)
+            </h2>
             <div class="table-responsive">
                 <table>
                     <thead>
                         <tr>
                             <th>Item</th>
+                            <th>Lote</th>
+                            <th>Data de Validade</th>
+                            <th>Status / Dias Restantes</th>
+                        </tr>
+                    </thead>
+                    <tbody id="expiring-lots-body">
+                        <!-- Preenchido via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Barra de Pesquisa e Botão de Filtro Único -->
+        <div class="filter-bar">
+            <div class="caixa-pesquisa">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" id="search-item" placeholder="Buscar insumo por nome...">
+            </div>
+            <!-- Botão de Filtro com Menu Select/Dropdown -->
+            <div class="filter-dropdown-container" style="display: flex; align-items: center; gap: 8px;">
+                <label for="category-filter" style="font-weight: 600;"><i class="fa-solid fa-filter"></i> Filtrar:</label>
+                <select id="category-filter" class="btn-secondary" style="padding: 10px; cursor: pointer; outline: none;">
+                    <option value="todos">Todos os Insumos</option>
+                    <option value="ingrediente">Ingredientes</option>
+                    <option value="feito">Feito (Produzido)</option>
+                    <option value="revenda">Revenda</option>
+                    <option value="embalagem">Embalagem</option>
+                </select>
+            </div>
+        </div>
+
+         <!-- Tabela Principal de Insumos -->
+        <section class="card table-card">
+            <h2>Todos os Insumos</h2>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
                             <th>Categoria</th>
                             <th>Quantidade Atual</th>
-                            <th>Mínimo Ideal</th>
                             <th>Status</th>
                             <th>Ações</th>
                         </tr>
@@ -129,31 +163,126 @@
                 </table>
             </div>
         </section>
+        
+        <!-- MODAL 1: Cadastrar Lote (com autocomplete) -->
+        <div class="modal-overlay" id="batch-modal">
+            <div class="modal-card">
+                <button class="close-modal" id="close-batch-modal-btn"><i class="fa-solid fa-xmark"></i></button>
+                
+                <div class="modal-header">
+                    <h2>Cadastrar Lote</h2>
+                    <p>Informe o produto cadastrado para registrar a validade e quantidade do lote.</p>
+                </div>
 
-        <!-- Modal de Novo Item -->
+                <form id="batch-form">
+                    <div class="input-group">
+                        <label for="batch-product-input">Selecione o Produto (digite para autocompletar):</label>
+                        <!-- Autocomplete nativo com datalist integrado -->
+                        <input type="text" id="batch-product-input" list="products-datalist" placeholder="Digite o nome do insumo..." autocomplete="off" required>
+                        <datalist id="products-datalist">
+                            <!-- Preenchido via JS com insumos cadastrados -->
+                        </datalist>
+                        <small id="batch-product-error" style="color: var(--aviso); display: none; margin-top: 4px;">* O insumo deve estar previamente cadastrado na tabela de insumos.</small>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="batch-code">Nome / Identificador do Lote:</label>
+                        <input type="text" id="batch-code" placeholder="Ex: Lote 10/05/2026" required>
+                    </div>
+
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label for="batch-acquisition-date">Data de Aquisição:</label>
+                            <input type="date" id="batch-acquisition-date" required>
+                        </div>
+                        <div class="input-group">
+                            <label for="batch-expiration-date">Data de Validade:</label>
+                            <input type="date" id="batch-expiration-date" required>
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="batch-qty">Quantidade do Lote:</label>
+                        <input type="number" id="batch-qty" step="any" min="0.1" placeholder="Ex: 5" required>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="submit" class="botao-primario">Cadastrar Lote</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- MODAL 2: Mais Informações do Insumo (Modal detalhado) -->
+        <div class="modal-overlay" id="info-modal">
+            <div class="modal-card">
+                <button class="close-modal" id="close-info-modal-btn"><i class="fa-solid fa-xmark"></i></button>
+                
+                <div class="modal-header">
+                    <h2 id="info-item-name" style="text-transform: uppercase;">NOME INSUMO</h2>
+                    <div style="margin-top: 10px; font-size: 0.95rem; line-height: 1.8;">
+                        <p><strong>Quantidade atual:</strong> <span id="info-item-qty">0</span></p>
+                        <p><strong>Estoque mínimo:</strong> <span id="info-item-min">0 un.</span></p>
+                        <p><strong>Fornecedor:</strong> <span id="info-item-supplier" style="font-weight: 600;">Não há fornecedor</span></p>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <h3 style="font-size: 1rem; margin-bottom: 10px; color: var(--pink-escuro);">Lotes e Validades Registradas</h3>
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Lote / Adquirido</th>
+                                    <th>Validade</th>
+                                    <th>Qtd Lote</th>
+                                </tr>
+                            </thead>
+                            <tbody id="info-item-lots-body">
+                                <!-- Preenchido via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="modal-footer" style="flex-direction: column; gap: 10px; width: 100%;">
+                    <button type="button" class="botao-primario" id="info-add-batch-btn" style="width: 100%; justify-content: center;">
+                        Cadastrar Lote
+                    </button>
+                    <button type="button" class="botao-primario" id="info-contact-supplier-btn" style="width: 100%; justify-content: center; background-color: #25d366;">
+                        <i class="fa-brands fa-whatsapp"></i> Entrar em Contato com Fornecedor
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        
+        <!-- MODAL 3: Novo Insumo -->
         <div class="modal-overlay" id="item-modal">
             <div class="modal-card">
                 <button class="close-modal" id="close-modal-btn"><i class="fa-solid fa-xmark"></i></button>
                 
                 <div class="modal-header">
                     <h2>Adicionar Novo Insumo</h2>
-                    <p>Cadastre um novo ingrediente ou embalagem no seu estoque.</p>
+                    <p>Cadastre um novo ingrediente, produto produzido ou embalagem no seu estoque.</p>
                 </div>
 
                 <form id="item-form">
                     <div class="input-group">
                         <label for="item-name">Nome do Item</label>
-                        <input type="text" id="item-name" required placeholder="Ex: Leite Condensado / Caixa para Bolo">
+                        <input type="text" id="item-name" required placeholder="Ex: Leite Condensado">
                     </div>
 
                     <div class="input-row">
                         <div class="input-group">
                             <label for="item-category">Categoria</label>
                             <select id="item-category" required>
-                                <option value="ingrediente">Ingrediente</option>
+                                <option value="ingrediente">Ingredientes</option>
+                                <option value="feito">Feito (Produzido)</option>
+                                <option value="revenda">Revenda</option>
                                 <option value="embalagem">Embalagem</option>
                             </select>
-                        </div>
+                        </div>                      
                         <div class="input-group">
                             <label for="item-unit-select">Unidade de Medida</label>
                             <select id="item-unit-select" required>
@@ -168,33 +297,41 @@
                                 <option value="outro">Outro (Digitar...)</option>
                             </select>
                         </div>
-                        <!-- Campo de texto extra que aparece apenas se escolher "Outro" -->
-                        <div class="input-group" id="custom-unit-group" style="display: none;">
-                            <label for="item-custom-unit">Digite a Unidade Personalizada</label>
-                            <input type="text" id="item-custom-unit" placeholder="Ex: pote, lata, balde">
-                        </div>
+                    </div>
+
+                    <div class="input-group" id="custom-unit-group" style="display: none;">
+                        <label for="item-custom-unit">Digite a Unidade Personalizada</label>
+                        <input type="text" id="item-custom-unit" placeholder="Ex: pote, lata">
                     </div>
 
                     <div class="input-row">
                         <div class="input-group">
-                            <label for="item-qty">Quantidade Atual</label>
-                            <input type="number" id="item-qty" required step="0.1" placeholder="10">
+                            <label for="item-qty">Quantidade Inicial</label>
+                            <input type="number" id="item-qty" required step="any" placeholder="10">
                         </div>
                         <div class="input-group">
                             <label for="item-min">Estoque Mínimo</label>
-                            <input type="number" id="item-min" required step="0.1" placeholder="3">
+                            <input type="number" id="item-min" required step="any" placeholder="3">
                         </div>
                     </div>
 
+                    <div class="input-group">
+                        <label for="item-supplier-select">Fornecedor Associado (Opcional)</label>
+                        <select id="item-supplier-select">
+                            <option value="">Não há fornecedor</option>
+                            <!-- Preenchido via JS com os fornecedores salvos -->
+                        </select>
+                    </div>
+
                     <div class="modal-footer">
-                        <!-- <button type="button" class="btn-secondary" id="cancel-modal-btn">Cancelar</button> -->
                         <button type="submit" class="botao-primario">Salvar Item</button>
                     </div>
                 </form>
             </div>
         </div>
 
-        <!-- Modal de Atualização Rápida de Quantidade -->
+        
+        <!-- MODAL 4: Atualização Rápida de Quantidade (Direta) -->
         <div class="modal-overlay" id="edit-qty-modal">
             <div class="modal-card">
                 <button class="close-modal" id="close-edit-modal-btn"><i class="fa-solid fa-xmark"></i></button>
@@ -222,13 +359,13 @@
 
     <footer class="footer">
         <div class="container">
-                <div class="redes-sociais">
-                    <div class="secao-sair">
-                        <button id="logout-btn"><i class="fa-solid fa-right-from-bracket"></i> Sair</button>
-                    </div>
+            <div class="redes-sociais">
+                <div class="secao-sair">
+                    <button id="logout-btn"><i class="fa-solid fa-right-from-bracket"></i> Sair</button>
                 </div>
-                <p>&copy; 2026 BeeFlux, todos os direitos reservados</p>
             </div>
+            <p>&copy; 2026 BeeFlux, todos os direitos reservados</p>
+        </div>
     </footer>
     <script src="../js/global.js" defer></script>
     <script src="../js/estoque.js" defer></script>

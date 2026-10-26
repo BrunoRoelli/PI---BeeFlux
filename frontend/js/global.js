@@ -30,7 +30,7 @@ document.addEventListener("DOMContentLoaded", () => {
         irParaLogin();
         return;
     }
-
+    
     // 2. RECUPERA E EXIBE DADOS DA USUÁRIA
     const nomeConfeiteira = localStorage.getItem("beeflux_nome_usuario") || "Confeiteira";
     // MOSTRA O NOME: Coloca o nome na tela
