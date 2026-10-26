@@ -24,6 +24,7 @@ let clientesData = [
         ]
     }
 ];
+
 let fornecedoresData = [
     {
         id: 1,
@@ -59,6 +60,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const clientForm = document.getElementById("client-form");
     const contactTypeSelect = document.getElementById("contact-type");
     const dynamicFieldContainer = document.getElementById("dynamic-field-container");
+    const clientNameInput = document.getElementById("client-name");
+    const labelClientName = document.getElementById("label-client-name");
+    const stockProductsDatalist = document.getElementById("stock-products-datalist");
 
     const historyModal = document.getElementById("history-modal");
     const closeHistoryModal = document.getElementById("close-history-modal");
@@ -69,8 +73,25 @@ document.addEventListener("DOMContentLoaded", () => {
     const historyOrdersBody = document.getElementById("history-orders-body");
     const historyBadge = document.getElementById("history-badge");
     const historySectionTitle = document.getElementById("history-section-title");
-    
+
     let currentFilter = "todos";
+
+    // Carregar produtos do estoque para o datalist de autopreenchimento (se houver no localStorage do estoque)
+    function carregarProdutosEstoqueParaDatalist() {
+        if (!stockProductsDatalist) return;
+        stockProductsDatalist.innerHTML = "";
+        const estoque = JSON.parse(localStorage.getItem("beeflux_estoque")) || [
+            { nome: "Leite Condensado" },
+            { nome: "Cacau em Pó 50%" },
+            { nome: "Manteiga Extra" }
+        ];
+        
+        estoque.forEach(item => {
+            const option = document.createElement("option");
+            option.value = item.nome;
+            stockProductsDatalist.appendChild(option);
+        });
+    }
 
     // Verificar se veio do index.html para abrir o modal automaticamente
     const urlParams = new URLSearchParams(window.location.search);
@@ -82,19 +103,29 @@ document.addEventListener("DOMContentLoaded", () => {
     contactTypeSelect.addEventListener("change", (e) => {
         const type = e.target.value;
         if (type === "cliente") {
+            if (labelClientName) labelClientName.textContent = "Nome Completo";
+            if (clientNameInput) clientNameInput.placeholder = "Ex: Mariana Silva";
+
             dynamicFieldContainer.innerHTML = `
                 <label for="client-birthday">Data de Aniversário</label>
                 <input type="date" id="client-birthday" required>
             `;
             document.getElementById("modal-title").textContent = "Cadastrar Novo Cliente";
             document.getElementById("save-btn-text").textContent = "Salvar Cliente";
+            document.getElementById("client-notes").placeholder="Ex: Intolerante a lactose";
         } else {
+            if (labelClientName) labelClientName.textContent = "Nome do Fornecedor";
+            if (clientNameInput) clientNameInput.placeholder = "Ex: Distribuidora Doces & Cia";
+            document.getElementById("client-notes").placeholder="Ex: Entregam 2 dias após o pedido"
+
             dynamicFieldContainer.innerHTML = `
                 <label for="client-product">Produto Consumido / Fornecido</label>
-                <input type="text" id="client-product" required placeholder="Ex: Embalagens, Leite Condensado">
+                <input type="text" id="client-product" list="stock-products-datalist" required placeholder="Ex: Embalagens, Leite Condensado">
             `;
             document.getElementById("modal-title").textContent = "Cadastrar Novo Fornecedor";
             document.getElementById("save-btn-text").textContent = "Salvar Fornecedor";
+
+            carregarProdutosEstoqueParaDatalist();
         }
     });
 
@@ -116,7 +147,6 @@ document.addEventListener("DOMContentLoaded", () => {
         totalClientsCount.textContent = clientesData.length;
         totalSuppliersCount.textContent = fornecedoresData.length;
 
-        // Gerenciar visibilidade das seções com base no botão de filtro ativo
         if (currentFilter === "todos") {
             sectionClients.style.display = "block";
             sectionSuppliers.style.display = "block";
@@ -147,7 +177,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         <td>${aniversarioFormatado}</td>
                         <td><strong>${client.totalGasto}</strong></td>
                         <td>
-                            <button class="action-icon-btn history-btn" title="Ver Detalhes, Telefone e Histórico" data-type="cliente" data-id="${client.id}">
+                            <button class="action-icon-btn history-btn" title="Ver Histórico e Observações" data-type="cliente" data-id="${client.id}">
                                 <i class="fa-regular fa-circle-user"></i>
                             </button>
                             <button class="action-icon-btn whatsapp-btn" title="WhatsApp" data-phone="${client.telefone}">
@@ -173,7 +203,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         <td>${supplier.produtoConsumido}</td>
                         <td><strong>${supplier.totalGasto}</strong></td>
                         <td>
-                            <button class="action-icon-btn history-btn" title="Ver Detalhes, Telefone e Histórico" data-type="fornecedor" data-id="${supplier.id}">
+                            <button class="action-icon-btn history-btn" title="Ver Histórico e Observações" data-type="fornecedor" data-id="${supplier.id}">
                                 <i class="fa-regular fa-circle-user"></i>
                             </button>
                             <button class="action-icon-btn whatsapp-btn" title="WhatsApp" data-phone="${supplier.telefone}">
@@ -221,7 +251,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // Abrir Modal de Histórico incluindo telefone e total gasto completo
     function openHistoryModal(id, type) {
         let contact = type === "cliente" 
             ? clientesData.find(c => c.id === id) 
@@ -230,12 +259,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!contact) return;
 
         historyClientName.textContent = contact.nome;
-        
-        // Exibe o telefone e o total gasto acumulado com destaque dentro do modal
-        historyClientPhone.innerHTML = `
-            <div style="margin-bottom: 6px;"><i class="fa-brands fa-whatsapp text-success"></i> ${contact.telefone}</div>
-            <div style="font-size: 0.85rem; color: var(--cor-corpo-texto);">Total Gasto: <strong>${contact.totalGasto}</strong></div>
-        `;
+        historyClientPhone.innerHTML = `<i class="fa-brands fa-whatsapp text-success"></i> ${contact.telefone}`;
         
         historyClientNotes.textContent = contact.observacoes && contact.observacoes.trim() !== "" 
             ? contact.observacoes 
@@ -267,7 +291,6 @@ document.addEventListener("DOMContentLoaded", () => {
         historyModal.classList.add("active");
     }
 
-    // Controle de Abertura/Fechamento de Modais
     openNewClientModalBtn.addEventListener("click", () => clientModal.classList.add("active"));
     closeModalBtn.addEventListener("click", () => clientModal.classList.remove("active"));
     closeHistoryModal.addEventListener("click", () => historyModal.classList.remove("active"));
@@ -277,7 +300,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (e.target === historyModal) historyModal.classList.remove("active");
     });
 
-    // Salvar Novo Contato
+    // Salvar Novo Contato (em memória, igual ao script original)
     clientForm.addEventListener("submit", (e) => {
         e.preventDefault();
         const type = contactTypeSelect.value;
@@ -318,11 +341,11 @@ document.addEventListener("DOMContentLoaded", () => {
         clientModal.classList.remove("active");
     });
 
-    // Pesquisa em tempo real
     searchContactInput.addEventListener("input", (e) => {
         renderContacts(e.target.value);
     });
 
     // Inicialização
+    carregarProdutosEstoqueParaDatalist();
     renderContacts();
 });

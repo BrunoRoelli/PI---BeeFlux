@@ -63,16 +63,17 @@
     </header>
     
     <main>
-        <!-- Cabeçalho -->
+<!-- Cabeçalho -->
         <section class="cabeçalho">
-                <div class="titulo">
-                    <h1>Seus Contatos <i class="fa-solid fa-users"></i></h1>
-                    <p>Informações dos clientes e fornecedores. Acompanhe o histórico de pedidos de cada cliente.</p>
-                </div>
-                <button class="botao-primario" id="open-new-client-modal">
-                    <i class="fa-solid fa-user-plus"></i> Novo Contato
-                </button>
+            <div class="titulo">
+                <h1>Seus Contatos <i class="fa-solid fa-users"></i></h1>
+                <p>Informações dos clientes e fornecedores. Acompanhe o histórico de pedidos de cada cliente.</p>
+            </div>
+            <button class="botao-primario" id="open-new-client-modal">
+                <i class="fa-solid fa-user-plus"></i> Novo Contato
+            </button>
         </section>
+
         <!-- Barra de Pesquisa-->
         <div class="filter-bar">
             <div class="caixa-pesquisa">
@@ -88,59 +89,63 @@
                 </div>
             </div>
         </div>
+
         <!-- Filtros -->
         <div class="filter-buttons" style="display: flex; gap: 10px; margin-bottom: 2rem;">
             <button class="botao-primario filter-btn active" data-filter="todos" style="cursor: pointer;">Todos</button>
             <button class="btn-secondary filter-btn" data-filter="clientes" style="cursor: pointer;">Só Clientes</button>
             <button class="btn-secondary filter-btn" data-filter="fornecedores" style="cursor: pointer;">Só Fornecedores</button>
         </div>
+
         <!-- Tabela de Clientes -->
         <section class="card card-tabela" id="section-clients">
-                <h2>Seus clientes</h2>
-                <div class="table-responsive">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Cliente</th>
-                                <th>Telefone / WhatsApp</th>
-                                <th>Aniversário</th>
-                                <th>Total Gasto</th>
-                                <th>Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody id="clients-table-body">
-                            <!-- Preenchido dinamicamente via JS -->
-                        </tbody>
-                    </table>
-                </div>
+            <h2>Seus clientes</h2>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Cliente</th>
+                            <th>Telefone / WhatsApp</th>
+                            <th>Aniversário</th>
+                            <th>Total Gasto</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="clients-table-body">
+                        <!-- Preenchido dinamicamente via JS -->
+                    </tbody>
+                </table>
+            </div>
         </section>
+        
         <!-- Tabela de Fornecedores -->
         <section class="card card-tabela" id="section-suppliers">
-                <h2>Seus fornecedores</h2>
-                <div class="table-responsive">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Fornecedor</th>
-                                <th>Telefone / WhatsApp</th>
-                                <th>Produto consumido</th>
-                                <th>Total Gasto</th>
-                                <th>Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody id="supplier-table-body">
-                            <!-- Preenchido dinamicamente via JS -->
-                        </tbody>
-                    </table>
-                </div>
+            <h2>Seus fornecedores</h2>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Fornecedor</th>
+                            <th>Telefone / WhatsApp</th>
+                            <th>Produto consumido</th>
+                            <th>Total Gasto</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="supplier-table-body">
+                        <!-- Preenchido dinamicamente via JS -->
+                    </tbody>
+                </table>
+            </div>
         </section>
+     
         <!-- Modal de Novo Contato -->
         <div class="modal-overlay" id="contact-modal">
             <div class="modal-card">
                 <button class="close-modal" id="close-modal-btn"><i class="fa-solid fa-xmark"></i></button>
                 
                 <div class="modal-header">
-                    <h2 id="modal-title">Cadastrar Novo Contato</h2>
+                    <h2 id="modal-title">Cadastrar Novo Cliente</h2>
                     <p>Adicione as informações de clientes ou fornecedores.</p>
                 </div>
                 <form id="client-form">
@@ -153,7 +158,7 @@
                     </div>
 
                     <div class="input-group">
-                        <label for="client-name">Nome Completo</label>
+                        <label for="client-name" id="label-client-name">Nome Completo</label>
                         <input type="text" id="client-name" required placeholder="Ex: Mariana Silva">
                     </div>
 
@@ -162,25 +167,29 @@
                             <label for="client-phone">WhatsApp / Telefone</label>
                             <input type="text" id="client-phone" required placeholder="(11) 99999-9999">
                         </div>
-                        <!-- Campo dinâmico: Aniversário (Cliente) ou Produto (Fornecedor) -->
+                        <!-- Campo dinâmico: Aniversário (Cliente) ou Produto com Autocomplete (Fornecedor) -->
                         <div class="input-group" id="dynamic-field-container">
                             <label for="client-birthday" id="dynamic-label">Data de Nascimento</label>
-                            <input type="date" id="client-birthday">
+                            <input type="date" id="client-birthday" required>
                         </div>
                     </div>
+
+                    <!-- Datalist para Autopreenchimento de Produtos do Estoque -->
+                    <datalist id="stock-products-datalist">
+                        <!-- Preenchido via JS com os insumos salvos no estoque -->
+                    </datalist>
 
                     <div class="input-group">
                         <label for="client-notes">Observações / Preferências</label>
                         <textarea id="client-notes" placeholder="Ex: Alérgica a lactose..."></textarea>
                     </div>
-
                     <div class="modal-footer">
-                        <!-- <button type="button" class="btn-secondary" id="cancel-modal-btn">Cancelar</button> -->
                         <button type="submit" class="botao-primario" id="save-btn-text">Salvar Cliente</button>
                     </div>
                 </form>
             </div>
         </div>
+
         <!-- Modal de Detalhes / Histórico -->
         <div class="modal-overlay" id="history-modal">
             <div class="modal-card">
@@ -190,7 +199,6 @@
                     <span class="badge-category" id="history-badge">Histórico</span>
                     <h2 id="history-client-name">Nome</h2>
                     <p id="history-client-phone"><i class="fa-brands fa-whatsapp text-success"></i> (00) 00000-0000</p>
-                    <!-- Exibir as observações cadastradas -->
                     <div class="history-observacoes" style="margin-top: 12px; background: rgba(255,255,255,0.5); padding: 10px 14px; border-radius: 8px; border-left: 3px solid var(--pink-escuro);">
                         <strong style="font-size: 0.85rem; display: block; color: var(--cor-corpo-texto); margin-bottom: 2px;">Observações / Preferências:</strong>
                         <span id="history-client-notes" style="font-size: 0.9rem; color: var(--text-main);">-</span>
@@ -213,10 +221,6 @@
                             </tbody>
                         </table>
                     </div>
-                </div>
-
-                <div class="modal-footer">
-                    <!-- <button type="button" class="btn-secondary" id="close-history-btn">Fechar</button> -->
                 </div>
             </div>
         </div>
