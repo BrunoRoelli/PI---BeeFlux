@@ -66,6 +66,49 @@ document.addEventListener("DOMContentLoaded", () => {
     const editItemIdInput = document.getElementById("edit-item-id");
     const editItemQtyInput = document.getElementById("edit-item-qty");
 
+    // ==========================================
+    // NOVO MODAL: Baixa por Lote
+    // ==========================================
+    let baixaLoteModal = document.getElementById("baixa-lote-modal");
+    if (!baixaLoteModal) {
+        baixaLoteModal = document.createElement("div");
+        baixaLoteModal.className = "modal-overlay";
+        baixaLoteModal.id = "baixa-lote-modal";
+        baixaLoteModal.innerHTML = `
+            <div class="modal-card">
+                <button class="close-modal" id="close-baixa-lote-btn"><i class="fa-solid fa-xmark"></i></button>
+                <div class="modal-header">
+                    <h2>Retirar Insumo por Lote</h2>
+                    <p id="baixa-lote-item-name">Selecione o lote do qual deseja dar baixa.</p>
+                </div>
+                <form id="baixa-lote-form">
+                    <input type="hidden" id="baixa-insumo-id">
+                    <div class="input-group">
+                        <label for="baixa-lote-select">Escolha o Lote (Validade)</label>
+                        <select id="baixa-lote-select" required>
+                            <!-- Preenchido via JS -->
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label for="baixa-qtd">Quantidade a Retirar</label>
+                        <input type="number" id="baixa-qtd" step="any" min="0.1" required placeholder="Ex: 2">
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="botao-primario">Confirmar Retirada</button>
+                    </div>
+                </form>
+            </div>
+        `;
+        document.body.appendChild(baixaLoteModal);
+    }
+
+    const closeBaixaLoteBtn = document.getElementById("close-baixa-lote-btn");
+    const baixaLoteForm = document.getElementById("baixa-lote-form");
+    const baixaInsumoIdInput = document.getElementById("baixa-insumo-id");
+    const baixaLoteSelect = document.getElementById("baixa-lote-select");
+    const baixaQtdInput = document.getElementById("baixa-qtd");
+    const baixaLoteItemName = document.getElementById("baixa-lote-item-name");
+
     let currentSelectedItemForModal = null;
 
     function salvarEstoque() {
@@ -118,7 +161,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         lotesData.forEach(lote => {
             const insumo = estoqueData.find(i => i.id === lote.insumoId);
-            if (!insumo) return;
+            if (!insumo || lote.quantidade <= 0) return; // Ignora lotes esgotados
 
             const dataVal = new Date(lote.dataValidade + "T00:00:00");
             const diffTempo = dataVal.getTime() - hoje.getTime();
@@ -152,7 +195,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // Renderizar Tabela Principal de Estoque com Botões de Alteração Manual e Modal Direto
+    // Renderizar Tabela Principal de Estoque
     function renderInventory() {
         tableBody.innerHTML = "";
         const search = searchItemInput.value.toLowerCase();
@@ -187,7 +230,6 @@ document.addEventListener("DOMContentLoaded", () => {
                         <i class="fa-solid fa-minus"></i>
                     </button>
                     
-                    <!-- Clicar neste texto abre o modal elegante para alterar a quantidade exata -->
                     <strong class="edit-qty-direct" title="Clique para alterar a quantidade exata" data-id="${item.id}" style="margin: 0 8px; font-size: 0.95rem; cursor: pointer; text-decoration: underline dotted; color: var(--pink-escuro);">
                         ${item.quantidade} ${item.unidade}
                     </strong>
@@ -199,7 +241,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 <td>${item.minimo} ${item.unidade}</td>
                 <td><span class="badge ${badgeClass}">${badgeText}</span></td>
                 <td>
-                    <!-- Botão de Mais Informações / Detalhes do Insumo -->
                     <button class="action-icon-btn info-item-btn" title="Ver Informações e Lotes" data-id="${item.id}">
                         <i class="fa-solid fa-eye"></i>
                     </button>
@@ -211,7 +252,7 @@ document.addEventListener("DOMContentLoaded", () => {
             tableBody.appendChild(tr);
         });
 
-        // Eventos dos botões de ajuste rápido [-] e [+]
+        // Eventos dos botões de adicionar quantidade [+]
         document.querySelectorAll(".add-qty-btn").forEach(btn => {
             btn.addEventListener("click", (e) => {
                 const id = parseInt(e.currentTarget.getAttribute("data-id"));
@@ -226,11 +267,37 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         });
 
+        // Eventos dos botões de diminuir quantidade [-]
         document.querySelectorAll(".remove-qty-btn").forEach(btn => {
             btn.addEventListener("click", (e) => {
                 const id = parseInt(e.currentTarget.getAttribute("data-id"));
                 const item = estoqueData.find(i => i.id === id);
-                if (item) {
+                if (!item) return;
+
+                // REGRA: Exceto embalagens, exige escolher o lote para retirar
+                if (item.categoria !== "embalagem") {
+                    const lotesDisponiveis = lotesData.filter(l => l.insumoId === item.id && l.quantidade > 0);
+                    if (lotesDisponiveis.length === 0) {
+                        alert("Não há lotes com saldo positivo cadastrados para este insumo. Cadastre um lote primeiro.");
+                        return;
+                    }
+
+                    // Abre o modal de escolha de lote para baixa
+                    baixaInsumoIdInput.value = item.id;
+                    baixaLoteItemName.textContent = `Insumo: ${item.nome} (${item.unidade})`;
+                    baixaLoteSelect.innerHTML = "";
+                    
+                    lotesDisponiveis.forEach(lote => {
+                        const opt = document.createElement("option");
+                        opt.value = lote.id;
+                        opt.textContent = `${lote.codigoLote} - Validade: ${formatarData(lote.dataValidade)} (Disponível: ${lote.quantidade})`;
+                        baixaLoteSelect.appendChild(opt);
+                    });
+
+                    baixaQtdInput.value = obterPasso(item.unidade);
+                    baixaLoteModal.classList.add("active");
+                } else {
+                    // Se for embalagem, retira direto sem restrição de lote
                     const passo = obterPasso(item.unidade);
                     item.quantidade = Math.max(0, parseFloat((item.quantidade - passo).toFixed(2)));
                     salvarEstoque();
@@ -240,7 +307,7 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         });
 
-        // Evento para abrir o Modal de Edição Direta ao clicar no número da quantidade
+        // Evento para abrir o Modal de Edição Direta
         document.querySelectorAll(".edit-qty-direct").forEach(span => {
             span.addEventListener("click", (e) => {
                 const id = parseInt(e.currentTarget.getAttribute("data-id"));
@@ -278,6 +345,38 @@ document.addEventListener("DOMContentLoaded", () => {
                     renderExpiringLots();
                 }
             });
+        });
+    }
+
+    // Submissão da Retirada por Lote
+    if (baixaLoteForm) {
+        baixaLoteForm.addEventListener("submit", (e) => {
+            e.preventDefault();
+            const insumoId = parseInt(baixaInsumoIdInput.value);
+            const loteId = parseInt(baixaLoteSelect.value);
+            const qtdRetirada = parseFloat(baixaQtdInput.value);
+
+            const item = estoqueData.find(i => i.id === insumoId);
+            const lote = lotesData.find(l => l.id === loteId);
+
+            if (!item || !lote) return;
+
+            if (qtdRetirada > lote.quantidade) {
+                alert(`A quantidade informada excede o saldo deste lote (${lote.quantidade}).`);
+                return;
+            }
+
+            // Atualiza o saldo do lote e do insumo geral
+            lote.quantidade = parseFloat((lote.quantidade - qtdRetirada).toFixed(2));
+            item.quantidade = Math.max(0, parseFloat((item.quantidade - qtdRetirada).toFixed(2)));
+
+            salvarEstoque();
+            baixaLoteModal.classList.remove("active");
+            baixaLoteForm.reset();
+            alert("Retirada registrada com sucesso no lote selecionado!");
+
+            renderInventory();
+            renderExpiringLots();
         });
     }
 
@@ -447,12 +546,16 @@ document.addEventListener("DOMContentLoaded", () => {
     closeModalBtn.addEventListener("click", () => itemModal.classList.remove("active"));
     closeInfoModalBtn.addEventListener("click", () => infoModal.classList.remove("active"));
     closeEditModalBtn.addEventListener("click", () => editQtyModal.classList.remove("active"));
+    if (closeBaixaLoteBtn) {
+        closeBaixaLoteBtn.addEventListener("click", () => baixaLoteModal.classList.remove("active"));
+    }
 
     window.addEventListener("click", (e) => {
         if (e.target === batchModal) batchModal.classList.remove("active");
         if (e.target === itemModal) itemModal.classList.remove("active");
         if (e.target === infoModal) infoModal.classList.remove("active");
         if (e.target === editQtyModal) editQtyModal.classList.remove("active");
+        if (e.target === baixaLoteModal) baixaLoteModal.classList.remove("active");
     });
 
     searchItemInput.addEventListener("input", renderInventory);
