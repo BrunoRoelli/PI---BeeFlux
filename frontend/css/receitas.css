@@ -1,0 +1,220 @@
+:root {
+    --bg-color: #f8f9fa;
+    --primary-light: #ffe3e9;
+}
+
+/* TOPO DA TELA */
+.topo {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+}
+.section-title h1 { font-size: 1.75rem; font-weight: bold; }
+.section-title p { color: var(--cor-corpo-texto); font-size: 1rem; margin-top: 4px; }
+
+/* Botões do projeto */
+.botao-primario {
+    background-color: var(--pink-escuro);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: var(--borda-botao);
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: var(--transicao);
+}
+.botao-primario:hover { background-color: var(--aviso); }
+.botao-primario, .btn-secondary { font-family: inherit; font-size: 0.95rem; }
+.btn-secondary {
+    background-color: var(--bg-color);
+    color: var(--cor-corpo-texto);
+    border: 1px solid var(--pink-escuro);
+    padding: 10px 16px;
+    border-radius: var(--borda-botao);
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transicao);
+}
+.btn-secondary:hover { background-color: var(--primary-light); }
+
+/* FILTRO DE STATUS */
+.filtro-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.filtro-status label { font-weight: 600; }
+.filtro-status select {
+    padding: 10px;
+    cursor: pointer;
+    outline: none;
+}
+
+/* CARD E TABELA DE RECEITAS */
+.card {
+    background-color: var(--bg-color);
+    border: 3px solid var(--pink-escuro);
+    border-radius: var(--borda-suave);
+    padding: 20px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+    margin-bottom: 2rem;
+}
+.card h2 {
+    color: var(--pink-escuro);
+    margin-bottom: 1rem;
+    text-align: center;
+}
+.table-responsive { overflow-x: auto; }
+table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: 0.9rem;
+}
+th {
+    font-weight: 500;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--pink-escuro);
+}
+td {
+    padding: 14px 0;
+    border-bottom: 1px solid var(--pink-escuro);
+    color: var(--cor-corpo-texto);
+}
+tr:last-child td { border-bottom: none; }
+.item-name { font-weight: 600; }
+
+/* Status da receita */
+.badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+.badge.ativa { background-color: #d1fae5; color: #047857; }
+.badge.desenvolvimento { background-color: #fef3c7; color: #d97706; }
+.badge.inativa { background-color: #f1f5f9; color: #64748b; }
+
+/* Botões de ação da tabela */
+.action-icon-btn {
+    background: var(--bg-color);
+    border: 1px solid var(--pink-escuro);
+    width: 34px;
+    height: 34px;
+    border-radius: 6px;
+    cursor: pointer;
+    color: var(--cor-corpo-texto);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    margin-right: 4px;
+    vertical-align: middle;
+}
+.action-icon-btn:hover {
+    background-color: var(--primary-light);
+    color: var(--pink-escuro);
+}
+
+/* MODAIS */
+.modal-overlay:target {
+    opacity: 1;
+    visibility: visible;
+}
+.modal-overlay:target .modal-card { transform: translateY(0); }
+
+/* Modal mais largo, pois o formulário de receita tem mais campos */
+.modal-card.modal-largo { max-width: 760px; }
+
+.modal-footer .btn-secondary {
+    display: inline-flex;
+    align-items: center;
+}
+
+/* FORMULÁRIO DE RECEITA */
+.form-secao {
+    border: none;
+    padding: 0;
+    margin: 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.form-secao legend {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--pink-escuro);
+    margin-bottom: 8px;
+    padding: 0;
+}
+.obrigatorio { color: var(--aviso); }
+.dica-campo {
+    font-size: 0.8rem;
+    color: var(--cor-corpo-texto);
+    opacity: 0.8;
+}
+
+/* Linha com 3 campos */
+.input-row-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+}
+
+/* Linha de ingrediente: nome | quantidade | botão remover */
+.ingrediente-linha {
+    display: grid;
+    grid-template-columns: 1fr 160px 40px;
+    gap: 12px;
+    align-items: end;
+}
+.ingrediente-linha .input-group select,
+.ingrediente-linha .input-group input { height: 40px; }
+.ingrediente-linha .action-icon-btn { margin-right: 0; height: 40px; width: 40px; }
+
+/* Resumo de custos (somente leitura) */
+.resumo-custos {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    background: rgba(255, 255, 255, 0.5);
+    border-left: 3px solid var(--pink-escuro);
+    border-radius: var(--borda-botao);
+    padding: 12px 14px;
+}
+.resumo-custos span { display: block; font-size: 0.8rem; color: var(--cor-corpo-texto); }
+.resumo-custos strong { font-size: 1.05rem; }
+
+/* MODAL DE DETALHES */
+.detalhes-lista {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px 20px;
+    margin-bottom: 20px;
+}
+.detalhes-lista dt { font-size: 0.8rem; font-weight: 500; opacity: 0.8; }
+.detalhes-lista dd { font-weight: 600; }
+.detalhes-bloco { margin-bottom: 20px; }
+.detalhes-bloco h3 { font-size: 1rem; margin-bottom: 10px; color: var(--pink-escuro); }
+.detalhes-bloco p { font-size: 0.9rem; white-space: pre-line; }
+
+/* MEDIA QUERIES */
+@media (max-width: 576px) {
+    .input-row-3,
+    .resumo-custos,
+    .detalhes-lista { grid-template-columns: 1fr; }
+
+    .ingrediente-linha { grid-template-columns: 1fr 40px; }
+    .ingrediente-linha .input-group:nth-child(1) { grid-column: 1 / -1; }
+
+    .caixa-pesquisa { width: 100%; }
+}

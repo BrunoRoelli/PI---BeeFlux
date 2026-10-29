@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BeeFlux | Receitas</title>
+
+    <link rel="stylesheet" href="../css/global.css">
+    <link rel="stylesheet" href="../css/receitas.css">
+    <link rel="stylesheet" href="../css/modal.css">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300..700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <header>
+        <div class="container-header">
+            <a href="../index.html" class="logo">
+                <div class="logo-icone">
+                    <img src="../assets/logo.png" alt="Logo do BeeFlux">
+                    <img src="../assets/logo-hover.png" alt="" class="logo-hover">
+                </div>
+                <span class="logo-texto">BeeFlux</span>
+            </a>
+            <nav class="desktop-nav">
+                <ul>
+                    <li><a href="../index.html"><i class="fa-solid fa-house"></i>Início</a></li>
+                    <li><a href="estoque.html"><i class="fa-solid fa-box-open"></i> Estoque</a></li>
+                    <li><a href="contatos.html"><i class="fa-solid fa-users"></i> Contatos</a></li>
+                    <li><a href="#"><i class="fa-solid fa-chart-pie"></i>Financeiro</a></li>
+                    <li><a href="#"><i class="fa-solid fa-book-open"></i> Receitas</a></li>
+                    <li><a href="#"><i class="fa-solid fa-list-check"></i> Pedidos</a></li>
+                </ul>
+            </nav>
+            <div class="user-profile">
+                <button id="user-menu-btn" class="avatar-btn" aria-label="Menu do Usuário">
+                    <div class="avatar-placeholder" id="user-initials"></div>
+                    <span class="status-dot"></span>
+                </button>
+                <div id="user-dropdown" class="user-dropdown-menu hidden">
+                    <a href="configuser.html" class="dropdown-item">
+                        <i class="fa-solid fa-gear"></i> Configurações
+                    </a>
+                    <div class="dropdown-divider"></div>
+                    <button id="logout-btn" class="dropdown-item logout">
+                        <i class="fa-solid fa-right-from-bracket"></i> Sair
+                    </button>
+                </div>
+            </div>
+            <button id="menu-btn" class="menu-sanduiche">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+        </div>
+        <div id="mobile-menu" class="menu-mobile">
+            <a href="../index.html"><i class="fa-solid fa-house"></i>Início</a>
+            <a href="estoque.html"><i class="fa-solid fa-box-open"></i> Estoque</a>
+            <a href="contatos.html"><i class="fa-solid fa-users"></i> Contatos</a>
+            <a href="#"><i class="fa-solid fa-chart-pie"></i> Financeiro</a>
+            <a href="#"><i class="fa-solid fa-book-open"></i> Receitas</a>
+            <a href="#"><i class="fa-solid fa-list-check"></i> Pedidos</a>
+        </div>
+    </header>
+
+    <main>
+        <!-- Topo da Tela -->
+        <section class="topo">
+            <div class="section-title">
+                <h1>Receitas</h1>
+                <p>Cadastre e consulte as receitas dos produtos feitos na sua confeitaria.</p>
+            </div>
+            <!-- Sem JavaScript: o link abre o modal pelo :target (#modal-receita) -->
+            <a href="#modal-receita" class="botao-primario">
+                <i class="fa-solid fa-plus"></i> Nova Receita
+            </a>
+        </section>
+
+        <!-- Barra de Pesquisa e Filtro de Status (apenas visual, sem JavaScript) -->
+        <div class="filter-bar">
+            <div class="caixa-pesquisa">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" id="search-recipe" placeholder="Buscar receita por nome...">
+            </div>
+            <div class="filtro-status">
+                <label for="status-filter"><i class="fa-solid fa-filter"></i> Status:</label>
+                <select id="status-filter" class="btn-secondary">
+                    <option value="todas">Todas</option>
+                    <option value="ATIVA">Ativas</option>
+                    <option value="EM_DESENVOLVIMENTO">Em desenvolvimento</option>
+                    <option value="INATIVA">Inativas</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Lista de Receitas -->
+        <section class="card table-card">
+            <h2>Todas as Receitas</h2>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Receita</th>
+                            <th>Rendimento</th>
+                            <th>Tempo de preparo</th>
+                            <th>Data de validade</th>
+                            <th>Status</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <!-- Linhas de EXEMPLO. Futuramente serão geradas a partir de GET /api/receitas -->
+                    <tbody id="recipes-table-body">
+                        <tr>
+                            <td><strong class="item-name">Brigadeiro Gourmet</strong></td>
+                            <td>20 un</td>
+                            <td>40 min</td>
+                            <td>15/11/2026</td>
+                            <td><span class="badge ativa">Ativa</span></td>
+                            <td>
+                                <a href="#modal-detalhes" class="action-icon-btn" title="Ver detalhes" aria-label="Ver detalhes da receita Brigadeiro Gourmet"><i class="fa-solid fa-eye"></i></a>
+                                <a href="#modal-receita" class="action-icon-btn" title="Editar" aria-label="Editar receita Brigadeiro Gourmet"><i class="fa-solid fa-pen"></i></a>
+                                <button type="button" class="action-icon-btn" title="Inativar" aria-label="Inativar receita Brigadeiro Gourmet"><i class="fa-solid fa-ban"></i></button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong class="item-name">Bolo de Cenoura</strong></td>
+                            <td>1 un</td>
+                            <td>75 min</td>
+                            <td>05/11/2026</td>
+                            <td><span class="badge desenvolvimento">Em desenvolvimento</span></td>
+                            <td>
+                                <a href="#modal-detalhes" class="action-icon-btn" title="Ver detalhes" aria-label="Ver detalhes da receita Bolo de Cenoura"><i class="fa-solid fa-eye"></i></a>
+                                <a href="#modal-receita" class="action-icon-btn" title="Editar" aria-label="Editar receita Bolo de Cenoura"><i class="fa-solid fa-pen"></i></a>
+                                <button type="button" class="action-icon-btn" title="Inativar" aria-label="Inativar receita Bolo de Cenoura"><i class="fa-solid fa-ban"></i></button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong class="item-name">Torta de Limão</strong></td>
+                            <td>8 fatias</td>
+                            <td>90 min</td>
+                            <td>01/10/2026</td>
+                            <td><span class="badge inativa">Inativa</span></td>
+                            <td>
+                                <a href="#modal-detalhes" class="action-icon-btn" title="Ver detalhes" aria-label="Ver detalhes da receita Torta de Limão"><i class="fa-solid fa-eye"></i></a>
+                                <a href="#modal-receita" class="action-icon-btn" title="Editar" aria-label="Editar receita Torta de Limão"><i class="fa-solid fa-pen"></i></a>
+                                <button type="button" class="action-icon-btn" title="Inativar" aria-label="Inativar receita Torta de Limão"><i class="fa-solid fa-ban"></i></button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- MODAL 1: Cadastrar / Editar Receita -->
+        <div class="modal-overlay" id="modal-receita" role="dialog" aria-modal="true" aria-labelledby="recipe-modal-title">
+            <div class="modal-card modal-largo">
+                <a href="#" class="close-modal" aria-label="Fechar"><i class="fa-solid fa-xmark"></i></a>
+
+                <div class="modal-header">
+                    <h2 id="recipe-modal-title">Cadastrar Receita</h2>
+                    <p>Preencha os dados da receita. Campos com <span class="obrigatorio">*</span> são obrigatórios.</p>
+                </div>
+
+                <!-- Os atributos "name" seguem os nomes do JSON esperado pela API (receitas.types.ts) -->
+                <form id="recipe-form">
+
+                    <!-- Seção 1: identificação -->
+                    <fieldset class="form-secao">
+                        <legend>Dados da receita</legend>
+                        <div class="input-row">
+                            <div class="input-group">
+                                <label for="recipe-product">Produto <span class="obrigatorio">*</span></label>
+                                <select id="recipe-product" name="id_produto_feito" required>
+                                    <option value="" disabled selected>Selecione o produto...</option>
+                                    <!-- Exemplos. Futuramente: produtos FEITO ativos, vindos da API -->
+                                    <option value="1">Brigadeiro Gourmet</option>
+                                    <option value="2">Bolo de Cenoura</option>
+                                    <option value="3">Torta de Limão</option>
+                                </select>
+                            </div>
+                            <div class="input-group">
+                                <label for="recipe-expiration">Data de validade <span class="obrigatorio">*</span></label>
+                                <input type="date" id="recipe-expiration" name="data_validade" required>
+                            </div>
+                        </div>
+                    </fieldset>
+
+                    <!-- Seção 2: rendimento e tempo -->
+                    <fieldset class="form-secao">
+                        <legend>Rendimento e preparo</legend>
+                        <div class="input-row">
+                            <div class="input-group">
+                                <label for="recipe-yield">Rendimento <span class="obrigatorio">*</span></label>
+                                <input type="number" id="recipe-yield" name="rendimento_receita" min="0.001" step="0.001" placeholder="Ex: 20" required>
+                                <span class="dica-campo">Quanto a receita rende, na unidade do produto.</span>
+                            </div>
+                            <div class="input-group">
+                                <label for="recipe-time">Tempo de preparo (min) <span class="obrigatorio">*</span></label>
+                                <input type="number" id="recipe-time" name="tempo_preparo_minutos" min="1" step="1" placeholder="Ex: 40" required>
+                            </div>
+                        </div>
+                    </fieldset>
+
+                    <!-- Seção 3: ingredientes -->
+                    <fieldset class="form-secao">
+                        <legend>Ingredientes <span class="obrigatorio">*</span></legend>
+                        <span class="dica-campo">Informe pelo menos um ingrediente, sem repetir. A quantidade é para a receita inteira.</span>
+
+                        <!-- Linhas de EXEMPLO. Sem JavaScript não é possível adicionar/remover linhas -->
+                        <div class="ingrediente-linha">
+                            <div class="input-group">
+                                <label for="ing-1">Ingrediente</label>
+                                <select id="ing-1" name="ingredientes[0][id_ingrediente]" required>
+                                    <option value="" disabled selected>Selecione...</option>
+                                    <option value="1">Leite Condensado (latas)</option>
+                                    <option value="2">Cacau em Pó 50% (kg)</option>
+                                    <option value="4">Manteiga Extra (kg)</option>
+                                </select>
+                            </div>
+                            <div class="input-group">
+                                <label for="qty-1">Quantidade</label>
+                                <input type="number" id="qty-1" name="ingredientes[0][quantidade]" min="0.001" step="0.001" placeholder="Ex: 2" required>
+                            </div>
+                            <button type="button" class="action-icon-btn" title="Remover ingrediente" aria-label="Remover ingrediente 1"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+
+                        <div class="ingrediente-linha">
+                            <div class="input-group">
+                                <label for="ing-2">Ingrediente</label>
+                                <select id="ing-2" name="ingredientes[1][id_ingrediente]">
+                                    <option value="" selected>Selecione...</option>
+                                    <option value="1">Leite Condensado (latas)</option>
+                                    <option value="2">Cacau em Pó 50% (kg)</option>
+                                    <option value="4">Manteiga Extra (kg)</option>
+                                </select>
+                            </div>
+                            <div class="input-group">
+                                <label for="qty-2">Quantidade</label>
+                                <input type="number" id="qty-2" name="ingredientes[1][quantidade]" min="0.001" step="0.001" placeholder="Ex: 0.5">
+                            </div>
+                            <button type="button" class="action-icon-btn" title="Remover ingrediente" aria-label="Remover ingrediente 2"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+
+                        <div>
+                            <button type="button" class="btn-secondary"><i class="fa-solid fa-plus"></i> Adicionar ingrediente</button>
+                        </div>
+                    </fieldset>
+
+                    <!-- Seção 4: custos e margem -->
+                    <fieldset class="form-secao">
+                        <legend>Custos e margem de lucro</legend>
+                        <div class="input-row-3">
+                            <div class="input-group">
+                                <label for="recipe-fixed-costs">Custos fixos (R$) <span class="obrigatorio">*</span></label>
+                                <input type="number" id="recipe-fixed-costs" name="custos_fixos" min="0" step="0.01" placeholder="0,00" required>
+                            </div>
+                            <div class="input-group">
+                                <label for="recipe-labor">Mão de obra (R$) <span class="obrigatorio">*</span></label>
+                                <input type="number" id="recipe-labor" name="custo_mao_obra" min="0" step="0.01" placeholder="0,00" required>
+                            </div>
+                            <div class="input-group">
+                                <label for="recipe-margin">Margem de lucro (%) <span class="obrigatorio">*</span></label>
+                                <input type="number" id="recipe-margin" name="margem_lucro" min="0" max="999.99" step="0.01" placeholder="Ex: 30" required>
+                            </div>
+                        </div>
+                        <span class="dica-campo">Custos fixos e mão de obra valem para a receita inteira (lote).</span>
+
+                        <!-- Resultado calculado pelo sistema: somente leitura -->
+                        <div class="resumo-custos" aria-label="Resumo de custos calculado pelo sistema">
+                            <div><span>Custo total</span><strong>R$ —</strong></div>
+                            <div><span>Custo unitário</span><strong>R$ —</strong></div>
+                            <div><span>Preço sugerido</span><strong>R$ —</strong></div>
+                        </div>
+                    </fieldset>
+
+                    <!-- Seção 5: modo de preparo -->
+                    <fieldset class="form-secao">
+                        <legend>Modo de preparo</legend>
+                        <div class="input-group">
+                            <label for="recipe-instructions">Instruções <span class="obrigatorio">*</span></label>
+                            <textarea id="recipe-instructions" name="instrucoes" placeholder="Ex: Misture os secos, bata e leve ao forno..." required></textarea>
+                        </div>
+                    </fieldset>
+
+                    <div class="modal-footer">
+                        <a href="#" class="btn-secondary">Cancelar</a>
+                        <button type="submit" class="botao-primario">Salvar Receita</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- MODAL 2: Detalhes da Receita (dados de EXEMPLO) -->
+        <div class="modal-overlay" id="modal-detalhes" role="dialog" aria-modal="true" aria-labelledby="detail-modal-title">
+            <div class="modal-card modal-largo">
+                <a href="#" class="close-modal" aria-label="Fechar"><i class="fa-solid fa-xmark"></i></a>
+
+                <div class="modal-header">
+                    <span class="badge ativa">Ativa</span>
+                    <h2 id="detail-modal-title">Brigadeiro Gourmet</h2>
+                </div>
+
+                <dl class="detalhes-lista">
+                    <div><dt>Rendimento</dt><dd>20 un</dd></div>
+                    <div><dt>Tempo de preparo</dt><dd>40 min</dd></div>
+                    <div><dt>Data de validade</dt><dd>15/11/2026</dd></div>
+                    <div><dt>Margem de lucro</dt><dd>30%</dd></div>
+                </dl>
+
+                <div class="detalhes-bloco">
+                    <h3>Ingredientes</h3>
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr><th>Ingrediente</th><th>Quantidade</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr><td>Leite Condensado</td><td>2 latas</td></tr>
+                                <tr><td>Cacau em Pó 50%</td><td>0,5 kg</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="detalhes-bloco">
+                    <h3>Custos</h3>
+                    <div class="resumo-custos">
+                        <div><span>Custo total</span><strong>R$ 40,00</strong></div>
+                        <div><span>Custo unitário</span><strong>R$ 2,00</strong></div>
+                        <div><span>Preço sugerido</span><strong>R$ 2,60</strong></div>
+                    </div>
+                </div>
+
+                <div class="detalhes-bloco">
+                    <h3>Modo de preparo</h3>
+                    <p>Misturar os secos, bater e assar.</p>
+                </div>
+
+                <div class="modal-footer">
+                    <a href="#" class="btn-secondary">Fechar</a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="redes-sociais">
+                <div class="secao-sair">
+                    <button id="logout-btn"><i class="fa-solid fa-right-from-bracket"></i> Sair</button>
+                </div>
+            </div>
+            <p>&copy; 2026 BeeFlux, todos os direitos reservados</p>
+        </div>
+    </footer>
+
+    <script src="../js/global.js" defer></script>
+</body>
+</html>
