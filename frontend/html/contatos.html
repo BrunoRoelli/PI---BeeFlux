@@ -39,7 +39,7 @@
                     <span class="status-dot"></span>
                 </button>
                 <div id="user-dropdown" class="user-dropdown-menu hidden">
-                    <a href="#" class="dropdown-item">
+                    <a href="configuser.html" class="dropdown-item">
                         <i class="fa-solid fa-gear"></i> Configurações
                     </a>
                     <div class="dropdown-divider"></div>
@@ -167,6 +167,10 @@
                             <label for="client-phone">WhatsApp / Telefone</label>
                             <input type="text" id="client-phone" required placeholder="(11) 99999-9999">
                         </div>
+                        <div class="input-group">
+                            <label for="client-email">E-mail</label>
+                            <input type="email" id="client-email" required placeholder="exemplo@gmail.com">
+                        </div>
                         <!-- Campo dinâmico: Aniversário (Cliente) ou Produto com Autocomplete (Fornecedor) -->
                         <div class="input-group" id="dynamic-field-container">
                             <label for="client-birthday" id="dynamic-label">Data de Nascimento</label>
@@ -199,6 +203,7 @@
                     <span class="badge-category" id="history-badge">Histórico</span>
                     <h2 id="history-client-name">Nome</h2>
                     <p id="history-client-phone"><i class="fa-brands fa-whatsapp text-success"></i> (00) 00000-0000</p>
+                    <p id="history-client-email"><i class="fa-regular fa-envelope"></i> email@gmail.com</p>
                     <div class="history-observacoes" style="margin-top: 12px; background: rgba(255,255,255,0.5); padding: 10px 14px; border-radius: 8px; border-left: 3px solid var(--pink-escuro);">
                         <strong style="font-size: 0.85rem; display: block; color: var(--cor-corpo-texto); margin-bottom: 2px;">Observações / Preferências:</strong>
                         <span id="history-client-notes" style="font-size: 0.9rem; color: var(--text-main);">-</span>

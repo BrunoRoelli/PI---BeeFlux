@@ -69,6 +69,7 @@ document.addEventListener("DOMContentLoaded", () => {
     
     const historyClientName = document.getElementById("history-client-name");
     const historyClientPhone = document.getElementById("history-client-phone");
+    const historyClientEmail = document.getElementById("history-client-email");
     const historyClientNotes = document.getElementById("history-client-notes");
     const historyOrdersBody = document.getElementById("history-orders-body");
     const historyBadge = document.getElementById("history-badge");
@@ -107,7 +108,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (clientNameInput) clientNameInput.placeholder = "Ex: Mariana Silva";
 
             dynamicFieldContainer.innerHTML = `
-                <label for="client-birthday">Data de Aniversário</label>
+                <label for="client-birthday">Data de Nascimento</label>
                 <input type="date" id="client-birthday" required>
             `;
             document.getElementById("modal-title").textContent = "Cadastrar Novo Cliente";
@@ -173,7 +174,9 @@ document.addEventListener("DOMContentLoaded", () => {
                     const tr = document.createElement("tr");
                     tr.innerHTML = `
                         <td><span class="info-name">${client.nome}</span></td>
-                        <td><i class="fa-brands fa-whatsapp text-success"></i> ${client.telefone}</td>
+                        <td>
+                        <i class="fa-brands fa-whatsapp text-success"></i> ${formatarTelefone(client.telefone)}</td>
+
                         <td>${aniversarioFormatado}</td>
                         <td><strong>${client.totalGasto}</strong></td>
                         <td>
@@ -199,7 +202,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     const tr = document.createElement("tr");
                     tr.innerHTML = `
                         <td><span class="info-name">${supplier.nome}</span></td>
-                        <td><i class="fa-brands fa-whatsapp text-success"></i> ${supplier.telefone}</td>
+                        <td><i class="fa-brands fa-whatsapp text-success"></i>  ${formatarTelefone(supplier.telefone)}</td>
                         <td>${supplier.produtoConsumido}</td>
                         <td><strong>${supplier.totalGasto}</strong></td>
                         <td>
@@ -217,6 +220,27 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         attachEventListeners();
     }
+    
+    function formatarTelefone(telefone) {
+        if (!telefone) return "Sem telefone";
+
+        // Remove tudo o que não for número (limpa parênteses, traços, espaços)
+        const apenasNumeros = String(telefone).replace(/\D/g, "");
+
+        // Celular com 11 dígitos: 15222223333 -> (15) 22222-3333
+        if (apenasNumeros.length === 11) {
+            return apenasNumeros.replace(/^(\d{2})(\d{5})(\d{4})$/, "($1) $2-$3");
+        }
+        
+        // Telefone Fixo com 10 dígitos: 1255554444 -> (12) 5555-4444
+        if (apenasNumeros.length === 10) {
+            return apenasNumeros.replace(/^(\d{2})(\d{4})(\d{4})$/, "($1) $2-$3");
+        }
+
+        // Caso o dado já venha formatado de outra forma ou incompleto, retorna o original
+        return telefone; 
+    }
+
 
     // Eventos dos botões de filtro
     filterButtons.forEach(btn => {
@@ -259,8 +283,8 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!contact) return;
 
         historyClientName.textContent = contact.nome;
-        historyClientPhone.innerHTML = `<i class="fa-brands fa-whatsapp text-success"></i> ${contact.telefone}`;
-        
+        historyClientPhone.innerHTML = `<i class="fa-brands fa-whatsapp text-success"></i>${formatarTelefone(contact.telefone)}`;
+        historyClientEmail.innerHTML = `<i class="fa-regular fa-envelope" style="color: rgb(218, 26, 26);"></i> ${contact.email || 'Sem e-mail cadastrado'}`;
         historyClientNotes.textContent = contact.observacoes && contact.observacoes.trim() !== "" 
             ? contact.observacoes 
             : "Nenhuma observação cadastrada.";
@@ -306,6 +330,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const type = contactTypeSelect.value;
         const nome = document.getElementById("client-name").value;
         const telefone = document.getElementById("client-phone").value;
+        const email = document.getElementById("client-email").value;
         const observacoes = document.getElementById("client-notes").value;
 
         if (type === "cliente") {
@@ -314,18 +339,21 @@ document.addEventListener("DOMContentLoaded", () => {
                 id: clientesData.length + 1,
                 nome,
                 telefone,
+                email,
                 aniversario,
                 observacoes,
                 totalGasto: "R$ 0,00",
                 historico: []
             });
             alert("Cliente cadastrado com sucesso!");
-        } else {
+        } 
+        else {
             const produtoConsumido = document.getElementById("client-product").value;
             fornecedoresData.push({
                 id: fornecedoresData.length + 1,
                 nome,
                 telefone,
+                email,
                 produtoConsumido,
                 observacoes,
                 totalGasto: "R$ 0,00",
