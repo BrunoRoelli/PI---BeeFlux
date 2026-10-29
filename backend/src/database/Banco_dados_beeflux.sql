@@ -1,5 +1,5 @@
 -- =========================================================
--- BEEFLUX - Banco de dados (MySQL 8.0.16+)
+-- BEEFLUX - Banco de dados FINAL (MySQL 8.0.16+)
 -- Ordem de criacao respeita as dependencias entre tabelas.
 --
 -- Regra tecnica: no MySQL, colunas usadas em CHECK nao podem ter
@@ -796,6 +796,127 @@ CREATE TABLE historico_pedidos (
 CREATE INDEX idx_historico_pedido_data
     ON historico_pedidos (id_pedido, data_historico);
 
+
+-- =========================================================
+-- 25. PRODUCAO, ESTOQUE DE FEITOS, RESERVAS E PENDENCIAS
+-- =========================================================
+-- Estas tabelas fazem parte do banco principal.
+-- Foram incorporadas diretamente ao modelo, sem depender de
+-- uma segunda etapa de migração.
+-- Producao sempre associada a um item de pedido FEITO.
+-- receita_snapshot preserva a receita/custos utilizados na data da producao.
+CREATE TABLE IF NOT EXISTS producoes (
+    id_producao INT AUTO_INCREMENT PRIMARY KEY,
+    id_pedido INT NOT NULL,
+    id_produto_feito INT NOT NULL,
+    quantidade_planejada DECIMAL(12,3) NOT NULL,
+    quantidade_concluida DECIMAL(12,3) NOT NULL DEFAULT 0,
+    quantidade_perdida DECIMAL(12,3) NOT NULL DEFAULT 0,
+    status_producao ENUM('PLANEJADA','EM_ANDAMENTO','PARCIAL','CONCLUIDA','CANCELADA') NOT NULL DEFAULT 'PLANEJADA',
+    receita_snapshot JSON NULL,
+    data_inicio DATETIME NULL,
+    data_conclusao DATETIME NULL,
+    criado_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CHECK (quantidade_planejada > 0),
+    CHECK (quantidade_concluida >= 0),
+    CHECK (quantidade_perdida >= 0),
+    CHECK (quantidade_concluida + quantidade_perdida <= quantidade_planejada),
+    INDEX idx_producoes_pedido (id_pedido),
+    CONSTRAINT fk_producoes_item FOREIGN KEY (id_pedido,id_produto_feito)
+        REFERENCES item_pedido(id_pedido,id_produto) ON DELETE RESTRICT,
+    CONSTRAINT fk_producoes_feito FOREIGN KEY (id_produto_feito)
+        REFERENCES feitos(id_produto) ON DELETE RESTRICT
+);
+
+-- Saldo fisico dos produtos FEITOS, separado dos lotes de compra existentes.
+CREATE TABLE IF NOT EXISTS estoque_feitos (
+    id_produto_feito INT PRIMARY KEY,
+    quantidade_atual DECIMAL(12,3) NOT NULL DEFAULT 0,
+    atualizado_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CHECK (quantidade_atual >= 0),
+    CONSTRAINT fk_estoque_feitos_produto FOREIGN KEY (id_produto_feito)
+        REFERENCES feitos(id_produto) ON DELETE RESTRICT
+);
+
+-- Auditoria de entradas/saidas/perdas/ajustes de produtos acabados.
+CREATE TABLE IF NOT EXISTS movimentacoes_feitos (
+    id_movimentacao_feito INT AUTO_INCREMENT PRIMARY KEY,
+    id_produto_feito INT NOT NULL,
+    id_producao INT NULL,
+    id_pedido INT NULL,
+    tipo_movimentacao ENUM('ENTRADA','SAIDA','PERDA','AJUSTE') NOT NULL,
+    quantidade DECIMAL(12,3) NOT NULL,
+    motivo VARCHAR(255) NULL,
+    criado_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CHECK (quantidade <> 0),
+    CHECK ((tipo_movimentacao = 'ENTRADA' AND quantidade > 0)
+        OR (tipo_movimentacao IN ('SAIDA','PERDA') AND quantidade < 0)
+        OR tipo_movimentacao = 'AJUSTE'),
+    CHECK (tipo_movimentacao IN ('ENTRADA','SAIDA') OR motivo IS NOT NULL),
+    INDEX idx_mov_feitos_produto_data (id_produto_feito,criado_em),
+    CONSTRAINT fk_mov_feitos_produto FOREIGN KEY (id_produto_feito)
+        REFERENCES feitos(id_produto) ON DELETE RESTRICT,
+    CONSTRAINT fk_mov_feitos_producao FOREIGN KEY (id_producao)
+        REFERENCES producoes(id_producao) ON DELETE RESTRICT,
+    CONSTRAINT fk_mov_feitos_pedido FOREIGN KEY (id_pedido)
+        REFERENCES pedidos(id_pedido) ON DELETE RESTRICT
+);
+
+-- Reserva por produto e pedido; a aplicacao deve considerar lotes validos
+-- e bloquear linhas com SELECT ... FOR UPDATE para impedir disputa de saldo.
+CREATE TABLE IF NOT EXISTS reservas_estoque (
+    id_reserva INT AUTO_INCREMENT PRIMARY KEY,
+    id_pedido INT NOT NULL,
+    id_produto INT NOT NULL,
+    quantidade_reservada DECIMAL(12,3) NOT NULL,
+    quantidade_consumida DECIMAL(12,3) NOT NULL DEFAULT 0,
+    status_reserva ENUM('ATIVA','CONSUMIDA','LIBERADA') NOT NULL DEFAULT 'ATIVA',
+    criado_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CHECK (quantidade_reservada > 0),
+    CHECK (quantidade_consumida >= 0),
+    CHECK (quantidade_consumida <= quantidade_reservada),
+    INDEX idx_reservas_produto_status (id_produto,status_reserva),
+    CONSTRAINT fk_reservas_pedido FOREIGN KEY (id_pedido)
+        REFERENCES pedidos(id_pedido) ON DELETE RESTRICT,
+    CONSTRAINT fk_reservas_produto FOREIGN KEY (id_produto)
+        REFERENCES produtos(id_produto) ON DELETE RESTRICT
+);
+
+-- Demanda nao atendida: nunca altera o saldo fisico para valor negativo.
+CREATE TABLE IF NOT EXISTS pendencias_estoque (
+    id_pendencia INT AUTO_INCREMENT PRIMARY KEY,
+    id_pedido INT NOT NULL,
+    id_producao INT NULL,
+    id_produto INT NOT NULL,
+    quantidade_pendente DECIMAL(12,3) NOT NULL,
+    status_pendencia ENUM('ABERTA','RESOLVIDA','CANCELADA') NOT NULL DEFAULT 'ABERTA',
+    motivo VARCHAR(255) NULL,
+    criado_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CHECK (quantidade_pendente > 0),
+    INDEX idx_pendencias_produto_status (id_produto,status_pendencia),
+    CONSTRAINT fk_pendencias_pedido FOREIGN KEY (id_pedido)
+        REFERENCES pedidos(id_pedido) ON DELETE RESTRICT,
+    CONSTRAINT fk_pendencias_producao FOREIGN KEY (id_producao)
+        REFERENCES producoes(id_producao) ON DELETE RESTRICT,
+    CONSTRAINT fk_pendencias_produto FOREIGN KEY (id_produto)
+        REFERENCES produtos(id_produto) ON DELETE RESTRICT
+);
+
+-- Consumo real por lote, para auditoria e rastreabilidade.
+CREATE TABLE IF NOT EXISTS consumo_producao (
+    id_consumo INT AUTO_INCREMENT PRIMARY KEY,
+    id_producao INT NOT NULL,
+    id_lote INT NOT NULL,
+    id_ingrediente INT NOT NULL,
+    quantidade_consumida DECIMAL(12,3) NOT NULL,
+    criado_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CHECK (quantidade_consumida > 0),
+    INDEX idx_consumo_producao (id_producao),
+    CONSTRAINT fk_consumo_producao FOREIGN KEY (id_producao)
+        REFERENCES producoes(id_producao) ON DELETE RESTRICT,
+    CONSTRAINT fk_consumo_lote_produto FOREIGN KEY (id_lote,id_ingrediente)
+        REFERENCES lotes_estoque(id_lote,id_produto) ON DELETE RESTRICT
+);
 
 -- =========================================================
 -- VIEWS (indicadores calculados, sem duplicar dados)
