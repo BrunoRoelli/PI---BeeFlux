@@ -47,7 +47,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const infoAddBatchBtn = document.getElementById("info-add-batch-btn");
     const infoContactSupplierBtn = document.getElementById("info-contact-supplier-btn");
 
-    // Modal Novo Item
+    // Modal Novo / Editar Insumo
     const itemModal = document.getElementById("item-modal");
     const openNewItemModalBtn = document.getElementById("open-new-item-modal");
     const closeModalBtn = document.getElementById("close-modal-btn");
@@ -56,7 +56,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const unitSelect = document.getElementById("item-unit-select");
     const customUnitGroup = document.getElementById("custom-unit-group");
     const customUnitInput = document.getElementById("item-custom-unit");
-    //Editar Insumo
     const editItemDbIdInput = document.getElementById("edit-item-db-id");
     const modalTitleElem = itemModal.querySelector(".modal-header h2");
     const modalDescElem = itemModal.querySelector(".modal-header p");
@@ -70,11 +69,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const editItemIdInput = document.getElementById("edit-item-id");
     const editItemQtyInput = document.getElementById("edit-item-qty");
 
-
-
-    // ==========================================
-    // NOVO MODAL: Baixa por Lote
-    // ==========================================
+    // MODAL DINÂMICO: Baixa por Lote
     let baixaLoteModal = document.getElementById("baixa-lote-modal");
     if (!baixaLoteModal) {
         baixaLoteModal = document.createElement("div");
@@ -91,9 +86,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     <input type="hidden" id="baixa-insumo-id">
                     <div class="input-group">
                         <label for="baixa-lote-select">Escolha o Lote (Validade)</label>
-                        <select id="baixa-lote-select" required>
-                            <!-- Preenchido via JS -->
-                        </select>
+                        <select id="baixa-lote-select" required></select>
                     </div>
                     <div class="input-group">
                         <label for="baixa-qtd">Quantidade a Retirar</label>
@@ -167,7 +160,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         lotesData.forEach(lote => {
             const insumo = estoqueData.find(i => i.id === lote.insumoId);
-            if (!insumo || lote.quantidade <= 0) return; // Ignora lotes esgotados
+            if (!insumo || lote.quantidade <= 0) return;
 
             const dataVal = new Date(lote.dataValidade + "T00:00:00");
             const diffTempo = dataVal.getTime() - hoje.getTime();
@@ -409,7 +402,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             }
 
-            // Atualiza o saldo do lote e do insumo geral
             lote.quantidade = parseFloat((lote.quantidade - qtdRetirada).toFixed(2));
             item.quantidade = Math.max(0, parseFloat((item.quantidade - qtdRetirada).toFixed(2)));
 
@@ -423,7 +415,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // Submissão do Modal de Edição Rápida de Quantidade
+    // Submissão do Modal de Edição Rápida de Quantidade Direta
     if (editQtyForm) {
         editQtyForm.addEventListener("submit", (e) => {
             e.preventDefault();
@@ -581,7 +573,7 @@ document.addEventListener("DOMContentLoaded", () => {
         customUnitGroup.style.display = "none";
         itemModal.classList.remove("active");
     });
-    
+
     if (unitSelect) {
         unitSelect.addEventListener("change", (e) => {
             if (e.target.value === "outro") {
@@ -602,7 +594,15 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     closeBatchModalBtn.addEventListener("click", () => batchModal.classList.remove("active"));
 
-    openNewItemModalBtn.addEventListener("click", () => itemModal.classList.add("active"));
+    openNewItemModalBtn.addEventListener("click", () => {
+        editItemDbIdInput.value = "";
+        itemForm.reset();
+        customUnitGroup.style.display = "none";
+        modalTitleElem.textContent = "Adicionar Novo Insumo";
+        modalDescElem.textContent = "Cadastre um novo ingrediente, produto produzido ou embalagem no seu estoque.";
+        itemModal.classList.add("active");
+    });
+
     closeModalBtn.addEventListener("click", () => itemModal.classList.remove("active"));
     closeInfoModalBtn.addEventListener("click", () => infoModal.classList.remove("active"));
     closeEditModalBtn.addEventListener("click", () => editQtyModal.classList.remove("active"));
