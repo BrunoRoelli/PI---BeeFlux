@@ -136,6 +136,8 @@ tr:last-child td { border-bottom: none; }
 @media (max-width: 768px) {
     .card-tabela th:nth-child(2),
     .card-tabela td:nth-child(2),
+    .card-tabela th:nth-child(3),
+    .card-tabela td:nth-child(3),
     .card-tabela th:nth-child(4),
     .card-tabela td:nth-child(4) {
         display: none;

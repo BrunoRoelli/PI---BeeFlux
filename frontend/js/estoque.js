@@ -56,6 +56,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const unitSelect = document.getElementById("item-unit-select");
     const customUnitGroup = document.getElementById("custom-unit-group");
     const customUnitInput = document.getElementById("item-custom-unit");
+    //Editar Insumo
+    const editItemDbIdInput = document.getElementById("edit-item-db-id");
+    const modalTitleElem = itemModal.querySelector(".modal-header h2");
+    const modalDescElem = itemModal.querySelector(".modal-header p");
 
     // Modal de Edição Rápida de Quantidade Direta
     const editQtyModal = document.getElementById("edit-qty-modal");
@@ -65,6 +69,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const editItemUnitLabel = document.getElementById("edit-item-unit-label");
     const editItemIdInput = document.getElementById("edit-item-id");
     const editItemQtyInput = document.getElementById("edit-item-qty");
+
+
 
     // ==========================================
     // NOVO MODAL: Baixa por Lote
@@ -241,6 +247,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 <td>${item.minimo} ${item.unidade}</td>
                 <td><span class="badge ${badgeClass}">${badgeText}</span></td>
                 <td>
+                    <button class="action-icon-btn edit-item-btn" title="Editar Informações do Insumo" data-id="${item.id}">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                    </button>
                     <button class="action-icon-btn info-item-btn" title="Ver Informações e Lotes" data-id="${item.id}">
                         <i class="fa-solid fa-eye"></i>
                     </button>
@@ -252,7 +261,7 @@ document.addEventListener("DOMContentLoaded", () => {
             tableBody.appendChild(tr);
         });
 
-        // Eventos dos botões de adicionar quantidade [+]
+        // Evento: Botão Aumentar Quantidade [+]
         document.querySelectorAll(".add-qty-btn").forEach(btn => {
             btn.addEventListener("click", (e) => {
                 const id = parseInt(e.currentTarget.getAttribute("data-id"));
@@ -267,14 +276,13 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         });
 
-        // Eventos dos botões de diminuir quantidade [-]
+        // Evento: Botão Diminuir Quantidade [-] (Exige lote se não for embalagem)
         document.querySelectorAll(".remove-qty-btn").forEach(btn => {
             btn.addEventListener("click", (e) => {
                 const id = parseInt(e.currentTarget.getAttribute("data-id"));
                 const item = estoqueData.find(i => i.id === id);
                 if (!item) return;
 
-                // REGRA: Exceto embalagens, exige escolher o lote para retirar
                 if (item.categoria !== "embalagem") {
                     const lotesDisponiveis = lotesData.filter(l => l.insumoId === item.id && l.quantidade > 0);
                     if (lotesDisponiveis.length === 0) {
@@ -282,7 +290,6 @@ document.addEventListener("DOMContentLoaded", () => {
                         return;
                     }
 
-                    // Abre o modal de escolha de lote para baixa
                     baixaInsumoIdInput.value = item.id;
                     baixaLoteItemName.textContent = `Insumo: ${item.nome} (${item.unidade})`;
                     baixaLoteSelect.innerHTML = "";
@@ -297,7 +304,6 @@ document.addEventListener("DOMContentLoaded", () => {
                     baixaQtdInput.value = obterPasso(item.unidade);
                     baixaLoteModal.classList.add("active");
                 } else {
-                    // Se for embalagem, retira direto sem restrição de lote
                     const passo = obterPasso(item.unidade);
                     item.quantidade = Math.max(0, parseFloat((item.quantidade - passo).toFixed(2)));
                     salvarEstoque();
@@ -307,7 +313,44 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         });
 
-        // Evento para abrir o Modal de Edição Direta
+        // Evento: Abrir Modal de Edição de Insumo
+        document.querySelectorAll(".edit-item-btn").forEach(btn => {
+            btn.addEventListener("click", (e) => {
+                const id = parseInt(e.currentTarget.getAttribute("data-id"));
+                const item = estoqueData.find(i => i.id === id);
+                if (!item) return;
+
+                editItemDbIdInput.value = item.id;
+                document.getElementById("item-name").value = item.nome;
+                document.getElementById("item-category").value = item.categoria;
+                document.getElementById("item-qty").value = item.quantidade;
+                document.getElementById("item-min").value = item.minimo;
+                
+                if (item.fornecedorId) {
+                    document.getElementById("item-supplier-select").value = item.fornecedorId;
+                } else {
+                    document.getElementById("item-supplier-select").value = "";
+                }
+
+                if (["un", "kg", "g", "litros", "ml", "cx", "pct"].includes(item.unidade)) {
+                    unitSelect.value = item.unidade;
+                    customUnitGroup.style.display = "none";
+                    customUnitInput.required = false;
+                } else {
+                    unitSelect.value = "outro";
+                    customUnitGroup.style.display = "flex";
+                    customUnitInput.value = item.unidade;
+                    customUnitInput.required = true;
+                }
+
+                modalTitleElem.textContent = "Editar Insumo";
+                modalDescElem.textContent = "Modifique as informações do insumo selecionado.";
+
+                itemModal.classList.add("active");
+            });
+        });
+
+        // Evento para abrir o Modal de Edição de Quantidade Direta
         document.querySelectorAll(".edit-qty-direct").forEach(span => {
             span.addEventListener("click", (e) => {
                 const id = parseInt(e.currentTarget.getAttribute("data-id"));
@@ -332,7 +375,7 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         });
 
-        // Evento de exclusão de item
+        // Evento: Excluir Item
         document.querySelectorAll(".delete-item-btn").forEach(btn => {
             btn.addEventListener("click", (e) => {
                 const id = parseInt(e.currentTarget.getAttribute("data-id"));
@@ -493,35 +536,52 @@ document.addEventListener("DOMContentLoaded", () => {
         renderExpiringLots();
     });
 
-    // Submissão de Novo Insumo
+    // Submissão do Formulário de Insumo (Criação ou Atualização/Edição)
     itemForm.addEventListener("submit", (e) => {
         e.preventDefault();
 
         const unidadeMedida = unitSelect.value === "outro" ? customUnitInput.value : unitSelect.value;
         const fornecedorVal = itemSupplierSelect.value ? parseInt(itemSupplierSelect.value) : null;
+        const editId = editItemDbIdInput.value;
 
-        const newItem = {
-            id: estoqueData.length > 0 ? Math.max(...estoqueData.map(i => i.id)) + 1 : 1,
-            nome: document.getElementById("item-name").value,
-            categoria: document.getElementById("item-category").value,
-            quantidade: parseFloat(document.getElementById("item-qty").value),
-            minimo: parseFloat(document.getElementById("item-min").value),
-            unidade: unidadeMedida,
-            fornecedorId: fornecedorVal
-        };
+        if (editId) {
+            // Atualizar item existente
+            const item = estoqueData.find(i => i.id === parseInt(editId));
+            if (item) {
+                item.nome = document.getElementById("item-name").value;
+                item.categoria = document.getElementById("item-category").value;
+                item.quantidade = parseFloat(document.getElementById("item-qty").value);
+                item.minimo = parseFloat(document.getElementById("item-min").value);
+                item.unidade = unidadeMedida;
+                item.fornecedorId = fornecedorVal;
 
-        estoqueData.push(newItem);
+                alert("Insumo atualizado com sucesso!");
+            }
+        } else {
+            // Cadastrar novo item
+            const newItem = {
+                id: estoqueData.length > 0 ? Math.max(...estoqueData.map(i => i.id)) + 1 : 1,
+                nome: document.getElementById("item-name").value,
+                categoria: document.getElementById("item-category").value,
+                quantidade: parseFloat(document.getElementById("item-qty").value),
+                minimo: parseFloat(document.getElementById("item-min").value),
+                unidade: unidadeMedida,
+                fornecedorId: fornecedorVal
+            };
+            estoqueData.push(newItem);
+            alert("Insumo cadastrado com sucesso!");
+        }
+
         salvarEstoque();
-
-        itemForm.reset();
-        if (customUnitGroup) customUnitGroup.style.display = "none";
-        itemModal.classList.remove("active");
-        alert("Insumo cadastrado com sucesso!");
-
         carregarDatalistProdutos();
         renderInventory();
-    });
+        renderExpiringLots();
 
+        itemForm.reset();
+        customUnitGroup.style.display = "none";
+        itemModal.classList.remove("active");
+    });
+    
     if (unitSelect) {
         unitSelect.addEventListener("change", (e) => {
             if (e.target.value === "outro") {

@@ -80,3 +80,15 @@ tr:last-child td { border-bottom: none; }
     color: var(--primary);
     border-color: var(--primary-light);
 }
+
+/* Responsividade da tabela de contatos: Oculta colunas secundárias no celular */
+@media (max-width: 768px) {
+    .table-card th:nth-child(2),
+    .table-card td:nth-child(2),
+    .table-card th:nth-child(4),
+    .table-card td:nth-child(4),
+    .table-card th:nth-child(5),
+    .table-card td:nth-child(5) {
+        display: none;
+    }
+}
