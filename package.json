@@ -1,7 +1,7 @@
 {
   "name": "pi---beeflux",
   "version": "1.0.0",
-  "description": "",
+  "description": "O **BeeFlux** é um sistema web para gerenciamento de confeitarias, desenvolvido como projeto acadêmico do curso de **Análise e Desenvolvimento de Sistemas (ADS)**.",
   "main": "index.js",
   "scripts": {
     "test": "vitest run",

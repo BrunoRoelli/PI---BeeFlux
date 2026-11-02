@@ -37,7 +37,7 @@ CREATE TABLE usuarios (
 CREATE TABLE clientes (
     id_cliente INT AUTO_INCREMENT PRIMARY KEY,
     nome_cliente VARCHAR(100) NOT NULL,
-    telefone_cliente VARCHAR(20),
+    telefone_cliente VARCHAR(20) NOT NULL,
     email_cliente VARCHAR(150),
     observacao VARCHAR(500),
     criado_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -467,25 +467,8 @@ CREATE TABLE movimentacoes_estoque (
     -- sem ON DELETE/UPDATE: coluna usada em CHECK
     CONSTRAINT fk_mov_estoque_produto
         FOREIGN KEY (id_produto, tipo_produto)
-        REFERENCES produtos(id_produto, tipo_produto),
-
-    CONSTRAINT fk_mov_estoque_lote_produto
-        FOREIGN KEY (id_lote, id_produto)
-        REFERENCES lotes_estoque(id_lote, id_produto)
-        ON DELETE RESTRICT
-        ON UPDATE RESTRICT,
-
-    CONSTRAINT fk_mov_estoque_item_compra_produto
-        FOREIGN KEY (id_item_compra, id_produto)
-        REFERENCES itens_compra(id_item_compra, id_produto)
-        ON DELETE RESTRICT
-        ON UPDATE RESTRICT,
-
-    CONSTRAINT fk_mov_estoque_user
-        FOREIGN KEY (id_user)
-        REFERENCES usuarios(id_user)
-        ON DELETE RESTRICT
-        ON UPDATE RESTRICT
+        REFERENCES produtos(id_produto, tipo_produto)
+    -- As FKs para lotes, itens_compra, usuarios e pedidos sao adicionadas conforme tabelas existem
 );
 
 
@@ -516,8 +499,10 @@ CREATE TABLE pedidos (
 
     observacao VARCHAR(500),
     valor_total DECIMAL(10,2) NOT NULL DEFAULT 0,
+    taxa_entrega DECIMAL(10,2) NOT NULL DEFAULT 0,
 
     CHECK (valor_total >= 0),
+    CHECK (taxa_entrega >= 0),
     CHECK (tipo_pedido = 'IMEDIATO' OR id_cliente IS NOT NULL),
 
     UNIQUE (id_pedido, tipo_pedido),
@@ -530,8 +515,26 @@ CREATE TABLE pedidos (
         REFERENCES clientes(id_cliente)
 );
 
--- Agora que pedidos existe, liga a movimentacao de estoque ao pedido.
+-- Adiciona constraints pendentes de movimentacoes_estoque
 ALTER TABLE movimentacoes_estoque
+    ADD CONSTRAINT fk_mov_estoque_lote_produto
+        FOREIGN KEY (id_lote, id_produto)
+        REFERENCES lotes_estoque(id_lote, id_produto)
+        ON DELETE RESTRICT
+        ON UPDATE RESTRICT,
+
+    ADD CONSTRAINT fk_mov_estoque_item_compra_produto
+        FOREIGN KEY (id_item_compra, id_produto)
+        REFERENCES itens_compra(id_item_compra, id_produto)
+        ON DELETE RESTRICT
+        ON UPDATE RESTRICT,
+
+    ADD CONSTRAINT fk_mov_estoque_user
+        FOREIGN KEY (id_user)
+        REFERENCES usuarios(id_user)
+        ON DELETE RESTRICT
+        ON UPDATE RESTRICT,
+
     ADD CONSTRAINT fk_mov_estoque_pedido
         FOREIGN KEY (id_pedido)
         REFERENCES pedidos(id_pedido)
@@ -542,11 +545,13 @@ ALTER TABLE movimentacoes_estoque
 -- =========================================================
 -- 17. ITEM_PEDIDO
 -- =========================================================
+-- Permite repetir o mesmo produto em linhas diferentes (PK propria id_item_pedido).
 -- So REVENDA ou FEITO podem ser vendidos.
 -- preco_unitario = preco praticado no momento do pedido.
 -- Sem CASCADE: o historico de vendas nao deve ser apagado.
 
 CREATE TABLE item_pedido (
+    id_item_pedido INT AUTO_INCREMENT PRIMARY KEY,
     id_pedido INT NOT NULL,
     id_produto INT NOT NULL,
     tipo_produto ENUM('REVENDA', 'INGREDIENTE', 'FEITO') NOT NULL,
@@ -556,11 +561,11 @@ CREATE TABLE item_pedido (
     subtotal DECIMAL(12,2)
         GENERATED ALWAYS AS (ROUND(quantidade * preco_unitario, 2)) STORED,
 
-    PRIMARY KEY (id_pedido, id_produto),
-
     CHECK (quantidade > 0),
     CHECK (preco_unitario >= 0),
     CHECK (tipo_produto IN ('REVENDA', 'FEITO')),
+
+    INDEX idx_item_pedido_pedido_produto (id_pedido, id_produto),
 
     CONSTRAINT fk_item_pedido_pedido
         FOREIGN KEY (id_pedido)
@@ -609,8 +614,7 @@ CREATE TABLE agendamentos (
 -- =========================================================
 -- 19. PAGAMENTOS
 -- =========================================================
--- Um pedido pode ter varios pagamentos (parciais).
--- Valor pago e separado do valor total do pedido.
+-- Restricao de pagamento unico por pedido aplicada (uq_pagamentos_um_por_pedido).
 
 CREATE TABLE pagamentos (
     id_pagamento INT AUTO_INCREMENT PRIMARY KEY,
@@ -634,7 +638,7 @@ CREATE TABLE pagamentos (
 
     CHECK (valor_pagamento > 0),
 
-    INDEX idx_pagamentos_pedido (id_pedido),
+    CONSTRAINT uq_pagamentos_um_por_pedido UNIQUE (id_pedido),
     INDEX idx_pagamentos_data (data_pagamento),
 
     CONSTRAINT fk_pagamentos_pedido
@@ -800,11 +804,7 @@ CREATE INDEX idx_historico_pedido_data
 -- =========================================================
 -- 25. PRODUCAO, ESTOQUE DE FEITOS, RESERVAS E PENDENCIAS
 -- =========================================================
--- Estas tabelas fazem parte do banco principal.
--- Foram incorporadas diretamente ao modelo, sem depender de
--- uma segunda etapa de migração.
--- Producao sempre associada a um item de pedido FEITO.
--- receita_snapshot preserva a receita/custos utilizados na data da producao.
+
 CREATE TABLE IF NOT EXISTS producoes (
     id_producao INT AUTO_INCREMENT PRIMARY KEY,
     id_pedido INT NOT NULL,
@@ -817,15 +817,25 @@ CREATE TABLE IF NOT EXISTS producoes (
     data_inicio DATETIME NULL,
     data_conclusao DATETIME NULL,
     criado_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
     CHECK (quantidade_planejada > 0),
     CHECK (quantidade_concluida >= 0),
     CHECK (quantidade_perdida >= 0),
     CHECK (quantidade_concluida + quantidade_perdida <= quantidade_planejada),
+
     INDEX idx_producoes_pedido (id_pedido),
-    CONSTRAINT fk_producoes_item FOREIGN KEY (id_pedido,id_produto_feito)
-        REFERENCES item_pedido(id_pedido,id_produto) ON DELETE RESTRICT,
-    CONSTRAINT fk_producoes_feito FOREIGN KEY (id_produto_feito)
-        REFERENCES feitos(id_produto) ON DELETE RESTRICT
+
+    -- FK ajustada para referenciar diretamente o pedido
+    CONSTRAINT fk_producoes_pedido
+        FOREIGN KEY (id_pedido)
+        REFERENCES pedidos(id_pedido)
+        ON DELETE RESTRICT
+        ON UPDATE RESTRICT,
+
+    CONSTRAINT fk_producoes_feito
+        FOREIGN KEY (id_produto_feito)
+        REFERENCES feitos(id_produto)
+        ON DELETE RESTRICT
 );
 
 -- Saldo fisico dos produtos FEITOS, separado dos lotes de compra existentes.
@@ -922,9 +932,6 @@ CREATE TABLE IF NOT EXISTS consumo_producao (
 -- VIEWS (indicadores calculados, sem duplicar dados)
 -- =========================================================
 
--- Saldo de estoque por produto: a fonte oficial e quantidade_atual dos lotes.
--- Movimentacoes de estoque funcionam como trilha de auditoria; a aplicacao
--- deve atualizar o lote e inserir a movimentacao na mesma transacao.
 CREATE VIEW vw_estoque_atual AS
 SELECT
     p.id_produto,
@@ -941,13 +948,11 @@ WHERE p.tipo_produto IN ('REVENDA', 'INGREDIENTE')
 GROUP BY p.id_produto, p.nome_produto, p.tipo_produto,
          p.unidade_medida, p.estoque_minimo;
 
--- Produtos abaixo do estoque minimo.
 CREATE VIEW vw_alerta_estoque_minimo AS
 SELECT *
 FROM vw_estoque_atual
 WHERE saldo_atual < estoque_minimo;
 
--- Quanto cada pedido ja recebeu e quanto falta.
 CREATE VIEW vw_saldo_pedidos AS
 SELECT
     pe.id_pedido,
@@ -962,7 +967,6 @@ LEFT JOIN pagamentos pg ON pg.id_pedido = pe.id_pedido
 WHERE pe.status_pedido <> 'CANCELADO'
 GROUP BY pe.id_pedido, pe.status_pedido, pe.valor_total;
 
--- Livro-caixa unificado (base para lucro e saldo nos relatorios).
 CREATE VIEW vw_movimentacoes_financeiras AS
 SELECT data_pagamento AS data_mov, 'ENTRADA' AS tipo,
        'VENDA' AS categoria, valor_pagamento AS valor,
@@ -988,19 +992,3 @@ SELECT data_retirada, 'SAIDA', 'RETIRADA_PROPRIETARIO', valor_retirada,
        'RETIRADA' AS origem, id_retirada AS id_referencia,
        NULL AS id_pedido
 FROM retiradas;
-
--- =========================================================
--- REGRAS IMPORTANTES DA APLICACAO
--- =========================================================
--- 1. Inserir historico_pedidos em toda criacao/alteracao relevante do pedido.
--- 2. Pedido AGENDADO deve ter linha em agendamentos; o CHECK/FK valida apenas
---    que um agendamento existente pertence a pedido do tipo AGENDADO.
--- 3. Atualizar lotes_estoque.quantidade_atual e inserir movimentacoes_estoque
---    na mesma transacao; nao calcular o saldo somando ambas as estruturas.
--- 4. Criar lotes e movimentacoes de entrada quando uma compra for recebida.
--- 5. Registrar pagamentos de clientes e fornecedores apenas quando houver evento
---    real; evitar duplicidade com referencia/identificador unico no backend.
--- 6. vw_movimentacoes_financeiras e um livro-caixa simplificado: inclui pagamentos
---    efetivamente confirmados a fornecedores, nao apenas compras recebidas.
---    Lucro real exige custo dos produtos vendidos e apropriacao dos custos.
--- 7. CHECKs sao aplicados a partir do MySQL 8.0.16.
