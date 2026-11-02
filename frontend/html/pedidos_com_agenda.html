@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BeeFlux | Módulo de Pedidos</title>
+
+    <link rel="stylesheet" href="../css/global.css">
+    <link rel="stylesheet" href="../css/index.css">
+    <link rel="stylesheet" href="../css/modal.css">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300..700&display=swap" rel="stylesheet">
+    <scritp src="/frontend/js/pedidos_com_agenda.js" defer></scritp>
+
+    <style>
+        .barra-acoes {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .filtros-pedidos {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .filtros-pedidos select, 
+        .filtros-pedidos input {
+            padding: 8px 12px;
+            border: 1px solid var(--cor-corpo-texto);
+            border-radius: var(--borda-botao);
+            background: #fff;
+            font-family: inherit;
+            font-size: 0.9rem;
+            color: var(--cor-corpo-texto);
+        }
+
+        .badge-status {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            display: inline-block;
+        }
+
+        .badge-pendente { background-color: #fef3c7; color: #b45309; }
+        .badge-confirmado { background-color: #e0f2fe; color: #0369a1; }
+        .badge-preparacao { background-color: #ede9fe; color: #6d28d9; }
+        .badge-pronto { background-color: #d1fae5; color: #047857; }
+        .badge-concluido { background-color: #e2e8f0; color: #475569; }
+        .badge-cancelado { background-color: #ffe4e6; color: #be123c; }
+
+        .badge-fin-pago { background-color: #dcfce7; color: #15803d; font-size: 0.72rem; }
+        .badge-fin-pendente { background-color: #fef9c3; color: #a16207; font-size: 0.72rem; }
+
+        .btn-acao-tabela {
+            background: #fff;
+            border: 1px solid var(--pink-escuro);
+            color: var(--pink-escuro);
+            padding: 6px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 600;
+            transition: var(--transicao);
+        }
+
+        .btn-acao-tabela:hover {
+            background: var(--pink-escuro);
+            color: #fff;
+        }
+
+        .modal-detalhe-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 20px;
+            background: #fff8f9;
+            padding: 16px;
+            border-radius: 8px;
+            border-left: 4px solid var(--pink-escuro);
+        }
+
+        .modal-detalhe-item span {
+            display: block;
+            font-size: 0.8rem;
+            color: #777;
+        }
+
+        .modal-detalhe-item strong {
+            font-size: 1rem;
+            color: var(--cor-corpo-texto);
+        }
+
+        .itens-pedido-lista {
+            margin: 16px 0;
+            border-top: 1px solid #eee;
+            padding-top: 12px;
+        }
+
+        /* ==============================
+           ESTILOS DA AGENDA INTEGRADA
+           ============================== */
+        .secao-agenda {
+            margin-top: 35px;
+            margin-bottom: 40px;
+        }
+
+        .agenda-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .agenda-controles {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .btn-agenda-nav {
+            background: #fff;
+            border: 1px solid var(--cor-corpo-texto);
+            border-radius: 6px;
+            width: 34px;
+            height: 34px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 0.9rem;
+            color: var(--cor-corpo-texto);
+            transition: var(--transicao);
+        }
+
+        .btn-agenda-nav:hover {
+            background: var(--pink-escuro);
+            color: #fff;
+            border-color: var(--pink-escuro);
+        }
+
+        .agenda-titulo-data {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--pink-escuro);
+            min-width: 180px;
+            text-align: center;
+        }
+
+        .botoes-visualizacao {
+            display: flex;
+            gap: 6px;
+        }
+
+        .btn-view-toggle {
+            padding: 6px 14px;
+            border: 1px solid var(--pink-escuro);
+            background: #fff;
+            color: var(--pink-escuro);
+            border-radius: var(--borda-botao);
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.85rem;
+            transition: var(--transicao);
+        }
+
+        .btn-view-toggle.active {
+            background: var(--pink-escuro);
+            color: #fff;
+        }
+
+        /* Grade Mensal */
+        .calendario-mensal {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+        }
+
+        .cal-cabecalho-dia {
+            text-align: center;
+            font-weight: 700;
+            font-size: 0.85rem;
+            color: var(--cor-corpo-texto);
+            padding: 8px 0;
+            background: #fbfbfb;
+            border-radius: 6px;
+        }
+
+        .cal-dia-celula {
+            min-height: 105px;
+            background: #fff;
+            border: 1px solid rgba(90, 74, 75, 0.15);
+            border-radius: 8px;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            transition: var(--transicao);
+        }
+
+        .cal-dia-celula.outro-mes {
+            background: #fafafa;
+            opacity: 0.45;
+        }
+
+        .cal-dia-celula.hoje {
+            border: 2px solid var(--pink-escuro);
+            background: #fffdfd;
+        }
+
+        .cal-dia-numero {
+            font-size: 0.8rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+            color: var(--cor-corpo-texto);
+        }
+
+        /* Grade Semanal */
+        .calendario-semanal {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 10px;
+        }
+
+        .coluna-semanal {
+            background: #fff;
+            border: 1px solid rgba(90, 74, 75, 0.15);
+            border-radius: 8px;
+            padding: 10px;
+            min-height: 380px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .coluna-semanal.hoje {
+            border: 2px solid var(--pink-escuro);
+            background: #fffdfd;
+        }
+
+        .coluna-semanal-topo {
+            text-align: center;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 6px;
+            margin-bottom: 4px;
+        }
+
+        .coluna-semanal-topo strong {
+            display: block;
+            font-size: 0.95rem;
+            color: var(--pink-escuro);
+        }
+
+        .coluna-semanal-topo span {
+            font-size: 0.8rem;
+            color: #777;
+        }
+
+        /* Card de Compromisso no Calendário */
+        .evento-pedido-chip {
+            border-radius: 6px;
+            padding: 5px 8px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+            text-align: left;
+            border-left: 3px solid transparent;
+        }
+
+        .evento-pedido-chip:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .evento-hora {
+            font-weight: 700;
+            font-size: 0.72rem;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .evento-cliente {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-weight: 600;
+        }
+
+        /* Cores dos compromissos na agenda por status */
+        .chip-pendente { background: #fef3c7; color: #92400e; border-left-color: #d97706; }
+        .chip-confirmado { background: #e0f2fe; color: #075985; border-left-color: #0284c7; }
+        .chip-em-preparacao { background: #ede9fe; color: #5b21b6; border-left-color: #7c3aed; }
+        .chip-pronto { background: #d1fae5; color: #065f46; border-left-color: #059669; }
+        .chip-concluido { background: #f1f5f9; color: #475569; border-left-color: #94a3b8; }
+        .chip-cancelado { background: #ffe4e6; color: #9f1239; border-left-color: #e11d48; text-decoration: line-through; }
+
+        @media (max-width: 900px) {
+            .calendario-mensal, .calendario-semanal {
+                overflow-x: auto;
+                min-width: 750px;
+            }
+            .secao-agenda .card {
+                overflow-x: auto;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="container-header">
+            <a href="../index.html" class="logo">
+                <div class="logo-icone">
+                    <img src="../assets/logo.png" alt="Logo do BeeFlux">
+                    <img src="../assets/logo-hover.png" alt="" class="logo-hover">
+                </div>
+                <span class="logo-texto">BeeFlux</span>
+            </a>
+            <nav class="desktop-nav">
+                <ul>
+                    <li><a href="../index.html"><i class="fa-solid fa-house"></i> Início</a></li>
+                    <li><a href="estoque.html"><i class="fa-solid fa-box-open"></i> Estoque</a></li>
+                    <li><a href="contatos.html"><i class="fa-solid fa-users"></i> Contatos</a></li>
+                    <li><a href="#"><i class="fa-solid fa-chart-pie"></i> Financeiro</a></li>
+                    <li><a href="receitas.html"><i class="fa-solid fa-book-open"></i> Receitas</a></li>
+                    <li><a href="pedidos.html" class="active"><i class="fa-solid fa-list-check"></i> Pedidos</a></li>
+                </ul>
+            </nav>
+            <div class="user-profile">
+                <button id="user-menu-btn" class="avatar-btn" aria-label="Menu do Usuário">
+                    <div class="avatar-placeholder" id="user-initials">U</div>
+                    <span class="status-dot"></span>
+                </button>
+                <div id="user-dropdown" class="user-dropdown-menu hidden">
+                    <a href="configuser.html" class="dropdown-item">
+                        <i class="fa-solid fa-gear"></i> Configurações
+                    </a>
+                    <div class="dropdown-divider"></div>
+                    <button id="logout-btn" class="dropdown-item logout">
+                        <i class="fa-solid fa-right-from-bracket"></i> Sair
+                    </button>
+                </div>
+            </div>
+            <button id="menu-btn" class="menu-sanduiche">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+        </div>
+        <div id="mobile-menu" class="menu-mobile">
+            <a href="../index.html"><i class="fa-solid fa-house"></i> Início</a>
+            <a href="estoque.html"><i class="fa-solid fa-box-open"></i> Estoque</a>
+            <a href="contatos.html"><i class="fa-solid fa-users"></i> Contatos</a>
+            <a href="#"><i class="fa-solid fa-chart-pie"></i> Financeiro</a>
+            <a href="receitas.html"><i class="fa-solid fa-book-open"></i> Receitas</a>
+            <a href="pedidos.html"><i class="fa-solid fa-list-check"></i> Pedidos</a>
+        </div>
+    </header>
+
+    <main>
+        <!-- TOPO -->
+        <section class="topo">
+            <div class="bem-vindo">
+                <h1>Painel de Pedidos <i class="fa-solid fa-list-check"></i></h1>
+                <p>Gerencie encomendas imediatas, agendamentos e entregas.</p>
+            </div>
+            <button class="botao-primario" onclick="abrirModalNovoPedido()">
+                <i class="fa-solid fa-plus-circle"></i> Novo Pedido
+            </button>
+        </section>
+
+        <!-- CARDS DE RESUMO DO MÓDULO -->
+        <section class="dashboard-grid">
+            <div class="card metric-card">
+                <div class="metric-icon pink">
+                    <i class="fa-solid fa-clock"></i>
+                </div>
+                <div class="metric-info">
+                    <h3>Aguardando Confirmação</h3>
+                    <span class="value" id="total-pendentes">0</span>
+                    <span class="trend neutral">Pedidos pendentes</span>
+                </div>
+            </div>
+
+            <div class="card metric-card">
+                <div class="metric-icon orange">
+                    <i class="fa-solid fa-fire-burner"></i>
+                </div>
+                <div class="metric-info">
+                    <h3>Em Preparação</h3>
+                    <span class="value" id="total-em-preparacao">0</span>
+                    <span class="trend neutral">Produção e montagem</span>
+                </div>
+            </div>
+
+            <div class="card metric-card">
+                <div class="metric-icon green">
+                    <i class="fa-solid fa-calendar-check"></i>
+                </div>
+                <div class="metric-info">
+                    <h3>Prontos / Para Entrega</h3>
+                    <span class="value" id="total-prontos">0</span>
+                    <span class="trend positive">Aguardando saída</span>
+                </div>
+            </div>
+
+            <div class="card metric-card">
+                <div class="metric-icon purple">
+                    <i class="fa-solid fa-receipt"></i>
+                </div>
+                <div class="metric-info">
+                    <h3>Vendas no Período</h3>
+                    <span class="value" id="total-faturamento">R$ 0,00</span>
+                    <span class="trend positive">Pedidos ativos</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- FILTROS E PESQUISA DE PEDIDOS -->
+        <section class="card" style="margin-bottom: 24px;">
+            <div class="barra-acoes">
+                <div class="filtros-pedidos">
+                    <input type="text" id="filtro-busca" placeholder="Buscar cliente ou nº..." oninput="filtrarPedidos()">
+                    
+                    <select id="filtro-tipo" onchange="filtrarPedidos()">
+                        <option value="">Todos os Tipos</option>
+                        <option value="IMEDIATO">Imediato (Balcão)</option>
+                        <option value="AGENDADO">Agendado (Encomenda)</option>
+                    </select>
+
+                    <select id="filtro-status" onchange="filtrarPedidos()">
+                        <option value="">Status Operacional (Ativos)</option>
+                        <option value="PENDENTE">Pendente</option>
+                        <option value="CONFIRMADO">Confirmado</option>
+                        <option value="EM_PREPARACAO">Em Preparação</option>
+                        <option value="PRONTO">Pronto</option>
+                        <option value="CONCLUIDO">Concluído</option>
+                        <option value="CANCELADO">Cancelado</option>
+                    </select>
+                </div>
+                <button class="btn-secondary" onclick="carregarPedidos()">
+                    <i class="fa-solid fa-arrows-rotate"></i> Atualizar Lista
+                </button>
+            </div>
+
+            <!-- TABELA DE PEDIDOS -->
+            <div class="tabela-responsiva">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nº Pedido</th>
+                            <th>Cliente</th>
+                            <th>Tipo / Atendimento</th>
+                            <th>Data / Agendamento</th>
+                            <th>Valor Total</th>
+                            <th>Situação Financeira</th>
+                            <th>Status Operacional</th>
+                            <th style="text-align: right;">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabela-pedidos-body">
+                        <tr>
+                            <td colspan="8" style="text-align: center; padding: 24px;">Carregando pedidos...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- ============================================================== -->
+        <!-- AGENDA INTEGRADA EM TEMPO REAL (MENSAL E SEMANAL)              -->
+        <!-- Conforme Documentação BeeFlux (Perguntas 35 a 42 e 75 a 76)     -->
+        <!-- ============================================================== -->
+        <section class="secao-agenda">
+            <div class="card">
+                <div class="agenda-header">
+                    <div>
+                        <h2 style="color: var(--pink-escuro); margin-bottom: 4px;">
+                            <i class="fa-solid fa-calendar-days"></i> Agenda de Encomendas
+                        </h2>
+                        <p style="font-size: 0.88rem; color: #777;">
+                            Visualize e planeje as entregas e retiradas em tempo real.
+                        </p>
+                    </div>
+
+                    <div class="agenda-controles">
+                        <button class="btn-agenda-nav" onclick="navegarPeriodoAgenda(-1)" title="Período anterior">
+                            <i class="fa-solid fa-chevron-left"></i>
+                        </button>
+                        <span id="agenda-titulo-data" class="agenda-titulo-data">Novembro 2026</span>
+                        <button class="btn-agenda-nav" onclick="navegarPeriodoAgenda(1)" title="Próximo período">
+                            <i class="fa-solid fa-chevron-right"></i>
+                        </button>
+                    </div>
+
+                    <div class="botoes-visualizacao">
+                        <button class="btn-view-toggle active" id="btn-view-mes" onclick="alternarVisualizacaoAgenda('mes')">
+                            <i class="fa-solid fa-calendar"></i> Mês
+                        </button>
+                        <button class="btn-view-toggle" id="btn-view-semana" onclick="alternarVisualizacaoAgenda('semana')">
+                            <i class="fa-solid fa-calendar-week"></i> Semana
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Contêiner dinâmico do calendário renderizado pelo JS -->
+                <div id="container-grade-agenda"></div>
+            </div>
+        </section>
+    </main>
+
+    <!-- MODAL DETALHES DO PEDIDO -->
+    <div class="modal-overlay" id="modal-detalhes-pedido" style="display: none;">
+        <div class="modal-card" style="max-width: 650px;">
+            <button class="close-modal" onclick="fecharModalDetalhes()"><i class="fa-solid fa-xmark"></i></button>
+            <div class="modal-header">
+                <h2 id="modal-ped-numero">Detalhes do Pedido</h2>
+                <p id="modal-ped-data">Data de criação</p>
+            </div>
+            
+            <div class="modal-detalhe-grid">
+                <div class="modal-detalhe-item">
+                    <span>Cliente</span>
+                    <strong id="modal-ped-cliente">-</strong>
+                </div>
+                <div class="modal-detalhe-item">
+                    <span>Telefone</span>
+                    <strong id="modal-ped-telefone">-</strong>
+                </div>
+                <div class="modal-detalhe-item">
+                    <span>Atendimento</span>
+                    <strong id="modal-ped-atendimento">-</strong>
+                </div>
+                <div class="modal-detalhe-item">
+                    <span>Financeiro</span>
+                    <strong id="modal-ped-financeiro">-</strong>
+                </div>
+            </div>
+
+            <div id="modal-ped-endereco-bloco" style="display: none; margin-bottom: 15px; font-size: 0.9rem;">
+                <strong>Endereço de Entrega:</strong> <span id="modal-ped-endereco"></span>
+            </div>
+
+            <div class="itens-pedido-lista">
+                <h3 style="font-size: 1rem; margin-bottom: 8px;">Itens do Pedido</h3>
+                <div class="tabela-responsiva">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Produto</th>
+                                <th>Qtd</th>
+                                <th>Unitário</th>
+                                <th>Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody id="modal-ped-itens-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div style="text-align: right; margin-top: 15px; font-size: 1.1rem;">
+                <span>Taxa de Entrega: <strong id="modal-ped-taxa">R$ 0,00</strong></span><br>
+                <span>Total: <strong id="modal-ped-total" style="color: var(--pink-escuro);">R$ 0,00</strong></span>
+            </div>
+
+            <div class="modal-footer" style="margin-top: 20px; display: flex; justify-content: space-between;">
+                <div id="modal-acoes-status"></div>
+                <button class="btn-secondary" onclick="fecharModalDetalhes()">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL NOVO PEDIDO SIMPLES -->
+    <div class="modal-overlay" id="modal-novo-pedido" style="display: none;">
+        <div class="modal-card" style="max-width: 600px;">
+            <button class="close-modal" onclick="fecharModalNovoPedido()"><i class="fa-solid fa-xmark"></i></button>
+            <div class="modal-header">
+                <h2>Criar Novo Pedido</h2>
+                <p>Preencha os dados da venda rápida ou encomenda.</p>
+            </div>
+            <form id="form-novo-pedido" onsubmit="salvarNovoPedido(event)">
+                <div class="input-group" style="margin-bottom: 12px;">
+                    <label>Tipo do Pedido</label>
+                    <select id="novo-tipo" onchange="alternarCamposAgendamento()" required>
+                        <option value="IMEDIATO">Imediato (Balcão)</option>
+                        <option value="AGENDADO">Agendado (Encomenda)</option>
+                    </select>
+                </div>
+
+                <div class="input-group" style="margin-bottom: 12px;">
+                    <label>Cliente (Obrigatório em Agendados)</label>
+                    <select id="novo-cliente">
+                        <option value="">Selecione um cliente cadastrado...</option>
+                    </select>
+                </div>
+
+                <!-- BLOCO CONDICIONAL DE AGENDAMENTO -->
+                <div id="bloco-agendamento" style="display: none; background: #fff8f9; padding: 12px; border-radius: 8px; margin-bottom: 12px;">
+                    <div class="input-group" style="margin-bottom: 8px;">
+                        <label>Atendimento</label>
+                        <select id="novo-atendimento" onchange="alternarCampoEndereco()">
+                            <option value="RETIRADA">Retirada na Confeitaria</option>
+                            <option value="ENTREGA">Entrega no Endereço</option>
+                        </select>
+                    </div>
+                    <div class="input-group" style="margin-bottom: 8px;">
+                        <label>Data e Horário</label>
+                        <input type="datetime-local" id="novo-datahora">
+                    </div>
+                    <div class="input-group" id="grupo-endereco" style="display: none; margin-bottom: 8px;">
+                        <label>Endereço de Entrega</label>
+                        <input type="text" id="novo-endereco" placeholder="Rua, número, bairro...">
+                    </div>
+                    <div class="input-group" id="grupo-taxa" style="display: none;">
+                        <label>Taxa de Entrega (R$)</label>
+                        <input type="number" id="novo-taxa" step="0.01" min="0" value="0.00">
+                    </div>
+                </div>
+
+                <!-- ITENS (PRODUTO E QUANTIDADE) -->
+                <div style="margin-bottom: 12px;">
+                    <label style="font-weight: 600; display: block; margin-bottom: 6px;">Adicionar Produto (FEITO ou REVENDA)</label>
+                    <div style="display: flex; gap: 8px;">
+                        <select id="novo-produto" style="flex: 2;"></select>
+                        <input type="number" id="novo-qtd" placeholder="Qtd" min="1" value="1" style="flex: 1;">
+                        <button type="button" class="btn-secondary" onclick="adicionarItemRascunho()"><i class="fa-solid fa-plus"></i></button>
+                    </div>
+                </div>
+
+                <!-- LISTA DE ITENS DO NOVO PEDIDO -->
+                <div style="background: #fafafa; border: 1px solid #ddd; border-radius: 6px; padding: 8px; margin-bottom: 14px; max-height: 140px; overflow-y: auto;">
+                    <ul id="lista-rascunho-itens" style="list-style: none; padding: 0; margin: 0; font-size: 0.85rem;">
+                        <li style="color: #888;">Nenhum produto adicionado ainda.</li>
+                    </ul>
+                </div>
+
+                <div class="input-group" style="margin-bottom: 16px;">
+                    <label>Observações Gerais</label>
+                    <input type="text" id="novo-observacao" placeholder="Ex: Sem cebola, embalar para presente...">
+                </div>
+
+                <div class="modal-footer">
+                    <button type="submit" class="botao-primario"><i class="fa-solid fa-check"></i> Concluir Criação</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2026 BeeFlux, todos os direitos reservados.</p>
+        </div>
+    </footer>
+
+    <script src="../js/global.js" defer></script>
+    <script src="../js/pedidos.js" defer></script>
+</body>
+</html>
