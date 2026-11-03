@@ -1,0 +1,303 @@
+        .barra-acoes {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .filtros-pedidos {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .filtros-pedidos select, 
+        .filtros-pedidos input {
+            padding: 8px 12px;
+            border: 1px solid var(--cor-corpo-texto);
+            border-radius: var(--borda-botao);
+            background: #fff;
+            font-family: inherit;
+            font-size: 0.9rem;
+            color: var(--cor-corpo-texto);
+        }
+
+        .badge-status {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            display: inline-block;
+        }
+
+        .badge-pendente { background-color: #fef3c7; color: #b45309; }
+        .badge-confirmado { background-color: #e0f2fe; color: #0369a1; }
+        .badge-preparacao { background-color: #ede9fe; color: #6d28d9; }
+        .badge-pronto { background-color: #d1fae5; color: #047857; }
+        .badge-concluido { background-color: #e2e8f0; color: #475569; }
+        .badge-cancelado { background-color: #ffe4e6; color: #be123c; }
+
+        .badge-fin-pago { background-color: #dcfce7; color: #15803d; font-size: 0.72rem; }
+        .badge-fin-pendente { background-color: #fef9c3; color: #a16207; font-size: 0.72rem; }
+
+        .btn-acao-tabela {
+            background: #fff;
+            border: 1px solid var(--pink-escuro);
+            color: var(--pink-escuro);
+            padding: 6px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 600;
+            transition: var(--transicao);
+        }
+
+        .btn-acao-tabela:hover {
+            background: var(--pink-escuro);
+            color: #fff;
+        }
+
+        .modal-detalhe-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 20px;
+            background: #fff8f9;
+            padding: 16px;
+            border-radius: 8px;
+            border-left: 4px solid var(--pink-escuro);
+        }
+
+        .modal-detalhe-item span {
+            display: block;
+            font-size: 0.8rem;
+            color: #777;
+        }
+
+        .modal-detalhe-item strong {
+            font-size: 1rem;
+            color: var(--cor-corpo-texto);
+        }
+
+        .itens-pedido-lista {
+            margin: 16px 0;
+            border-top: 1px solid #eee;
+            padding-top: 12px;
+        }
+
+        /* ==============================
+           ESTILOS DA AGENDA INTEGRADA
+           ============================== */
+        .secao-agenda {
+            margin-top: 35px;
+            margin-bottom: 40px;
+        }
+
+        .agenda-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .agenda-controles {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .btn-agenda-nav {
+            background: #fff;
+            border: 1px solid var(--cor-corpo-texto);
+            border-radius: 6px;
+            width: 34px;
+            height: 34px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 0.9rem;
+            color: var(--cor-corpo-texto);
+            transition: var(--transicao);
+        }
+
+        .btn-agenda-nav:hover {
+            background: var(--pink-escuro);
+            color: #fff;
+            border-color: var(--pink-escuro);
+        }
+
+        .agenda-titulo-data {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--pink-escuro);
+            min-width: 180px;
+            text-align: center;
+        }
+
+        .botoes-visualizacao {
+            display: flex;
+            gap: 6px;
+        }
+
+        .btn-view-toggle {
+            padding: 6px 14px;
+            border: 1px solid var(--pink-escuro);
+            background: #fff;
+            color: var(--pink-escuro);
+            border-radius: var(--borda-botao);
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.85rem;
+            transition: var(--transicao);
+        }
+
+        .btn-view-toggle.active {
+            background: var(--pink-escuro);
+            color: #fff;
+        }
+
+        /* Grade Mensal */
+        .calendario-mensal {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+        }
+
+        .cal-cabecalho-dia {
+            text-align: center;
+            font-weight: 700;
+            font-size: 0.85rem;
+            color: var(--cor-corpo-texto);
+            padding: 8px 0;
+            background: #fbfbfb;
+            border-radius: 6px;
+        }
+
+        .cal-dia-celula {
+            min-height: 105px;
+            background: #fff;
+            border: 1px solid rgba(90, 74, 75, 0.15);
+            border-radius: 8px;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            transition: var(--transicao);
+        }
+
+        .cal-dia-celula.outro-mes {
+            background: #fafafa;
+            opacity: 0.45;
+        }
+
+        .cal-dia-celula.hoje {
+            border: 2px solid var(--pink-escuro);
+            background: #fffdfd;
+        }
+
+        .cal-dia-numero {
+            font-size: 0.8rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+            color: var(--cor-corpo-texto);
+        }
+
+        /* Grade Semanal */
+        .calendario-semanal {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 10px;
+        }
+
+        .coluna-semanal {
+            background: #fff;
+            border: 1px solid rgba(90, 74, 75, 0.15);
+            border-radius: 8px;
+            padding: 10px;
+            min-height: 380px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .coluna-semanal.hoje {
+            border: 2px solid var(--pink-escuro);
+            background: #fffdfd;
+        }
+
+        .coluna-semanal-topo {
+            text-align: center;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 6px;
+            margin-bottom: 4px;
+        }
+
+        .coluna-semanal-topo strong {
+            display: block;
+            font-size: 0.95rem;
+            color: var(--pink-escuro);
+        }
+
+        .coluna-semanal-topo span {
+            font-size: 0.8rem;
+            color: #777;
+        }
+
+        /* Card de Compromisso no Calendário */
+        .evento-pedido-chip {
+            border-radius: 6px;
+            padding: 5px 8px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+            text-align: left;
+            border-left: 3px solid transparent;
+        }
+
+        .evento-pedido-chip:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .evento-hora {
+            font-weight: 700;
+            font-size: 0.72rem;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .evento-cliente {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-weight: 600;
+        }
+
+        /* Cores dos compromissos na agenda por status */
+        .chip-pendente { background: #fef3c7; color: #92400e; border-left-color: #d97706; }
+        .chip-confirmado { background: #e0f2fe; color: #075985; border-left-color: #0284c7; }
+        .chip-em-preparacao { background: #ede9fe; color: #5b21b6; border-left-color: #7c3aed; }
+        .chip-pronto { background: #d1fae5; color: #065f46; border-left-color: #059669; }
+        .chip-concluido { background: #f1f5f9; color: #475569; border-left-color: #94a3b8; }
+        .chip-cancelado { background: #ffe4e6; color: #9f1239; border-left-color: #e11d48; text-decoration: line-through; }
+
+        @media (max-width: 900px) {
+            .calendario-mensal, .calendario-semanal {
+                overflow-x: auto;
+                min-width: 750px;
+            }
+            .secao-agenda .card {
+                overflow-x: auto;
+            }
+        }
