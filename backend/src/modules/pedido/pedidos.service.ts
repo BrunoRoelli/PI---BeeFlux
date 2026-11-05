@@ -355,26 +355,21 @@ export async function atualizarStatus(
         for (const it of itens.itens) {
           if (pedido.tipo_pedido === 'AGENDADO') {
             // Tenta criar reserva de estoque via módulo Estoque (sem permitir saldo negativo)
-            try {
-              await estoqueService.reservarEstoquePedido({
-                id_pedido: idPedido,
-                id_produto: it.id_produto,
-                quantidade: it.quantidade
-              });
-            } catch (err: unknown) {
-              // Conforme Pergunta 12: se estoque for insuficiente, registra pendência sem travar a confirmação
-              console.warn(`[Estoque] Saldo insuficiente para reserva do item ${it.id_produto}. Pendência registrada.`);
-            }
+            // Insuficiência é retornada pelo Estoque como pendência persistida.
+            // Erros inesperados devem interromper a transação inteira.
+            await estoqueService.reservarEstoquePedido({
+              id_pedido: idPedido,
+              id_produto: it.id_produto,
+              quantidade: it.quantidade
+            }, conn);
           }
         }
 
         if (pedido.tipo_pedido === 'IMEDIATO') {
           // Baixa imediata de itens de REVENDA
-          try {
-            await estoqueService.baixarRevendaPedido(idPedido, false, dados.id_user);
-          } catch (err) {
-            console.warn(`[Estoque] Baixa de revenda imediata registrou pendência: ${(err as Error).message}`);
-          }
+          // Insuficiência é persistida como pendência pelo Estoque. Falhas reais
+          // propagam o erro para provocar rollback também no status do pedido.
+          await estoqueService.baixarRevendaPedido(idPedido, false, dados.id_user, conn);
         }
       }
     }
@@ -406,15 +401,18 @@ export async function cancelarPedido(
     throw new Error('ID do pedido inválido.');
   }
 
-  const pedido = await repo.buscarPedidoCompleto(idPedido);
-  if (!pedido) throw new Error('Pedido não encontrado.');
+  return await repo.executarTransacao(async (conn) => {
+    const pedido = await repo.buscarPedidoPorIdBloqueado(conn, idPedido);
+    if (!pedido) throw new Error('Pedido não encontrado.');
+    if (!regras.podeCancelarPedido(pedido.status_pedido)) {
+      throw new Error(`Não é possível cancelar um pedido com status ${pedido.status_pedido}.`);
+    }
 
-  if (!regras.podeCancelarPedido(pedido.status_pedido)) {
-    throw new Error(`Não é possível cancelar um pedido com status ${pedido.status_pedido}.`);
-  }
+    if (idUser !== undefined) {
+      const usuario = await repo.buscarUsuarioAtivo(conn, idUser);
+      if (!usuario) throw new Error('Usuário responsável inválido ou inativo.');
+    }
 
-  // Se houver pagamento confirmado, estorna o pagamento
-  await repo.executarTransacao(async (conn) => {
     const pag = await repo.obterPagamentoPedido(conn, idPedido);
     if (pag && pag.status_pagamento === 'CONFIRMADO') {
       await repo.estornarPagamento(conn, pag.id_pagamento);
@@ -426,23 +424,14 @@ export async function cancelarPedido(
         descricao_historico: `Pagamento #${pag.id_pagamento} alterado para ESTORNADO devido ao cancelamento do pedido.`
       });
     }
+
+    // O estoque usa a mesma conexão: pagamento, devolução, reservas, pendências e status
+    // são confirmados ou desfeitos juntos.
+    await estoqueService.devolverPedido(idPedido, idUser, conn, motivo);
+
+    return {
+      mensagem: 'Pedido cancelado; pagamento, estoque, reservas e pendências processados na mesma transação.',
+      status_novo: 'CANCELADO'
+    };
   });
-
-  // Reverte estoque (Pergunta 17: reverter baixas/reservas e liberar pendências)
-  await estoqueService.devolverPedido(idPedido, idUser);
-
-  if (motivo) {
-    await repo.executarTransacao(async (conn) => {
-      await repo.registrarHistorico(conn, {
-        id_pedido: idPedido,
-        tipo_evento: 'CANCELAMENTO',
-        descricao_historico: `Motivo do cancelamento: ${motivo}`
-      });
-    });
-  }
-
-  return {
-    mensagem: 'Pedido cancelado com sucesso. Baixas, reservas e pendências estornadas.',
-    status_novo: 'CANCELADO'
-  };
 }
