@@ -469,7 +469,7 @@ export async function movimentadoPorPedido(conn: PoolConnection, idPedido: numbe
   const [rows] = await conn.query<RowDataPacket[]>(
     `SELECT id_lote, id_produto, tipo_produto, SUM(quantidade) AS liquido
      FROM movimentacoes_estoque 
-     WHERE id_pedido = ?
+     WHERE id_pedido = ? AND tipo_produto = 'REVENDA'
      GROUP BY id_lote, id_produto, tipo_produto 
      ORDER BY id_lote`,
     [idPedido]
@@ -488,7 +488,7 @@ export async function movimentadoFeitoPorPedido(conn: PoolConnection, idPedido: 
   const [rows] = await conn.query<RowDataPacket[]>(
     `SELECT id_produto_feito, SUM(quantidade) AS liquido
      FROM movimentacoes_feitos
-     WHERE id_pedido = ?
+     WHERE id_pedido = ? AND id_producao IS NULL
      GROUP BY id_produto_feito`,
     [idPedido]
   );
@@ -627,6 +627,14 @@ export async function consumirReserva(conn: PoolConnection, idReserva: number, q
 export async function liberarReservasPedido(conn: PoolConnection, idPedido: number) {
   await conn.execute(
     `UPDATE reservas_estoque SET status_reserva = 'LIBERADA' WHERE id_pedido = ? AND status_reserva = 'ATIVA'`,
+    [idPedido]
+  );
+}
+
+export async function cancelarPendenciasPedido(conn: PoolConnection, idPedido: number) {
+  await conn.execute(
+    `UPDATE pendencias_estoque SET status_pendencia = 'CANCELADA'
+     WHERE id_pedido = ? AND status_pendencia = 'ABERTA'`,
     [idPedido]
   );
 }
