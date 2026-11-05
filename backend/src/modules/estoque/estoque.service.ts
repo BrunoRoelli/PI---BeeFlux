@@ -1,3 +1,4 @@
+import type { PoolConnection } from 'mysql2/promise';
 import * as repo from './estoque.repository';
 import * as regras from './estoque.regras';
 import type {
@@ -13,6 +14,15 @@ import type {
   BaixaFeito,
   ReservaEstoqueInput
 } from './estoque.types';
+
+
+/** Reutiliza a transação do módulo chamador quando fornecida. */
+async function executarComConexao<T>(
+  connExterna: PoolConnection | undefined,
+  operacao: (conn: PoolConnection) => Promise<T>
+): Promise<T> {
+  return connExterna ? operacao(connExterna) : repo.executarTransacao(operacao);
+}
 
 export async function listar(tipo?: TipoProduto) {
   return await repo.listarEstoque(tipo);
@@ -190,13 +200,13 @@ export async function movimentar(d: MovimentoEstoque) {
   });
 }
 
-export async function reservarEstoquePedido(d: ReservaEstoqueInput) {
+export async function reservarEstoquePedido(d: ReservaEstoqueInput, connExterna?: PoolConnection) {
   if (!regras.inteiroPositivo(d.id_pedido) || !regras.inteiroPositivo(d.id_produto)) {
     throw new Error('Pedido e produto são obrigatórios.');
   }
   regras.validarQuantidade(d.quantidade);
 
-  return await repo.executarTransacao(async (conn) => {
+  return await executarComConexao(connExterna, async (conn) => {
     const pedido = await repo.buscarPedido(conn, d.id_pedido);
     if (!pedido || pedido.status_pedido === 'CANCELADO') throw new Error('Pedido inexistente ou cancelado.');
 
@@ -211,7 +221,9 @@ export async function reservarEstoquePedido(d: ReservaEstoqueInput) {
       saldoValido = lotes.filter((l) => !l.vencido).reduce((acc, l) => acc + Number(l.quantidade_atual), 0);
     }
 
-    const jaReservado = await repo.reservadoProduto(conn, d.id_produto, d.id_pedido);
+    // Inclui reservas já feitas para este mesmo pedido, evitando sobre-reserva
+    // quando o pedido contém linhas duplicadas do mesmo produto.
+    const jaReservado = await repo.reservadoProduto(conn, d.id_produto);
     const disponivel = regras.saldoDisponivel(saldoValido, jaReservado);
 
     if (disponivel < d.quantidade) {
@@ -222,7 +234,7 @@ export async function reservarEstoquePedido(d: ReservaEstoqueInput) {
         quantidade: faltante,
         motivo: `Reserva parcial: faltam ${faltante} unidades do produto ${produto.nome_produto}`
       });
-      throw new Error(`Saldo disponível insuficiente (${disponivel}) para reservar ${d.quantidade}. Pendência registrada.`);
+      return { pendencia: true, quantidade_pendente: faltante, mensagem: `Saldo insuficiente para reservar ${d.quantidade}; pendência registrada.` };
     }
 
     const idReserva = await repo.criarReserva(conn, d);
@@ -230,7 +242,7 @@ export async function reservarEstoquePedido(d: ReservaEstoqueInput) {
   });
 }
 
-export async function registrarProducaoFeito(d: RegistroProducaoFeito) {
+export async function registrarProducaoFeito(d: RegistroProducaoFeito, connExterna?: PoolConnection) {
   if (!regras.inteiroPositivo(d.id_pedido) || !regras.inteiroPositivo(d.id_produto_feito)) {
     throw new Error('Pedido e produto FEITO são obrigatórios.');
   }
@@ -239,7 +251,7 @@ export async function registrarProducaoFeito(d: RegistroProducaoFeito) {
   if (perdas < 0 || !Number.isFinite(perdas)) throw new Error('Perdas inválidas.');
   if (perdas > 0) regras.validarQuantidade(perdas);
 
-  return await repo.executarTransacao(async (conn) => {
+  return await executarComConexao(connExterna, async (conn) => {
     const pedido = await repo.buscarPedido(conn, d.id_pedido);
     if (!pedido || pedido.status_pedido === 'CANCELADO') throw new Error('Pedido inexistente ou cancelado.');
 
@@ -269,6 +281,56 @@ export async function registrarProducaoFeito(d: RegistroProducaoFeito) {
 
     const totalInsumosPlanejados = regras.arredondar(d.quantidade_produzida + perdas);
 
+    // Primeiro valida TODOS os ingredientes. Assim não existe consumo parcial caso
+    // um ingrediente posterior esteja em falta.
+    const planosIngredientes: Array<{
+      id_ingrediente: number;
+      usos: Array<{ id_lote: number; quantidade: number; saldo_restante: number }>;
+    }> = [];
+    const faltasIngredientes: Array<{ id_ingrediente: number; nome_produto: string; quantidade: number }> = [];
+
+    for (const ing of receita.ingredientes) {
+      const necessaria = regras.arredondar((Number(ing.quantidade) * totalInsumosPlanejados) / rendimento);
+      if (necessaria <= 0) continue;
+
+      const lotes = await repo.buscarLotesFEFO(conn, ing.id_ingrediente);
+      const plano = regras.planejarConsumo(
+        lotes.map((l) => ({
+          id_lote: l.id_lote,
+          quantidade_atual: Number(l.quantidade_atual),
+          vencido: Boolean(l.vencido)
+        })),
+        necessaria,
+        Boolean(d.confirmar_vencidos)
+      );
+
+      if (plano.faltante > 0) {
+        faltasIngredientes.push({
+          id_ingrediente: ing.id_ingrediente,
+          nome_produto: ing.nome_produto,
+          quantidade: plano.faltante
+        });
+      } else {
+        planosIngredientes.push({ id_ingrediente: ing.id_ingrediente, usos: plano.usos });
+      }
+    }
+
+    if (faltasIngredientes.length > 0) {
+      for (const falta of faltasIngredientes) {
+        await repo.inserirPendencia(conn, {
+          id_pedido: d.id_pedido,
+          id_produto: falta.id_ingrediente,
+          quantidade: falta.quantidade,
+          motivo: `Falta de insumo ${falta.nome_produto} para produção do produto #${d.id_produto_feito}`
+        });
+      }
+      return {
+        pendencia: true,
+        faltas: faltasIngredientes,
+        mensagem: 'Produção não iniciada: existem ingredientes insuficientes. As pendências foram registradas.'
+      };
+    }
+
     const snapshot = JSON.stringify({
       tempo_preparo_minutos: receita.detalhes.tempo_preparo_minutos,
       rendimento_receita: rendimento,
@@ -291,38 +353,11 @@ export async function registrarProducaoFeito(d: RegistroProducaoFeito) {
     );
     const idProducao = insercao.insertId;
 
-    for (const ing of receita.ingredientes) {
-      const necessaria = regras.arredondar((Number(ing.quantidade) * totalInsumosPlanejados) / rendimento);
-      if (necessaria <= 0) continue;
-
-      const lotes = await repo.buscarLotesFEFO(conn, ing.id_ingrediente);
-      const plano = regras.planejarConsumo(
-        lotes.map((l) => ({
-          id_lote: l.id_lote,
-          quantidade_atual: Number(l.quantidade_atual),
-          vencido: Boolean(l.vencido)
-        })),
-        necessaria,
-        Boolean(d.confirmar_vencidos)
-      );
-
-      if (plano.faltante > 0) {
-        await repo.inserirPendencia(conn, {
-          id_pedido: d.id_pedido,
-          id_producao: idProducao,
-          id_produto: ing.id_ingrediente,
-          quantidade: plano.faltante,
-          motivo: `Falta de insumo ${ing.nome_produto} para a produção #${idProducao}`
-        });
-        throw new Error(
-          `Ingrediente ${ing.nome_produto} insuficiente: faltam ${plano.faltante}. Pendência registrada.`
-        );
-      }
-
+    for (const plano of planosIngredientes) {
       for (const uso of plano.usos) {
         await repo.atualizarLote(conn, uso.id_lote, uso.saldo_restante);
         await repo.registrarMovimentacao(conn, {
-          id_produto: ing.id_ingrediente,
+          id_produto: plano.id_ingrediente,
           tipo_produto: 'INGREDIENTE',
           id_lote: uso.id_lote,
           id_pedido: d.id_pedido,
@@ -334,7 +369,7 @@ export async function registrarProducaoFeito(d: RegistroProducaoFeito) {
         await conn.execute(
           `INSERT INTO consumo_producao (id_producao, id_lote, id_ingrediente, quantidade_consumida)
            VALUES (?, ?, ?, ?)`,
-          [idProducao, uso.id_lote, ing.id_ingrediente, uso.quantidade]
+          [idProducao, uso.id_lote, plano.id_ingrediente, uso.quantidade]
         );
       }
     }
@@ -372,13 +407,13 @@ export async function registrarProducaoFeito(d: RegistroProducaoFeito) {
   });
 }
 
-export async function baixarFeitoPedido(d: BaixaFeito) {
+export async function baixarFeitoPedido(d: BaixaFeito, connExterna?: PoolConnection) {
   if (!regras.inteiroPositivo(d.id_pedido) || !regras.inteiroPositivo(d.id_produto_feito)) {
     throw new Error('Pedido e produto inválidos.');
   }
   regras.validarQuantidade(d.quantidade);
 
-  return await repo.executarTransacao(async (conn) => {
+  return await executarComConexao(connExterna, async (conn) => {
     const pedido = await repo.buscarPedido(conn, d.id_pedido);
     if (!pedido || pedido.status_pedido === 'CANCELADO') throw new Error('Pedido inexistente ou cancelado.');
 
@@ -406,7 +441,7 @@ export async function baixarFeitoPedido(d: BaixaFeito) {
         quantidade: Math.max(0, faltante),
         motivo: 'Estoque insuficiente de produto FEITO na tentativa de baixa'
       });
-      throw new Error('Saldo de produto FEITO disponível insuficiente.');
+      return { pendencia: true, quantidade_pendente: faltante, mensagem: 'Saldo de produto FEITO insuficiente; pendência registrada.' };
     }
 
     await repo.atualizarEstoqueFeito(conn, d.id_produto_feito, regras.arredondar(saldo - d.quantidade));
@@ -501,10 +536,10 @@ export async function receberCompra(d: RecebimentoCompra) {
   });
 }
 
-export async function baixarRevendaPedido(idPedido: number, confirmarVencidos = false, idUser?: number) {
+export async function baixarRevendaPedido(idPedido: number, confirmarVencidos = false, idUser?: number, connExterna?: PoolConnection) {
   if (!regras.inteiroPositivo(idPedido)) throw new Error('ID do pedido inválido.');
 
-  return await repo.executarTransacao(async (conn) => {
+  return await executarComConexao(connExterna, async (conn) => {
     const pedido = await repo.buscarPedido(conn, idPedido);
     if (!pedido) throw new Error('Pedido não encontrado.');
     if (pedido.status_pedido === 'CANCELADO') {
@@ -545,9 +580,7 @@ export async function baixarRevendaPedido(idPedido: number, confirmarVencidos = 
           quantidade: plano.faltante,
           motivo: `Estoque insuficiente de REVENDA ao faturar o pedido #${idPedido}`
         });
-        throw new Error(
-          `Estoque insuficiente para o produto REVENDA (ID ${item.id_produto}). Faltam ${plano.faltante}. Pendência registrada.`
-        );
+        return { pendencia: true, id_produto: item.id_produto, quantidade_pendente: plano.faltante, mensagem: `Estoque insuficiente para REVENDA #${item.id_produto}; pendência registrada.` };
       }
 
       for (const uso of plano.usos) {
@@ -585,10 +618,10 @@ export async function baixarRevendaPedido(idPedido: number, confirmarVencidos = 
   });
 }
 
-export async function devolverPedido(idPedido: number, idUser?: number) {
+export async function devolverPedido(idPedido: number, idUser?: number, connExterna?: PoolConnection, motivo?: string) {
   if (!regras.inteiroPositivo(idPedido)) throw new Error('ID do pedido inválido.');
 
-  return await repo.executarTransacao(async (conn) => {
+  return await executarComConexao(connExterna, async (conn) => {
     const pedido = await repo.buscarPedido(conn, idPedido);
     if (!pedido) throw new Error('Pedido não encontrado.');
 
@@ -643,6 +676,7 @@ export async function devolverPedido(idPedido: number, idUser?: number) {
     }
 
     await repo.liberarReservasPedido(conn, idPedido);
+    await repo.cancelarPendenciasPedido(conn, idPedido);
 
     await repo.atualizarStatusPedido(conn, idPedido, 'CANCELADO');
     await repo.registrarHistoricoPedido(conn, {
@@ -651,8 +685,8 @@ export async function devolverPedido(idPedido: number, idUser?: number) {
       status_anterior: pedido.status_pedido,
       status_novo: 'CANCELADO',
       descricao_historico: houveEstorno
-        ? `Pedido cancelado: itens e produtos prontos devolvidos ao estoque e reservas liberadas.`
-        : `Pedido cancelado e reservas ativas liberadas.`
+        ? `Pedido cancelado: itens devolvidos ao estoque, reservas liberadas e pendências canceladas.${motivo ? ` Motivo: ${motivo}` : ''}`
+        : `Pedido cancelado, reservas liberadas e pendências canceladas.${motivo ? ` Motivo: ${motivo}` : ''}`
     });
 
     return {
