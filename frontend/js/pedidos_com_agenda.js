@@ -27,7 +27,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function carregarPedidos() {
     const tbody = document.getElementById('tabela-pedidos-body');
-    tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 24px;">Carregando pedidos...</td></tr>';
+    if (tbody) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 24px;">Carregando pedidos...</td></tr>';
+    }
 
     try {
         const res = await fetch(API_PEDIDOS_URL);
@@ -37,7 +39,9 @@ async function carregarPedidos() {
         atualizarMetricas(listaPedidos);
         renderizarAgenda();
     } catch (e) {
-        tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--pink-escuro); padding: 24px;">Não foi possível conectar à API de pedidos. (${e.message})</td></tr>`;
+        if (tbody) {
+            tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--pink-escuro, #b45309); padding: 24px;">Não foi possível conectar à API de pedidos. (${e.message})</td></tr>`;
+        }
         renderizarAgenda();
     }
 }
@@ -58,6 +62,8 @@ async function carregarPedidosSilencioso() {
 
 function renderizarTabela(pedidos) {
     const tbody = document.getElementById('tabela-pedidos-body');
+    if (!tbody) return;
+
     if (!pedidos || pedidos.length === 0) {
         tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 24px;">Nenhum pedido encontrado.</td></tr>';
         return;
@@ -69,6 +75,8 @@ function renderizarTabela(pedidos) {
             ? new Date(p.data_hora_agendada).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
             : new Date(p.data_pedido).toLocaleDateString('pt-BR');
 
+        const statusClass = (p.status_pedido || 'PENDENTE').toLowerCase().replace('_', '-');
+
         return `
             <tr>
                 <td><strong>${p.numero_exibicao || '#' + p.id_pedido}</strong></td>
@@ -78,15 +86,15 @@ function renderizarTabela(pedidos) {
                     ${p.tipo_atendimento ? `(${p.tipo_atendimento})` : ''}
                 </td>
                 <td>${dataFormatada}</td>
-                <td><strong>R$ ${Number(p.valor_total).toFixed(2)}</strong></td>
+                <td><strong>R$ ${Number(p.valor_total || 0).toFixed(2)}</strong></td>
                 <td>
                     <span class="badge-status ${p.status_financeiro === 'PAGO' ? 'badge-fin-pago' : 'badge-fin-pendente'}">
                         ${p.status_financeiro || 'PENDENTE'}
                     </span>
                 </td>
                 <td>
-                    <span class="badge-status badge-${p.status_pedido.toLowerCase().replace('_', '-')}">
-                        ${p.status_pedido.replace('_', ' ')}
+                    <span class="badge-status badge-${statusClass}">
+                        ${(p.status_pedido || 'PENDENTE').replace('_', ' ')}
                     </span>
                 </td>
                 <td style="text-align: right;">
@@ -104,18 +112,27 @@ function atualizarMetricas(pedidos) {
     const preparacao = pedidos.filter(p => p.status_pedido === 'EM_PREPARACAO').length;
     const prontos = pedidos.filter(p => p.status_pedido === 'PRONTO').length;
     const faturamento = pedidos.filter(p => p.status_pedido !== 'CANCELADO')
-                               .reduce((acc, p) => acc + Number(p.valor_total), 0);
+                               .reduce((acc, p) => acc + Number(p.valor_total || 0), 0);
 
-    document.getElementById('total-pendentes').textContent = pendentes;
-    document.getElementById('total-em-preparacao').textContent = preparacao;
-    document.getElementById('total-prontos').textContent = prontos;
-    document.getElementById('total-faturamento').textContent = `R$ ${faturamento.toFixed(2)}`;
+    const elPend = document.getElementById('total-pendentes');
+    const elPrep = document.getElementById('total-em-preparacao');
+    const elPron = document.getElementById('total-prontos');
+    const elFat = document.getElementById('total-faturamento');
+
+    if (elPend) elPend.textContent = pendentes;
+    if (elPrep) elPrep.textContent = preparacao;
+    if (elPron) elPron.textContent = prontos;
+    if (elFat) elFat.textContent = `R$ ${faturamento.toFixed(2)}`;
 }
 
 function filtrarPedidos() {
-    const termo = document.getElementById('filtro-busca').value.toLowerCase();
-    const tipo = document.getElementById('filtro-tipo').value;
-    const status = document.getElementById('filtro-status').value;
+    const elBusca = document.getElementById('filtro-busca');
+    const elTipo = document.getElementById('filtro-tipo');
+    const elStatus = document.getElementById('filtro-status');
+
+    const termo = elBusca ? elBusca.value.toLowerCase() : '';
+    const tipo = elTipo ? elTipo.value : '';
+    const status = elStatus ? elStatus.value : '';
 
     const filtrados = listaPedidos.filter(p => {
         const matchTermo = (p.nome_cliente && p.nome_cliente.toLowerCase().includes(termo)) ||
@@ -135,8 +152,11 @@ function filtrarPedidos() {
 // ==========================================================
 function alternarVisualizacaoAgenda(modo) {
     modoAgenda = modo;
-    document.getElementById('btn-view-mes').classList.toggle('active', modo === 'mes');
-    document.getElementById('btn-view-semana').classList.toggle('active', modo === 'semana');
+    const btnMes = document.getElementById('btn-view-mes');
+    const btnSem = document.getElementById('btn-view-semana');
+
+    if (btnMes) btnMes.classList.toggle('active', modo === 'mes');
+    if (btnSem) btnSem.classList.toggle('active', modo === 'semana');
     renderizarAgenda();
 }
 
@@ -153,7 +173,8 @@ function renderizarAgenda() {
     const container = document.getElementById('container-grade-agenda');
     const titulo = document.getElementById('agenda-titulo-data');
 
-    // Filtra apenas pedidos agendados com data válida
+    if (!container || !titulo) return;
+
     const pedidosAgendados = listaPedidos.filter(p => p.tipo_pedido === 'AGENDADO' && p.data_hora_agendada);
 
     if (modoAgenda === 'mes') {
@@ -161,6 +182,16 @@ function renderizarAgenda() {
     } else {
         renderizarSemana(container, titulo, pedidosAgendados);
     }
+}
+
+function extrairDataISO(dataStr) {
+    if (!dataStr) return '';
+    const dateObj = new Date(dataStr);
+    if (isNaN(dateObj.getTime())) return '';
+    const ano = dateObj.getFullYear();
+    const mes = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const dia = String(dateObj.getDate()).padStart(2, '0');
+    return `${ano}-${mes}-${dia}`;
 }
 
 function renderizarMes(container, tituloEl, pedidos) {
@@ -173,7 +204,7 @@ function renderizarMes(container, tituloEl, pedidos) {
     const primeiroDia = new Date(ano, mes, 1);
     const ultimoDia = new Date(ano, mes + 1, 0);
 
-    const diaSemanaInicio = primeiroDia.getDay(); // 0 = Domingo
+    const diaSemanaInicio = primeiroDia.getDay();
     const totalDiasMes = ultimoDia.getDate();
 
     let html = `
@@ -187,7 +218,6 @@ function renderizarMes(container, tituloEl, pedidos) {
             <div class="cal-cabecalho-dia">Sáb</div>
     `;
 
-    // Células do mês anterior para completar a semana
     const ultimoDiaMesAnterior = new Date(ano, mes, 0).getDate();
     for (let i = diaSemanaInicio - 1; i >= 0; i--) {
         const diaNum = ultimoDiaMesAnterior - i;
@@ -197,18 +227,11 @@ function renderizarMes(container, tituloEl, pedidos) {
     const hoje = new Date();
     const ehMesAtual = hoje.getFullYear() === ano && hoje.getMonth() === mes;
 
-    // Células do mês atual
     for (let dia = 1; dia <= totalDiasMes; dia++) {
         const ehHoje = ehMesAtual && hoje.getDate() === dia;
         const dataFormatadaStr = `${ano}-${String(mes + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
 
-        // Busca pedidos para este dia
-        const pedidosDoDia = pedidos.filter(p => {
-            const dataPed = p.data_hora_agendada.split('T')[0].split(' ')[0];
-            return dataPed === dataFormatadaStr;
-        });
-
-        // Ordena por horário
+        const pedidosDoDia = pedidos.filter(p => extrairDataISO(p.data_hora_agendada) === dataFormatadaStr);
         pedidosDoDia.sort((a, b) => new Date(a.data_hora_agendada) - new Date(b.data_hora_agendada));
 
         html += `
@@ -221,7 +244,6 @@ function renderizarMes(container, tituloEl, pedidos) {
         `;
     }
 
-    // Dias do próximo mês para fechar a grade (múltiplo de 7)
     const celulasTotais = diaSemanaInicio + totalDiasMes;
     const resto = (7 - (celulasTotais % 7)) % 7;
     for (let prox = 1; prox <= resto; prox++) {
@@ -236,7 +258,6 @@ function renderizarSemana(container, tituloEl, pedidos) {
     const dataAtual = new Date(dataReferenciaAgenda);
     const diaSemana = dataAtual.getDay();
     
-    // Início da semana (Domingo)
     const inicioSemana = new Date(dataAtual);
     inicioSemana.setDate(dataAtual.getDate() - diaSemana);
 
@@ -256,13 +277,9 @@ function renderizarSemana(container, tituloEl, pedidos) {
         diaLoop.setDate(inicioSemana.getDate() + i);
 
         const ehHoje = diaLoop.toDateString() === hoje.toDateString();
-        const dataFormatadaStr = diaLoop.toISOString().split('T')[0];
+        const dataFormatadaStr = extrairDataISO(diaLoop.toISOString());
 
-        const pedidosDoDia = pedidos.filter(p => {
-            const dataPed = p.data_hora_agendada.split('T')[0].split(' ')[0];
-            return dataPed === dataFormatadaStr;
-        });
-
+        const pedidosDoDia = pedidos.filter(p => extrairDataISO(p.data_hora_agendada) === dataFormatadaStr);
         pedidosDoDia.sort((a, b) => new Date(a.data_hora_agendada) - new Date(b.data_hora_agendada));
 
         html += `
@@ -284,16 +301,17 @@ function renderizarSemana(container, tituloEl, pedidos) {
 }
 
 function criarChipEvento(p, detalhado = false) {
-    const hora = new Date(p.data_hora_agendada).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    const dateObj = new Date(p.data_hora_agendada);
+    const hora = isNaN(dateObj.getTime()) ? '--:--' : dateObj.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     const cliente = p.nome_cliente || 'Balcão';
-    const statusClass = `chip-${p.status_pedido.toLowerCase().replace('_', '-')}`;
+    const statusClass = `chip-${(p.status_pedido || 'PENDENTE').toLowerCase().replace('_', '-')}`;
     const iconeAtendimento = p.tipo_atendimento === 'ENTREGA' ? '<i class="fa-solid fa-motorcycle"></i>' : '<i class="fa-solid fa-bag-shopping"></i>';
 
     return `
         <div class="evento-pedido-chip ${statusClass}" onclick="abrirDetalhesPedido(${p.id_pedido})" title="Clique para abrir detalhes">
             <span class="evento-hora">${iconeAtendimento} ${hora} - ${p.numero_exibicao || '#' + p.id_pedido}</span>
             <span class="evento-cliente">${cliente}</span>
-            ${detalhado ? `<span style="font-size:0.7rem; font-weight:700;">R$ ${Number(p.valor_total).toFixed(2)} (${p.status_pedido})</span>` : ''}
+            ${detalhado ? `<span style="font-size:0.7rem; font-weight:700;">R$ ${Number(p.valor_total || 0).toFixed(2)} (${p.status_pedido})</span>` : ''}
         </div>
     `;
 }
@@ -313,8 +331,8 @@ async function abrirDetalhesPedido(idPedido) {
         document.getElementById('modal-ped-telefone').textContent = p.telefone_cliente || 'Não informado';
         document.getElementById('modal-ped-atendimento').textContent = p.agendamento ? `${p.tipo_pedido} (${p.agendamento.tipo_atendimento})` : p.tipo_pedido;
         document.getElementById('modal-ped-financeiro').textContent = p.status_financeiro;
-        document.getElementById('modal-ped-taxa').textContent = `R$ ${Number(p.taxa_entrega).toFixed(2)}`;
-        document.getElementById('modal-ped-total').textContent = `R$ ${Number(p.valor_total).toFixed(2)}`;
+        document.getElementById('modal-ped-taxa').textContent = `R$ ${Number(p.taxa_entrega || 0).toFixed(2)}`;
+        document.getElementById('modal-ped-total').textContent = `R$ ${Number(p.valor_total || 0).toFixed(2)}`;
 
         const enderecoBloco = document.getElementById('modal-ped-endereco-bloco');
         if (p.agendamento && p.agendamento.endereco_entrega) {
@@ -325,12 +343,12 @@ async function abrirDetalhesPedido(idPedido) {
         }
 
         const tbodyItens = document.getElementById('modal-ped-itens-body');
-        tbodyItens.innerHTML = p.itens.map(it => `
+        tbodyItens.innerHTML = (p.itens || []).map(it => `
             <tr>
                 <td>${it.nome_produto} (${it.tipo_produto})</td>
-                <td>${it.quantidade} ${it.unidade_medida}</td>
-                <td>R$ ${Number(it.preco_unitario).toFixed(2)}</td>
-                <td><strong>R$ ${Number(it.subtotal).toFixed(2)}</strong></td>
+                <td>${it.quantidade} ${it.unidade_medida || ''}</td>
+                <td>R$ ${Number(it.preco_unitario || 0).toFixed(2)}</td>
+                <td><strong>R$ ${Number(it.subtotal || 0).toFixed(2)}</strong></td>
             </tr>
         `).join('');
 
@@ -453,9 +471,11 @@ async function carregarProdutos() {
         listaProdutosDisponiveis = produtos.filter(p => p.tipo_produto !== 'INGREDIENTE');
 
         const select = document.getElementById('novo-produto');
-        select.innerHTML = listaProdutosDisponiveis.map(p => `
-            <option value="${p.id_produto}">${p.nome_produto} (${p.tipo_produto})</option>
-        `).join('');
+        if (select) {
+            select.innerHTML = listaProdutosDisponiveis.map(p => `
+                <option value="${p.id_produto}">${p.nome_produto} (${p.tipo_produto})</option>
+            `).join('');
+        }
     } catch (e) {
         console.error('Erro ao carregar produtos para o pedido:', e);
     }
@@ -464,6 +484,7 @@ async function carregarProdutos() {
 async function carregarClientes() {
     try {
         const select = document.getElementById('novo-cliente');
+        if (!select) return;
         select.innerHTML = '<option value="">Balcão (Sem cadastro)</option>';
         const res = await fetch('http://localhost:3000/api/clientes');
         if (res.ok) {
@@ -498,6 +519,7 @@ function adicionarItemRascunho() {
 
 function atualizarListaRascunho() {
     const ul = document.getElementById('lista-rascunho-itens');
+    if (!ul) return;
     if (itensRascunho.length === 0) {
         ul.innerHTML = '<li style="color: #888;">Nenhum produto adicionado ainda.</li>';
         return;

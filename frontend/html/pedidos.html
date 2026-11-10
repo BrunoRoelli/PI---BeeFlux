@@ -13,8 +13,6 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300..700&display=swap" rel="stylesheet">
-    <scritp src="/frontend/js/pedidos_com_agenda.js" defer></scritp>
-
 </head>
 
 <body>
@@ -176,15 +174,12 @@
             </div>
         </section>
 
-        <!-- ============================================================== -->
-        <!-- AGENDA INTEGRADA EM TEMPO REAL (MENSAL E SEMANAL)              -->
-        <!-- Conforme Documentação BeeFlux (Perguntas 35 a 42 e 75 a 76)     -->
-        <!-- ============================================================== -->
+        <!-- AGENDA INTEGRADA EM TEMPO REAL -->
         <section class="secao-agenda">
             <div class="card">
                 <div class="agenda-header">
                     <div>
-                        <h2 style="color: var(--pink-escuro); margin-bottom: 4px;">
+                        <h2 style="color: var(--pink-escuro, #b45309); margin-bottom: 4px;">
                             <i class="fa-solid fa-calendar-days"></i> Agenda de Encomendas
                         </h2>
                         <p style="font-size: 0.88rem; color: #777;">
@@ -196,7 +191,7 @@
                         <button class="btn-agenda-nav" onclick="navegarPeriodoAgenda(-1)" title="Período anterior">
                             <i class="fa-solid fa-chevron-left"></i>
                         </button>
-                        <span id="agenda-titulo-data" class="agenda-titulo-data">Novembro 2026</span>
+                        <span id="agenda-titulo-data" class="agenda-titulo-data">Carregando...</span>
                         <button class="btn-agenda-nav" onclick="navegarPeriodoAgenda(1)" title="Próximo período">
                             <i class="fa-solid fa-chevron-right"></i>
                         </button>
@@ -212,7 +207,6 @@
                     </div>
                 </div>
 
-                <!-- Contêiner dinâmico do calendário renderizado pelo JS -->
                 <div id="container-grade-agenda"></div>
             </div>
         </section>
@@ -269,7 +263,7 @@
 
             <div style="text-align: right; margin-top: 15px; font-size: 1.1rem;">
                 <span>Taxa de Entrega: <strong id="modal-ped-taxa">R$ 0,00</strong></span><br>
-                <span>Total: <strong id="modal-ped-total" style="color: var(--pink-escuro);">R$ 0,00</strong></span>
+                <span>Total: <strong id="modal-ped-total" style="color: var(--pink-escuro, #be123c);">R$ 0,00</strong></span>
             </div>
 
             <div class="modal-footer" style="margin-top: 20px; display: flex; justify-content: space-between;">
@@ -303,7 +297,6 @@
                     </select>
                 </div>
 
-                <!-- BLOCO CONDICIONAL DE AGENDAMENTO -->
                 <div id="bloco-agendamento" style="display: none; background: #fff8f9; padding: 12px; border-radius: 8px; margin-bottom: 12px;">
                     <div class="input-group" style="margin-bottom: 8px;">
                         <label>Atendimento</label>
@@ -326,7 +319,6 @@
                     </div>
                 </div>
 
-                <!-- ITENS (PRODUTO E QUANTIDADE) -->
                 <div style="margin-bottom: 12px;">
                     <label style="font-weight: 600; display: block; margin-bottom: 6px;">Adicionar Produto (FEITO ou REVENDA)</label>
                     <div style="display: flex; gap: 8px;">
@@ -336,7 +328,6 @@
                     </div>
                 </div>
 
-                <!-- LISTA DE ITENS DO NOVO PEDIDO -->
                 <div style="background: #fafafa; border: 1px solid #ddd; border-radius: 6px; padding: 8px; margin-bottom: 14px; max-height: 140px; overflow-y: auto;">
                     <ul id="lista-rascunho-itens" style="list-style: none; padding: 0; margin: 0; font-size: 0.85rem;">
                         <li style="color: #888;">Nenhum produto adicionado ainda.</li>
@@ -362,6 +353,6 @@
     </footer>
 
     <script src="../js/global.js" defer></script>
-    <script src="../js/pedidos.js" defer></script>
+    <script src="../js/pedidos_com_agenda.js" defer></script>
 </body>
 </html>
