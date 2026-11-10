@@ -1,6 +1,42 @@
 {
   "name": "pi---beeflux",
   "version": "1.0.0",
+  "description": "O **BeeFlux** é um sistema web para gerenciamento de confeitarias, desenvolvido como projeto acadêmico do curso de **Análise e Desenvolvimento de Sistemas (ADS)**.",
+  "main": "index.js",
+  "scripts": {
+    "test": "vitest run",
+    "dev": "tsx backend/src/index.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/BrunoRoelli/PI---BeeFlux.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/BrunoRoelli/PI---BeeFlux/issues"
+  },
+  "homepage": "https://github.com/BrunoRoelli/PI---BeeFlux#readme",
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.6.5",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.4"
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.9",
+    "express": "^5.3.0",
+    "mysql2": "^3.24.6"
+  },
   "lockfileVersion": 3,
   "requires": true,
   "packages": {
