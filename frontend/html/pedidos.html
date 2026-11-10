@@ -76,6 +76,88 @@
             </button>
         </section>
 
+        <!-- PAINEL LATERAL NOVO PEDIDO -->
+        <div class="painel-overlay" id="modal-novo-pedido">
+            <div class="painel-lateral">
+                <div class="painel-header">
+                    <div>
+                        <h2>Novo Pedido</h2>
+                        <p>Preencha os dados da venda rápida ou encomenda.</p>
+                    </div>
+                    <button class="close-painel" type="button" onclick="fecharModalNovoPedido()"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+
+                <form id="form-novo-pedido" onsubmit="salvarNovoPedido(event)">
+                    <div class="painel-body">
+                        <div class="input-group" style="margin-bottom: 16px;">
+                            <label>Tipo do Pedido</label>
+                            <select id="novo-tipo" onchange="alternarCamposAgendamento()" required>
+                                <option value="IMEDIATO">Imediato (Balcão)</option>
+                                <option value="AGENDADO">Agendado (Encomenda)</option>
+                            </select>
+                        </div>
+
+                        <div class="input-group" style="margin-bottom: 16px;">
+                            <label>Cliente (Obrigatório em Agendados)</label>
+                            <select id="novo-cliente">
+                                <option value="">Selecione um cliente cadastrado...</option>
+                            </select>
+                        </div>
+
+                        <!-- BLOCO CONDICIONAL DE AGENDAMENTO -->
+                        <div id="bloco-agendamento" style="display: none; background: #fff8f9; padding: 14px; border-radius: 8px; margin-bottom: 16px; border: 1px dashed #f43f5e;">
+                            <div class="input-group" style="margin-bottom: 10px;">
+                                <label>Atendimento</label>
+                                <select id="novo-atendimento" onchange="alternarCampoEndereco()">
+                                    <option value="RETIRADA">Retirada na Confeitaria</option>
+                                    <option value="ENTREGA">Entrega no Endereço</option>
+                                </select>
+                            </div>
+                            <div class="input-group" style="margin-bottom: 10px;">
+                                <label>Data e Horário</label>
+                                <input type="datetime-local" id="novo-datahora">
+                            </div>
+                            <div class="input-group" id="grupo-endereco" style="display: none; margin-bottom: 10px;">
+                                <label>Endereço de Entrega</label>
+                                <input type="text" id="novo-endereco" placeholder="Rua, número, bairro...">
+                            </div>
+                            <div class="input-group" id="grupo-taxa" style="display: none;">
+                                <label>Taxa de Entrega (R$)</label>
+                                <input type="number" id="novo-taxa" step="0.01" min="0" value="0.00">
+                            </div>
+                        </div>
+
+                        <!-- ITENS (PRODUTO E QUANTIDADE) -->
+                        <div style="margin-bottom: 16px;">
+                            <label style="font-weight: 600; display: block; margin-bottom: 6px;">Adicionar Produto</label>
+                            <div style="display: flex; gap: 8px;">
+                                <select id="novo-produto" style="flex: 2;"></select>
+                                <input type="number" id="novo-qtd" placeholder="Qtd" min="1" value="1" style="flex: 1;">
+                                <button type="button" class="btn-secondary" onclick="adicionarItemRascunho()"><i class="fa-solid fa-plus"></i></button>
+                            </div>
+                        </div>
+
+                        <!-- LISTA DE ITENS DO NOVO PEDIDO -->
+                        <div style="background: #fafafa; border: 1px solid #ddd; border-radius: 6px; padding: 10px; margin-bottom: 16px; max-height: 180px; overflow-y: auto;">
+                            <ul id="lista-rascunho-itens" style="list-style: none; padding: 0; margin: 0; font-size: 0.88rem;">
+                                <li style="color: #888;">Nenhum produto adicionado ainda.</li>
+                            </ul>
+                        </div>
+
+                        <div class="input-group" style="margin-bottom: 16px;">
+                            <label>Observações Gerais</label>
+                            <input type="text" id="novo-observacao" placeholder="Ex: Sem cebola, embalar para presente...">
+                        </div>
+                    </div>
+
+                    <div class="painel-footer">
+                        <button type="button" class="btn-secondary" onclick="fecharModalNovoPedido()">Cancelar</button>
+                        <button type="submit" class="botao-primario"><i class="fa-solid fa-check"></i> Concluir Criação</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
         <!-- CARDS DE RESUMO DO MÓDULO -->
         <section class="dashboard-grid">
             <div class="card metric-card">
@@ -270,79 +352,6 @@
                 <div id="modal-acoes-status"></div>
                 <button class="btn-secondary" onclick="fecharModalDetalhes()">Fechar</button>
             </div>
-        </div>
-    </div>
-
-    <!-- MODAL NOVO PEDIDO SIMPLES -->
-    <div class="modal-overlay" id="modal-novo-pedido" style="display: none;">
-        <div class="modal-card" style="max-width: 600px;">
-            <button class="close-modal" onclick="fecharModalNovoPedido()"><i class="fa-solid fa-xmark"></i></button>
-            <div class="modal-header">
-                <h2>Criar Novo Pedido</h2>
-                <p>Preencha os dados da venda rápida ou encomenda.</p>
-            </div>
-            <form id="form-novo-pedido" onsubmit="salvarNovoPedido(event)">
-                <div class="input-group" style="margin-bottom: 12px;">
-                    <label>Tipo do Pedido</label>
-                    <select id="novo-tipo" onchange="alternarCamposAgendamento()" required>
-                        <option value="IMEDIATO">Imediato (Balcão)</option>
-                        <option value="AGENDADO">Agendado (Encomenda)</option>
-                    </select>
-                </div>
-
-                <div class="input-group" style="margin-bottom: 12px;">
-                    <label>Cliente (Obrigatório em Agendados)</label>
-                    <select id="novo-cliente">
-                        <option value="">Selecione um cliente cadastrado...</option>
-                    </select>
-                </div>
-
-                <div id="bloco-agendamento" style="display: none; background: #fff8f9; padding: 12px; border-radius: 8px; margin-bottom: 12px;">
-                    <div class="input-group" style="margin-bottom: 8px;">
-                        <label>Atendimento</label>
-                        <select id="novo-atendimento" onchange="alternarCampoEndereco()">
-                            <option value="RETIRADA">Retirada na Confeitaria</option>
-                            <option value="ENTREGA">Entrega no Endereço</option>
-                        </select>
-                    </div>
-                    <div class="input-group" style="margin-bottom: 8px;">
-                        <label>Data e Horário</label>
-                        <input type="datetime-local" id="novo-datahora">
-                    </div>
-                    <div class="input-group" id="grupo-endereco" style="display: none; margin-bottom: 8px;">
-                        <label>Endereço de Entrega</label>
-                        <input type="text" id="novo-endereco" placeholder="Rua, número, bairro...">
-                    </div>
-                    <div class="input-group" id="grupo-taxa" style="display: none;">
-                        <label>Taxa de Entrega (R$)</label>
-                        <input type="number" id="novo-taxa" step="0.01" min="0" value="0.00">
-                    </div>
-                </div>
-
-                <div style="margin-bottom: 12px;">
-                    <label style="font-weight: 600; display: block; margin-bottom: 6px;">Adicionar Produto (FEITO ou REVENDA)</label>
-                    <div style="display: flex; gap: 8px;">
-                        <select id="novo-produto" style="flex: 2;"></select>
-                        <input type="number" id="novo-qtd" placeholder="Qtd" min="1" value="1" style="flex: 1;">
-                        <button type="button" class="btn-secondary" onclick="adicionarItemRascunho()"><i class="fa-solid fa-plus"></i></button>
-                    </div>
-                </div>
-
-                <div style="background: #fafafa; border: 1px solid #ddd; border-radius: 6px; padding: 8px; margin-bottom: 14px; max-height: 140px; overflow-y: auto;">
-                    <ul id="lista-rascunho-itens" style="list-style: none; padding: 0; margin: 0; font-size: 0.85rem;">
-                        <li style="color: #888;">Nenhum produto adicionado ainda.</li>
-                    </ul>
-                </div>
-
-                <div class="input-group" style="margin-bottom: 16px;">
-                    <label>Observações Gerais</label>
-                    <input type="text" id="novo-observacao" placeholder="Ex: Sem cebola, embalar para presente...">
-                </div>
-
-                <div class="modal-footer">
-                    <button type="submit" class="botao-primario"><i class="fa-solid fa-check"></i> Concluir Criação</button>
-                </div>
-            </form>
         </div>
     </div>
 

@@ -357,21 +357,21 @@ async function abrirDetalhesPedido(idPedido) {
 
         if (p.status_pedido === 'PENDENTE') {
             acoesDiv.innerHTML = `
-                <button class="botao-primario" onclick="atualizarStatus(${p.id_pedido}, 'CONFIRMADO')"><i class="fa-solid fa-check"></i> Confirmar Pedido</button>
-                <button class="btn-secondary" style="color: #be123c;" onclick="cancelarPedido(${p.id_pedido})"><i class="fa-solid fa-ban"></i> Cancelar</button>
+                <button class="botao-primario" type="button" onclick="atualizarStatus(${p.id_pedido}, 'CONFIRMADO')"><i class="fa-solid fa-check"></i> Confirmar Pedido</button>
+                <button class="btn-secondary" type="button" style="color: #be123c;" onclick="cancelarPedido(${p.id_pedido})"><i class="fa-solid fa-ban"></i> Cancelar</button>
             `;
         } else if (p.status_pedido === 'CONFIRMADO') {
             acoesDiv.innerHTML = `
-                <button class="botao-primario" onclick="atualizarStatus(${p.id_pedido}, 'EM_PREPARACAO')"><i class="fa-solid fa-utensils"></i> Iniciar Produção</button>
-                <button class="btn-secondary" style="color: #be123c;" onclick="cancelarPedido(${p.id_pedido})"><i class="fa-solid fa-ban"></i> Cancelar</button>
+                <button class="botao-primario" type="button" onclick="atualizarStatus(${p.id_pedido}, 'EM_PREPARACAO')"><i class="fa-solid fa-utensils"></i> Iniciar Produção</button>
+                <button class="btn-secondary" type="button" style="color: #be123c;" onclick="cancelarPedido(${p.id_pedido})"><i class="fa-solid fa-ban"></i> Cancelar</button>
             `;
         } else if (p.status_pedido === 'EM_PREPARACAO') {
             acoesDiv.innerHTML = `
-                <button class="botao-primario" onclick="atualizarStatus(${p.id_pedido}, 'PRONTO')"><i class="fa-solid fa-box"></i> Marcar como Pronto</button>
+                <button class="botao-primario" type="button" onclick="atualizarStatus(${p.id_pedido}, 'PRONTO')"><i class="fa-solid fa-box"></i> Marcar como Pronto</button>
             `;
         } else if (p.status_pedido === 'PRONTO') {
             acoesDiv.innerHTML = `
-                <button class="botao-primario" onclick="atualizarStatus(${p.id_pedido}, 'CONCLUIDO')"><i class="fa-solid fa-circle-check"></i> Concluir Entrega</button>
+                <button class="botao-primario" type="button" onclick="atualizarStatus(${p.id_pedido}, 'CONCLUIDO')"><i class="fa-solid fa-circle-check"></i> Concluir Entrega</button>
             `;
         }
 
@@ -427,34 +427,42 @@ async function cancelarPedido(idPedido) {
 }
 
 // ==========================================
-// CRIAÇÃO DE NOVO PEDIDO
+// CONTROLE DO PAINEL LATERAL DE NOVO PEDIDO
 // ==========================================
 function abrirModalNovoPedido() {
     itensRascunho = [];
     atualizarListaRascunho();
-    document.getElementById('form-novo-pedido').reset();
+    const form = document.getElementById('form-novo-pedido');
+    if (form) form.reset();
     alternarCamposAgendamento();
-    document.getElementById('modal-novo-pedido').style.display = 'flex';
+    
+    // Aciona a classe 'ativo' para o painel deslizar para dentro da tela
+    const painel = document.getElementById('modal-novo-pedido');
+    if (painel) painel.classList.add('ativo');
 }
 
 function fecharModalNovoPedido() {
-    document.getElementById('modal-novo-pedido').style.display = 'none';
+    const painel = document.getElementById('modal-novo-pedido');
+    if (painel) painel.classList.remove('ativo');
 }
 
 function alternarCamposAgendamento() {
-    const tipo = document.getElementById('novo-tipo').value;
+    const tipoEl = document.getElementById('novo-tipo');
     const bloco = document.getElementById('bloco-agendamento');
-    bloco.style.display = tipo === 'AGENDADO' ? 'block' : 'none';
+    if (!tipoEl || !bloco) return;
+    bloco.style.display = tipoEl.value === 'AGENDADO' ? 'block' : 'none';
     alternarCampoEndereco();
 }
 
 function alternarCampoEndereco() {
-    const tipo = document.getElementById('novo-tipo').value;
-    const atend = document.getElementById('novo-atendimento').value;
+    const tipoEl = document.getElementById('novo-tipo');
+    const atendEl = document.getElementById('novo-atendimento');
     const grupoEnd = document.getElementById('grupo-endereco');
     const grupoTaxa = document.getElementById('grupo-taxa');
 
-    if (tipo === 'AGENDADO' && atend === 'ENTREGA') {
+    if (!tipoEl || !atendEl || !grupoEnd || !grupoTaxa) return;
+
+    if (tipoEl.value === 'AGENDADO' && atendEl.value === 'ENTREGA') {
         grupoEnd.style.display = 'block';
         grupoTaxa.style.display = 'block';
     } else {
@@ -514,7 +522,7 @@ function adicionarItemRascunho() {
     });
 
     atualizarListaRascunho();
-    qtdInput.value = 1;
+    if (qtdInput) qtdInput.value = 1;
 }
 
 function atualizarListaRascunho() {
@@ -572,7 +580,7 @@ async function salvarNovoPedido(e) {
             return alert('Informe o endereço de entrega.');
         }
 
-        taxaEntrega = atend === 'ENTREGA' ? Number(document.getElementById('novo-taxa').value) || 0 : 0;
+        taxaEntrega = atend === 'ENTREga' || atend === 'ENTREGA' ? Number(document.getElementById('novo-taxa').value) || 0 : 0;
 
         agendamento = {
             tipo_atendimento: atend,
@@ -601,7 +609,7 @@ async function salvarNovoPedido(e) {
         const dados = await res.json();
         if (!res.ok) throw new Error(dados.mensagem || 'Erro ao criar pedido.');
 
-        alert(`Pedido #${dados.id_pedido} criado com sucesso!`);
+        alert(`Pedido #${dados.id_pedido || 'criado'} gerado com sucesso!`);
         fecharModalNovoPedido();
         carregarPedidos();
     } catch (err) {
