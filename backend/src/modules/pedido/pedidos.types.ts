@@ -33,10 +33,6 @@ export type TipoEventoHistorico =
   | 'EXCLUSAO'
   | 'OUTRO';
 
-/**
- * Entrada de item pelo front-end.
- * O front-end NUNCA envia o preço unitário para evitar manipulação de valores.
- */
 export interface ItemPedidoInput {
   id_produto: number;
   quantidade: number;
@@ -44,7 +40,7 @@ export interface ItemPedidoInput {
 
 export interface AgendamentoInput {
   tipo_atendimento: TipoAtendimento;
-  data_hora_agendada: string; // AAAA-MM-DD HH:mm:ss ou ISO
+  data_hora_agendada: string;
   endereco_entrega?: string | null;
   observacao?: string | null;
 }
@@ -62,7 +58,7 @@ export interface CriarPedidoInput {
   itens: ItemPedidoInput[];
   agendamento?: AgendamentoInput | null;
   pagamento?: PagamentoInput | null;
-  id_user: number; // Obrigatório para trilha de auditoria
+  id_user: number;
 }
 
 export interface AtualizarItensInput {
@@ -84,7 +80,7 @@ export interface FiltroPedidos {
   id_cliente?: number;
   de?: string;
   ate?: string;
-  termo_busca?: string; // Busca por número do pedido (#001) ou nome do cliente
+  termo_busca?: string;
   limite?: number;
   pagina?: number;
 }
@@ -133,7 +129,7 @@ export interface HistoricoPedidoDetalhe {
 
 export interface PedidoCompleto {
   id_pedido: number;
-  numero_exibicao: string; // Ex: Pedido #001
+  numero_exibicao: string;
   id_cliente: number | null;
   nome_cliente: string | null;
   telefone_cliente: string | null;

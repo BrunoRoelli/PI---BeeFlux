@@ -2,8 +2,8 @@ import {
   inteiroPositivo,
   numeroNaoNegativo,
   dataHoraValida,
+  dataHoraFutura,
   dataValidaFormato,
-  arredondarQuantidade,
   arredondarMoeda
 } from './pedidos.regras';
 import type {
@@ -36,11 +36,6 @@ const STATUS_PEDIDO_VALIDOS: StatusPedido[] = [
   'CANCELADO'
 ];
 
-/**
- * Validação rigorosa dos itens:
- * O front-end DEVE enviar apenas id_produto e quantidade.
- * Preço enviado pelo front-end é explicitamente ignorado ou rejeitado.
- */
 export function validarItens(itens: unknown): ItemPedidoInput[] {
   if (!Array.isArray(itens) || itens.length === 0) {
     throw new Error('O pedido deve conter pelo menos um item.');
@@ -51,12 +46,7 @@ export function validarItens(itens: unknown): ItemPedidoInput[] {
       throw new Error(`Item no índice ${index} inválido.`);
     }
 
-    const { id_produto, quantidade, preco_unitario } = item as Record<string, unknown>;
-
-    if (preco_unitario !== undefined) {
-      // Alerta / restrição para segurança de preços
-      // Não confiamos no preço do cliente
-    }
+    const { id_produto, quantidade } = item as Record<string, unknown>;
 
     const idProd = Number(id_produto);
     if (!inteiroPositivo(idProd)) {
@@ -67,31 +57,33 @@ export function validarItens(itens: unknown): ItemPedidoInput[] {
       throw new Error(`Item ${index + 1}: Quantidade deve ser um número maior que zero.`);
     }
 
-    return {
-      id_produto: idProd,
-      quantidade: arredondarQuantidade(quantidade)
-    };
+    // A unidade ainda não é conhecida nesta camada. A normalização é feita
+    // no service depois de consultar produtos.unidade_medida.
+    if (Math.abs(quantidade * 1000 - Math.round(quantidade * 1000)) > 1e-8) {
+      throw new Error(`Item ${index + 1}: informe no máximo 3 casas decimais.`);
+    }
+
+    return { id_produto: idProd, quantidade };
   });
 }
 
-export function validarAgendamento(
+export function regrasDataHoraFutura(dataHora: string): boolean { return dataHoraFutura(dataHora); }
+
+function validarAgendamento(
   agendamento: unknown,
   tipoPedido: TipoPedido,
   taxaEntrega: number
 ): AgendamentoInput | null {
-  // Regra 4: Pedido IMEDIATO NÃO pode ter agendamento
   if (tipoPedido === 'IMEDIATO') {
     if (agendamento !== undefined && agendamento !== null) {
       throw new Error('Pedidos do tipo IMEDIATO não aceitam dados de agendamento.');
     }
-    // Em IMEDIATO, a taxa de entrega deve ser 0 (atendimento no balcão)
     if (taxaEntrega > 0) {
       throw new Error('Pedidos do tipo IMEDIATO não possuem taxa de entrega.');
     }
     return null;
   }
 
-  // Regra: Pedido AGENDADO exige obrigatoriamente agendamento
   if (!agendamento || typeof agendamento !== 'object') {
     throw new Error('Pedidos do tipo AGENDADO exigem informações de agendamento.');
   }
@@ -107,7 +99,10 @@ export function validarAgendamento(
     throw new Error('Data e horário de agendamento inválidos. Informe uma data/hora válida.');
   }
 
-  // Regra 5: Coerência de taxa e endereço
+  if (!regrasDataHoraFutura(data_hora_agendada)) {
+    throw new Error('Não é permitido criar agendamento em data ou horário passado.');
+  }
+
   if (tipo_atendimento === 'RETIRADA') {
     if (taxaEntrega > 0) {
       throw new Error('A taxa de entrega deve ser zero quando o atendimento for RETIRADA.');
@@ -171,7 +166,6 @@ export function validarCriarPedido(dados: unknown): CriarPedidoInput {
     id_user
   } = dados as Record<string, unknown>;
 
-  // Regra 7: Usuário responsável obrigatório para histórico e auditoria
   const userId = Number(id_user);
   if (!inteiroPositivo(userId)) {
     throw new Error('Identificação do usuário (id_user) é obrigatória para registrar a operação.');
@@ -181,7 +175,6 @@ export function validarCriarPedido(dados: unknown): CriarPedidoInput {
     throw new Error('Tipo de pedido inválido. Deve ser IMEDIATO ou AGENDADO.');
   }
 
-  // Regra: Pedido AGENDADO exige cliente cadastrado
   const clienteId = id_cliente !== undefined && id_cliente !== null ? Number(id_cliente) : null;
   if (tipo_pedido === 'AGENDADO') {
     if (!inteiroPositivo(clienteId)) {
@@ -261,9 +254,6 @@ export function validarAtualizarStatus(dados: unknown): AtualizarStatusInput {
   };
 }
 
-/**
- * Rejeita explicitamente filtros inválidos em vez de ignorá-los.
- */
 export function validarFiltroPedidos(query: Record<string, unknown>): FiltroPedidos {
   const filtro: FiltroPedidos = {};
 

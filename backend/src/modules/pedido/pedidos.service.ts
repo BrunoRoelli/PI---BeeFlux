@@ -1,5 +1,6 @@
 import * as repo from './pedidos.repository';
 import * as regras from './pedidos.regras';
+import * as agendamentoRepo from '../agendamentos/agendamentos.repository';
 import * as estoqueService from '../estoque/estoque.service';
 import type {
   CriarPedidoInput,
@@ -18,6 +19,7 @@ export async function obterPorId(idPedido: number): Promise<PedidoCompleto> {
   if (!regras.inteiroPositivo(idPedido)) {
     throw new Error('ID do pedido inválido.');
   }
+  // Usa repo com transação padrão (sem conn, usa pool)
   const pedido = await repo.buscarPedidoCompleto(idPedido);
   if (!pedido) {
     throw new Error('Pedido não encontrado.');
@@ -29,13 +31,11 @@ export async function criarPedido(
   dados: CriarPedidoInput
 ): Promise<{ id_pedido: number; numero_exibicao: string; valor_total: number }> {
   return await repo.executarTransacao(async (conn) => {
-    // 1. Validar usuário de auditoria
     const usuario = await repo.buscarUsuarioAtivo(conn, dados.id_user);
     if (!usuario) {
       throw new Error(`Usuário ID #${dados.id_user} não encontrado ou está inativo.`);
     }
 
-    // 2. Validar cliente vinculado
     if (dados.id_cliente) {
       const cliente = await repo.buscarClientePorId(conn, dados.id_cliente);
       if (!cliente) {
@@ -46,7 +46,6 @@ export async function criarPedido(
       }
     }
 
-    // 3. Validar itens consultando o banco de dados oficial (SEGURANÇA DE PREÇOS E TIPOS)
     const itensProcessados: Array<{
       id_produto: number;
       tipo_produto: 'REVENDA' | 'FEITO';
@@ -61,37 +60,48 @@ export async function criarPedido(
         throw new Error(`Produto #${item.id_produto} não encontrado ou está inativo no catálogo.`);
       }
 
-      // REGRA CRÍTICA: Bloquear estritamente INGREDIENTE no pedido
       if (prod.tipo_produto === 'INGREDIENTE') {
         throw new Error(
           `O produto "${prod.nome_produto}" é classificado como INGREDIENTE e não pode ser comercializado diretamente no pedido.`
         );
       }
 
-      // O preço é buscado EXCLUSIVAMENTE do banco de dados (ignora manipulação do front-end)
+      const quantidadeNormalizada = regras.arredondarQuantidade(item.quantidade, prod.unidade_medida);
+      if (quantidadeNormalizada <= 0) {
+        throw new Error(`Quantidade inválida para o produto "${prod.nome_produto}".`);
+      }
+      if (['un', 'und', 'unid', 'unidade', 'unidades', 'pç', 'pc', 'peça', 'peças', 'g', 'gr', 'grama', 'gramas'].includes(prod.unidade_medida.trim().toLowerCase())
+          && !Number.isInteger(item.quantidade)) {
+        throw new Error(`O produto "${prod.nome_produto}" é vendido por unidade inteira.`);
+      }
+
       const precoOficial = Number(prod.preco_produto);
 
       itensProcessados.push({
         id_produto: prod.id_produto,
         tipo_produto: prod.tipo_produto as 'REVENDA' | 'FEITO',
-        quantidade: item.quantidade,
+        quantidade: quantidadeNormalizada,
         preco_unitario: precoOficial,
         nome_produto: prod.nome_produto
       });
     }
 
-    // 4. Calcular valor dos itens e valor total no servidor
     const { valorItens, valorTotal } = regras.calcularTotaisPedido(
       itensProcessados,
       dados.taxa_entrega ?? 0
     );
 
-    // 5. Validar pagamento de entrada (se houver, deve ser único e integral)
     if (dados.pagamento) {
       regras.validarValorPagamento(dados.pagamento.valor_pagamento, valorTotal);
     }
 
-    // 6. Inserir cabeçalho do pedido
+    if (dados.agendamento && dados.agendamento.data_hora_agendada) {
+      const conflito = await agendamentoRepo.verificarConflitoHorario(conn, dados.agendamento.data_hora_agendada);
+      if (conflito) {
+        throw new Error('Conflito de horários: já existe outro agendamento neste exato horário.');
+      }
+    }
+
     const idPedido = await repo.inserirPedido(conn, {
       id_cliente: dados.id_cliente ?? null,
       tipo_pedido: dados.tipo_pedido,
@@ -100,7 +110,6 @@ export async function criarPedido(
       valor_total: valorTotal
     });
 
-    // 7. Inserir linhas de itens
     for (const it of itensProcessados) {
       await repo.inserirItemPedido(conn, {
         id_pedido: idPedido,
@@ -111,9 +120,9 @@ export async function criarPedido(
       });
     }
 
-    // 8. Inserir agendamento (somente em AGENDADO)
+    // Correção 3: Inserção de agendamento usando o repositório de agendamentos
     if (dados.agendamento) {
-      await repo.inserirAgendamento(conn, {
+      await agendamentoRepo.inserirAgendamentoRepo(conn, {
         id_pedido: idPedido,
         tipo_pedido: dados.tipo_pedido,
         tipo_atendimento: dados.agendamento.tipo_atendimento,
@@ -123,7 +132,6 @@ export async function criarPedido(
       });
     }
 
-    // 9. Inserir pagamento (se houver)
     if (dados.pagamento) {
       await repo.inserirPagamento(conn, {
         id_pedido: idPedido,
@@ -132,7 +140,6 @@ export async function criarPedido(
       });
     }
 
-    // 10. Registrar histórico de auditoria
     await repo.registrarHistorico(conn, {
       id_pedido: idPedido,
       tipo_evento: 'CRIACAO',
@@ -141,7 +148,6 @@ export async function criarPedido(
       descricao_historico: `Pedido criado pelo usuário ${usuario.nome_user} com ${itensProcessados.length} item(ns). Valor Itens: R$ ${valorItens.toFixed(2)}, Taxa Entrega: R$ ${(dados.taxa_entrega ?? 0).toFixed(2)}, Total: R$ ${valorTotal.toFixed(2)}.`
     });
 
-    // Se houve pagamento no ato, registrar no histórico
     if (dados.pagamento) {
       await repo.registrarHistorico(conn, {
         id_pedido: idPedido,
@@ -156,13 +162,9 @@ export async function criarPedido(
       numero_exibicao: regras.formatarNumeroExibicao(idPedido),
       valor_total: valorTotal
     };
-  });
+  }, dados.agendamento?.data_hora_agendada);
 }
 
-/**
- * Requisito Pergunta 8: Permitir alteração de itens e valores enquanto o pedido estiver PENDENTE.
- * Requisito Pergunta 16: Impedir qualquer alteração de itens após a confirmação.
- */
 export async function atualizarItensPedido(
   idPedido: number,
   dados: AtualizarItensInput
@@ -206,10 +208,19 @@ export async function atualizarItensPedido(
         throw new Error(`O produto "${prod.nome_produto}" é um INGREDIENTE e não pode ser adicionado.`);
       }
 
+      const quantidadeNormalizada = regras.arredondarQuantidade(item.quantidade, prod.unidade_medida);
+      if (quantidadeNormalizada <= 0) {
+        throw new Error(`Quantidade inválida para o produto "${prod.nome_produto}".`);
+      }
+      if (['un', 'und', 'unid', 'unidade', 'unidades', 'pç', 'pc', 'peça', 'peças', 'g', 'gr', 'grama', 'gramas'].includes(prod.unidade_medida.trim().toLowerCase())
+          && !Number.isInteger(item.quantidade)) {
+        throw new Error(`O produto "${prod.nome_produto}" é vendido por unidade inteira.`);
+      }
+
       itensProcessados.push({
         id_produto: prod.id_produto,
         tipo_produto: prod.tipo_produto as 'REVENDA' | 'FEITO',
-        quantidade: item.quantidade,
+        quantidade: quantidadeNormalizada,
         preco_unitario: Number(prod.preco_produto),
         nome_produto: prod.nome_produto
       });
@@ -218,7 +229,6 @@ export async function atualizarItensPedido(
     const taxa = dados.taxa_entrega !== undefined ? dados.taxa_entrega : Number(pedido.taxa_entrega);
     const { valorItens, valorTotal } = regras.calcularTotaisPedido(itensProcessados, taxa);
 
-    // Substituir itens
     await repo.removerItensDoPedido(conn, idPedido);
     for (const it of itensProcessados) {
       await repo.inserirItemPedido(conn, {
@@ -246,9 +256,6 @@ export async function atualizarItensPedido(
   });
 }
 
-/**
- * Requisito Pergunta 30: Excluir definitivamente pedido ainda PENDENTE.
- */
 export async function excluirPedidoPendente(
   idPedido: number,
   idUser: number
@@ -304,7 +311,6 @@ export async function registrarPagamento(
       throw new Error('Este pedido já possui um pagamento integral confirmado no sistema.');
     }
 
-    // Regra BeeFlux: validação do valor recebido contra o total oficial do pedido
     regras.validarValorPagamento(dados.valor_pagamento, Number(pedido.valor_total));
 
     await repo.inserirPagamento(conn, {
@@ -332,7 +338,6 @@ export async function atualizarStatus(
     throw new Error('ID do pedido inválido.');
   }
 
-  // Intercepta cancelamento para executar estorno de estoque coordenado com o módulo Estoque
   if (dados.status_pedido === 'CANCELADO') {
     return await cancelarPedido(idPedido, dados.motivo, dados.id_user);
   }
@@ -346,17 +351,12 @@ export async function atualizarStatus(
 
     regras.validarTransicaoStatus(pedido.status_pedido, dados.status_pedido);
 
-    // Integração na confirmação de pedidos:
-    // Se for IMEDIATO -> realiza baixa imediata de REVENDA
-    // Se for AGENDADO -> reserva estoque de REVENDA e FEITO
     if (pedido.status_pedido === 'PENDENTE' && dados.status_pedido === 'CONFIRMADO') {
-      const itens = await repo.buscarPedidoCompleto(idPedido);
+      // Correção 4: Passa a conexão ativa `conn` para buscarPedidoCompleto dentro da transação
+      const itens = await repo.buscarPedidoCompleto(idPedido, conn);
       if (itens) {
         for (const it of itens.itens) {
           if (pedido.tipo_pedido === 'AGENDADO') {
-            // Tenta criar reserva de estoque via módulo Estoque (sem permitir saldo negativo)
-            // Insuficiência é retornada pelo Estoque como pendência persistida.
-            // Erros inesperados devem interromper a transação inteira.
             await estoqueService.reservarEstoquePedido({
               id_pedido: idPedido,
               id_produto: it.id_produto,
@@ -366,9 +366,6 @@ export async function atualizarStatus(
         }
 
         if (pedido.tipo_pedido === 'IMEDIATO') {
-          // Baixa imediata de itens de REVENDA
-          // Insuficiência é persistida como pendência pelo Estoque. Falhas reais
-          // propagam o erro para provocar rollback também no status do pedido.
           await estoqueService.baixarRevendaPedido(idPedido, false, dados.id_user, conn);
         }
       }
@@ -425,12 +422,21 @@ export async function cancelarPedido(
       });
     }
 
-    // O estoque usa a mesma conexão: pagamento, devolução, reservas, pendências e status
-    // são confirmados ou desfeitos juntos.
+    // Correção 1: Atualiza efetivamente o status do pedido para CANCELADO na tabela de pedidos
+    await repo.atualizarStatus(conn, idPedido, 'CANCELADO');
+
+    await repo.registrarHistorico(conn, {
+      id_pedido: idPedido,
+      tipo_evento: 'CANCELAMENTO',
+      status_anterior: pedido.status_pedido,
+      status_novo: 'CANCELADO',
+      descricao_historico: motivo ? `Pedido cancelado. Motivo: ${motivo}` : 'Pedido cancelado.'
+    });
+
     await estoqueService.devolverPedido(idPedido, idUser, conn, motivo);
 
     return {
-      mensagem: 'Pedido cancelado; pagamento, estoque, reservas e pendências processados na mesma transação.',
+      mensagem: 'Pedido cancelado; status, pagamento, estoque, reservas e pendências processados na mesma transação.',
       status_novo: 'CANCELADO'
     };
   });

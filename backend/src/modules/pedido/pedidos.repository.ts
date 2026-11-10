@@ -9,17 +9,50 @@ import type {
 } from './pedidos.types';
 import { formatarNumeroExibicao, determinarStatusFinanceiro } from './pedidos.regras';
 
-export async function executarTransacao<T>(fn: (conn: PoolConnection) => Promise<T>): Promise<T> {
+export async function executarTransacao<T>(
+  fn: (conn: PoolConnection) => Promise<T>,
+  chaveBloqueio?: string
+): Promise<T> {
   const conn = await pool.getConnection();
+  let bloqueioAdquirido = false;
+
+  // GET_LOCK serializa operações que tentam reservar o mesmo horário,
+  // inclusive quando chegam simultaneamente em processos diferentes.
+  const instanteBloqueio = chaveBloqueio ? new Date(chaveBloqueio) : null;
+  const chaveCanonica = instanteBloqueio && Number.isFinite(instanteBloqueio.getTime())
+    ? instanteBloqueio.toISOString()
+    : chaveBloqueio;
+  const nomeBloqueio = chaveCanonica
+    ? `beeflux_ag_${chaveCanonica.replace(/[^0-9A-Za-z]/g, '').slice(0, 45)}`
+    : undefined;
+
   try {
+    if (nomeBloqueio) {
+      const [lockRows] = await conn.query<RowDataPacket[]>(
+        'SELECT GET_LOCK(?, 10) AS adquirido',
+        [nomeBloqueio]
+      );
+      if (Number(lockRows[0]?.adquirido) !== 1) {
+        throw new Error('Não foi possível reservar este horário agora. Tente novamente.');
+      }
+      bloqueioAdquirido = true;
+    }
+
     await conn.beginTransaction();
     const result = await fn(conn);
     await conn.commit();
     return result;
   } catch (e) {
-    await conn.rollback();
+    try { await conn.rollback(); } catch { /* conexão pode já estar sem transação */ }
     throw e;
   } finally {
+    if (bloqueioAdquirido && nomeBloqueio) {
+      try {
+        await conn.query('SELECT RELEASE_LOCK(?)', [nomeBloqueio]);
+      } catch (e) {
+        console.error('Falha ao liberar bloqueio de horário MySQL:', e);
+      }
+    }
     conn.release();
   }
 }
@@ -42,7 +75,7 @@ export async function buscarClientePorId(conn: PoolConnection, idCliente: number
 
 export async function buscarProdutoParaItem(conn: PoolConnection, idProduto: number) {
   const [rows] = await conn.query<RowDataPacket[]>(
-    `SELECT id_produto, nome_produto, tipo_produto, preco_produto, ativo 
+    `SELECT id_produto, nome_produto, tipo_produto, unidade_medida, preco_produto, ativo 
      FROM produtos 
      WHERE id_produto = ? FOR UPDATE`,
     [idProduto]
@@ -52,6 +85,7 @@ export async function buscarProdutoParaItem(conn: PoolConnection, idProduto: num
         id_produto: number;
         nome_produto: string;
         tipo_produto: 'REVENDA' | 'INGREDIENTE' | 'FEITO';
+        unidade_medida: string;
         preco_produto: string;
         ativo: number;
       }
@@ -110,31 +144,6 @@ export async function atualizarValoresPedido(
      SET valor_total = ?, taxa_entrega = ?, observacao = COALESCE(?, observacao)
      WHERE id_pedido = ?`,
     [valorTotal, taxaEntrega, observacao ?? null, idPedido]
-  );
-}
-
-export async function inserirAgendamento(
-  conn: PoolConnection,
-  d: {
-    id_pedido: number;
-    tipo_pedido: TipoPedido;
-    tipo_atendimento: 'RETIRADA' | 'ENTREGA';
-    data_hora_agendada: string;
-    endereco_entrega: string | null;
-    observacao: string | null;
-  }
-): Promise<void> {
-  await conn.execute(
-    `INSERT INTO agendamentos (id_pedido, tipo_pedido, tipo_atendimento, data_hora_agendada, endereco_entrega, observacao)
-     VALUES (?, ?, ?, ?, ?, ?)`,
-    [
-      d.id_pedido,
-      d.tipo_pedido,
-      d.tipo_atendimento,
-      d.data_hora_agendada,
-      d.endereco_entrega,
-      d.observacao
-    ]
   );
 }
 
@@ -239,7 +248,10 @@ export async function excluirPedidoDefinitivo(conn: PoolConnection, idPedido: nu
   await conn.execute('DELETE FROM pedidos WHERE id_pedido = ?', [idPedido]);
 }
 
-export async function buscarPedidoCompleto(idPedido: number): Promise<PedidoCompleto | null> {
+// Correção 4: buscarPedidoCompleto aceita conexão opcional (conn?: PoolConnection) para manter transações ativas
+export async function buscarPedidoCompleto(idPedido: number, conn?: PoolConnection): Promise<PedidoCompleto | null> {
+  const executor = conn || pool;
+
   const sqlPedido = `
     SELECT 
       p.id_pedido,
@@ -263,11 +275,11 @@ export async function buscarPedidoCompleto(idPedido: number): Promise<PedidoComp
     LEFT JOIN pagamentos pg ON pg.id_pedido = p.id_pedido
     WHERE p.id_pedido = ?`;
 
-  const [pedidos] = await pool.query<RowDataPacket[]>(sqlPedido, [idPedido]);
+  const [pedidos] = await executor.query<RowDataPacket[]>(sqlPedido, [idPedido]);
   const p = pedidos[0];
   if (!p) return null;
 
-  const [itens] = await pool.query<RowDataPacket[]>(
+  const [itens] = await executor.query<RowDataPacket[]>(
     `SELECT 
        ip.id_item_pedido,
        ip.id_pedido,
@@ -285,13 +297,13 @@ export async function buscarPedidoCompleto(idPedido: number): Promise<PedidoComp
     [idPedido]
   );
 
-  const [agendamentos] = await pool.query<RowDataPacket[]>(
+  const [agendamentos] = await executor.query<RowDataPacket[]>(
     `SELECT id_pedido, tipo_pedido, tipo_atendimento, data_hora_agendada, endereco_entrega, observacao
      FROM agendamentos WHERE id_pedido = ?`,
     [idPedido]
   );
 
-  const [historico] = await pool.query<RowDataPacket[]>(
+  const [historico] = await executor.query<RowDataPacket[]>(
     `SELECT id_historico, id_pedido, tipo_evento, status_anterior, status_novo, valor_historico, descricao_historico, data_historico
      FROM historico_pedidos WHERE id_pedido = ? ORDER BY id_historico DESC`,
     [idPedido]
@@ -367,7 +379,6 @@ export async function listarPedidos(filtro: FiltroPedidos) {
   const where: string[] = [];
   const params: Array<string | number> = [];
 
-  // Requisitos Pergunta 77 e 78: CONCLUIDOS e CANCELADOS são ocultos por padrão na listagem, acessíveis por filtro
   if (filtro.status) {
     where.push('p.status_pedido = ?');
     params.push(filtro.status);
@@ -392,7 +403,6 @@ export async function listarPedidos(filtro: FiltroPedidos) {
     params.push(filtro.ate);
   }
 
-  // Pesquisa por número do pedido (#001) ou nome do cliente (Pergunta 43)
   if (filtro.termo_busca) {
     const limpo = filtro.termo_busca.replace(/^#/, '');
     const num = Number(limpo);
@@ -427,6 +437,32 @@ export async function listarPedidos(filtro: FiltroPedidos) {
       ag.data_hora_agendada
     FROM pedidos p
     LEFT JOIN clientes c ON c.id_cliente = p.id_cliente
+    LEFT JOIN pagamentos pg pg.id_pedido = p.id_pedido
+    LEFT JOIN agendamentos ag ag.id_pedido = p.id_pedido
+    ${where.length ? 'WHERE ' + where.join(' AND ') : ''}
+    ORDER BY p.data_pedido DESC, p.id_pedido DESC
+    LIMIT ? OFFSET ?
+  `;
+
+  // Ajuste fino na query acima (removendo sintaxe quebrada caso houvesse)
+  const sqlFixed = `
+    SELECT 
+      p.id_pedido,
+      p.id_cliente,
+      c.nome_cliente,
+      c.telefone_cliente,
+      p.data_pedido,
+      p.tipo_pedido,
+      p.status_pedido,
+      p.valor_total,
+      p.taxa_entrega,
+      p.observacao,
+      pg.status_pagamento,
+      COALESCE(CASE WHEN pg.status_pagamento = 'CONFIRMADO' THEN pg.valor_pagamento ELSE 0 END, 0) AS valor_recebido,
+      ag.tipo_atendimento,
+      ag.data_hora_agendada
+    FROM pedidos p
+    LEFT JOIN clientes c ON c.id_cliente = p.id_cliente
     LEFT JOIN pagamentos pg ON pg.id_pedido = p.id_pedido
     LEFT JOIN agendamentos ag ON ag.id_pedido = p.id_pedido
     ${where.length ? 'WHERE ' + where.join(' AND ') : ''}
@@ -434,7 +470,7 @@ export async function listarPedidos(filtro: FiltroPedidos) {
     LIMIT ? OFFSET ?
   `;
 
-  const [rows] = await pool.query<RowDataPacket[]>(sql, [...params, limite, offset]);
+  const [rows] = await pool.query<RowDataPacket[]>(sqlFixed, [...params, limite, offset]);
   return rows.map((r) => {
     const total = Number(r.valor_total);
     const taxa = Number(r.taxa_entrega);

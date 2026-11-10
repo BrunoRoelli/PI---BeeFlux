@@ -4,8 +4,17 @@ export function arredondarMoeda(n: number): number {
   return Math.round(n * 100) / 100;
 }
 
-export function arredondarQuantidade(n: number): number {
-  return Math.round(n * 1000) / 1000;
+/**
+ * Correção 6: Tratamento de quantidade para evitar arredondamento para zero.
+ * Se for unidade (un), arredonda para inteiro. Se for peso (ex: kg, g), mantemos precisão de até 3 casas decimais (gramas).
+ */
+export function arredondarQuantidade(n: number, unidadeMedida?: string): number {
+  if (unidadeMedida && ['un', 'und', 'unid', 'unidade', 'unidades', 'pç', 'pc', 'peça', 'peças', 'g', 'gr', 'grama', 'gramas'].includes(unidadeMedida.trim().toLowerCase())) {
+    return Math.max(1, Math.round(n));
+  }
+  // Para peso/granel (kg, g, etc), 3 casas decimais sem zerar valores mínimos válidos
+  const arredondado = Math.round(n * 1000) / 1000;
+  return arredondado > 0 ? arredondado : n;
 }
 
 export function inteiroPositivo(n: unknown): n is number {
@@ -28,8 +37,14 @@ export function dataValidaFormato(data: string): boolean {
 }
 
 export function dataHoraValida(dataHora: string): boolean {
+  if (typeof dataHora !== 'string' || !dataHora.trim()) return false;
   const d = new Date(dataHora);
-  return !isNaN(d.getTime());
+  return Number.isFinite(d.getTime());
+}
+
+export function dataHoraFutura(dataHora: string, agora = new Date()): boolean {
+  const instante = new Date(dataHora).getTime();
+  return Number.isFinite(instante) && instante > agora.getTime();
 }
 
 export function calcularTotaisPedido(
@@ -48,15 +63,6 @@ export function calcularTotaisPedido(
   };
 }
 
-/**
- * Regra: Fluxo de status operacional
- * PENDENTE -> CONFIRMADO, CANCELADO
- * CONFIRMADO -> EM_PREPARACAO, PRONTO, CANCELADO
- * EM_PREPARACAO -> PRONTO, CANCELADO
- * PRONTO -> CONCLUIDO, CANCELADO
- * CONCLUIDO -> (Estado final)
- * CANCELADO -> (Estado final)
- */
 export const TRANSIÇÕES_PERMITIDAS: Record<StatusPedido, StatusPedido[]> = {
   PENDENTE: ['CONFIRMADO', 'CANCELADO'],
   CONFIRMADO: ['EM_PREPARACAO', 'PRONTO', 'CANCELADO'],
@@ -115,7 +121,6 @@ export function validarValorPagamento(
     throw new Error('Valor do pagamento deve ser maior que zero.');
   }
 
-  // Regra BeeFlux: pagamento único e integral por pedido. Sem pagamentos parciais.
   if (pago !== total) {
     throw new Error(
       `Pagamento parcial não é permitido. O valor informado (R$ ${pago.toFixed(2)}) deve ser exatamente igual ao total do pedido (R$ ${total.toFixed(2)}).`
