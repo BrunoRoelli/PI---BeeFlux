@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BeeFlux | Movimentação Financeira</title>
+    <link rel="stylesheet" href="../css/global.css">
+    <link rel="stylesheet" href="../css/financeiro.css">
+    <link rel="stylesheet" href="../css/modal.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300..700&display=swap" rel="stylesheet">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <header>
+        <div class="container-header">
+            <a href="../index.html" class="logo">
+                <div class="logo-icone">
+                    <img src="../assets/logo.png" alt="Logo do BeeFlux">
+                    <img src="../assets/logo-hover.png" alt="" class="logo-hover">
+                </div>
+                <span class="logo-texto">BeeFlux</span>
+            </a>
+            <nav class="desktop-nav">
+                <ul>
+                    <li><a href="../index.html"><i class="fa-solid fa-house"></i> Início</a></li>
+                    <li><a href="estoque.html"><i class="fa-solid fa-box-open"></i> Estoque</a></li>
+                    <li><a href="contatos.html"><i class="fa-solid fa-users"></i> Contatos</a></li>
+                    <li><a href="financeiro.html" class="active"><i class="fa-solid fa-chart-pie"></i> Financeiro</a></li>
+                    <li><a href="receitas.html"><i class="fa-solid fa-book-open"></i> Receitas</a></li>
+                    <li><a href="pedidos.html"><i class="fa-solid fa-list-check"></i> Pedidos</a></li>
+                </ul>
+            </nav>
+            <div class="user-profile">
+                <button id="user-menu-btn" class="avatar-btn" aria-label="Menu do Usuário">
+                    <div class="avatar-placeholder" id="user-initials">U</div>
+                    <span class="status-dot"></span>
+                </button>
+                <div id="user-dropdown" class="user-dropdown-menu hidden">
+                    <a href="configuser.html" class="dropdown-item"><i class="fa-solid fa-gear"></i> Configurações</a>
+                    <div class="dropdown-divider"></div>
+                    <button id="logout-btn" class="dropdown-item logout"><i class="fa-solid fa-right-from-bracket"></i> Sair</button>
+                </div>
+            </div>
+            <button id="menu-btn" class="menu-sanduiche"><i class="fa-solid fa-bars"></i></button>
+        </div>
+        <div id="mobile-menu" class="menu-mobile">
+            <a href="../index.html"><i class="fa-solid fa-house"></i> Início</a>
+            <a href="estoque.html"><i class="fa-solid fa-box-open"></i> Estoque</a>
+            <a href="contatos.html"><i class="fa-solid fa-users"></i> Contatos</a>
+            <a href="financeiro.html"><i class="fa-solid fa-chart-pie"></i> Financeiro</a>
+            <a href="receitas.html"><i class="fa-solid fa-book-open"></i> Receitas</a>
+            <a href="pedidos.html"><i class="fa-solid fa-list-check"></i> Pedidos</a>
+        </div>
+    </header>
+
+    <main class="container-main">
+        <section class="topo-financeiro">
+            <div>
+                <h1>Gestão Financeira <i class="fa-solid fa-chart-line"></i></h1>
+                <p>Acompanhe o fluxo de caixa, despesas, retiradas e faturamento da confeitaria.</p>
+            </div>
+            <div class="botoes-topo">
+                <button class="botao-primario" onclick="abrirModalNovaDespesa()">
+                    <i class="fa-solid fa-plus"></i> Nova Despesa
+                </button>
+                <button class="btn-secondary" onclick="abrirModalNovaRetirada()">
+                    <i class="fa-solid fa-hand-holding-dollar"></i> Nova Retirada
+                </button>
+            </div>
+        </section>
+
+        <!-- NAVEGAÇÃO DE ABAS -->
+        <nav class="abas-financeiras">
+            <button class="aba-btn active" data-aba="dashboard" onclick="alternarAba('dashboard')">
+                <i class="fa-solid fa-chart-pie"></i> Visão Geral
+            </button>
+            <button class="aba-btn" data-aba="movimentacoes" onclick="alternarAba('movimentacoes')">
+                <i class="fa-solid fa-list-ol"></i> Movimentações
+            </button>
+            <button class="aba-btn" data-aba="despesas" onclick="alternarAba('despesas')">
+                <i class="fa-solid fa-file-invoice-dollar"></i> Despesas
+            </button>
+            <button class="aba-btn" data-aba="retiradas" onclick="alternarAba('retiradas')">
+                <i class="fa-solid fa-user-minus"></i> Retiradas
+            </button>
+        </nav>
+
+        <!-- SEÇÃO 1: VISÃO GERAL (DASHBOARD) -->
+        <section id="aba-dashboard" class="conteudo-aba ativo">
+            <div class="filtro-periodo-card card">
+                <div class="form-grid-inline">
+                    <div>
+                        <label>Data Inicial</label>
+                        <input type="date" id="dash-data-de">
+                    </div>
+                    <div>
+                        <label>Data Final</label>
+                        <input type="date" id="dash-data-ate">
+                    </div>
+                    <div style="align-self: flex-end;">
+                        <button class="botao-primario" onclick="carregarResumoDashboard()"><i class="fa-solid fa-filter"></i> Filtrar</button>
+                        <button class="btn-secondary" onclick="limparFiltroDashboard()"><i class="fa-solid fa-rotate-left"></i> Limpar</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="cards-resumo-grid">
+                <div class="card metric-card">
+                    <div class="metric-icon green"><i class="fa-solid fa-arrow-trend-up"></i></div>
+                    <div class="metric-info">
+                        <h3>Entradas</h3>
+                        <span class="value" id="val-entradas">R$ 0,00</span>
+                        <span class="trend positive">Vendas confirmadas</span>
+                    </div>
+                </div>
+                <div class="card metric-card">
+                    <div class="metric-icon red"><i class="fa-solid fa-arrow-trend-down"></i></div>
+                    <div class="metric-info">
+                        <h3>Saídas</h3>
+                        <span class="value" id="val-saidas">R$ 0,00</span>
+                        <span class="trend negative">Compras e despesas pagas</span>
+                    </div>
+                </div>
+                <div class="card metric-card">
+                    <div class="metric-icon purple"><i class="fa-solid fa-wallet"></i></div>
+                    <div class="metric-info">
+                        <h3>Saldo Líquido</h3>
+                        <span class="value" id="val-saldo">R$ 0,00</span>
+                        <span class="trend neutral">Entradas − Saídas</span>
+                    </div>
+                </div>
+                <div class="card metric-card">
+                    <div class="metric-icon orange"><i class="fa-solid fa-clock-rotate-left"></i></div>
+                    <div class="metric-info">
+                        <h3>Despesas Pendentes</h3>
+                        <span class="value" id="val-pendentes">R$ 0,00</span>
+                        <span class="trend neutral">Contas a pagar</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="graficos-grid">
+                <div class="card">
+                    <h2><i class="fa-solid fa-chart-bar"></i> Comparativo Entradas vs Saídas</h2>
+                    <div class="container-grafico">
+                        <canvas id="grafico-financeiro"></canvas>
+                    </div>
+                </div>
+                <div class="card">
+                    <h2><i class="fa-solid fa-chart-pie"></i> Distribuição por Tipo</h2>
+                    <div class="container-grafico">
+                        <canvas id="grafico-pizza"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SEÇÃO 2: MOVIMENTAÇÕES (HISTÓRICO) -->
+        <section id="aba-movimentacoes" class="conteudo-aba">
+            <div class="card">
+                <div class="barra-filtros">
+                    <input type="date" id="filtro-mov-de" title="Data De">
+                    <input type="date" id="filtro-mov-ate" title="Data Até">
+                    <select id="filtro-mov-tipo">
+                        <option value="">Todos os Tipos</option>
+                        <option value="ENTRADA">Entradas</option>
+                        <option value="SAIDA">Saídas</option>
+                    </select>
+                    <button class="botao-primario" onclick="carregarMovimentacoes()"><i class="fa-solid fa-magnifying-glass"></i> Filtrar</button>
+                </div>
+                <div class="tabela-responsiva">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Data / Hora</th>
+                                <th>Tipo</th>
+                                <th>Categoria</th>
+                                <th>Origem</th>
+                                <th>Valor</th>
+                                <th>Ref. Pedido</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabela-movimentacoes-body">
+                            <tr><td colspan="6" style="text-align:center;">Carregando movimentações...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- SEÇÃO 3: DESPESAS -->
+        <section id="aba-despesas" class="conteudo-aba">
+            <div class="card">
+                <div class="barra-filtros">
+                    <select id="filtro-despesa-status" onchange="carregarDespesas()">
+                        <option value="">Todas as Despesas</option>
+                        <option value="PENDENTE">Somente Pendentes</option>
+                        <option value="PAGO">Somente Pagas</option>
+                    </select>
+                    <button class="botao-primario" onclick="abrirModalNovaDespesa()"><i class="fa-solid fa-plus"></i> Cadastrar Despesa</button>
+                </div>
+                <div class="tabela-responsiva">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Descrição</th>
+                                <th>Categoria</th>
+                                <th>Valor</th>
+                                <th>Data Registro</th>
+                                <th>Vencimento</th>
+                                <th>Status</th>
+                                <th style="text-align: right;">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabela-despesas-body">
+                            <tr><td colspan="7" style="text-align:center;">Carregando despesas...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- SEÇÃO 4: RETIRADAS -->
+        <section id="aba-retiradas" class="conteudo-aba">
+            <div class="card">
+                <div class="barra-filtros">
+                    <button class="botao-primario" onclick="abrirModalNovaRetirada()"><i class="fa-solid fa-hand-holding-dollar"></i> Registrar Retirada</button>
+                </div>
+                <div class="tabela-responsiva">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Usuário</th>
+                                <th>Descrição</th>
+                                <th>Data</th>
+                                <th>Valor</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabela-retiradas-body">
+                            <tr><td colspan="5" style="text-align:center;">Carregando retiradas...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- MODAL DE DESPESA (CRIAR / EDITAR) -->
+    <div class="modal-overlay" id="modal-despesa" style="display: none;">
+        <div class="modal-card">
+            <button class="close-modal" onclick="fecharModalDespesa()"><i class="fa-solid fa-xmark"></i></button>
+            <div class="modal-header">
+                <h2 id="modal-despesa-titulo">Cadastrar Nova Despesa</h2>
+                <p>Preencha os detalhes da despesa operacional.</p>
+            </div>
+            <form id="form-despesa" onsubmit="salvarDespesa(event)">
+                <input type="hidden" id="despesa-id">
+                <div class="input-group">
+                    <label>Descrição *</label>
+                    <input type="text" id="despesa-descricao" required placeholder="Ex: Conta de Luz de Outubro">
+                </div>
+                <div class="form-grid-2">
+                    <div class="input-group">
+                        <label>Categoria *</label>
+                        <select id="despesa-categoria" required>
+                            <option value="ALUGUEL">Aluguel</option>
+                            <option value="ENERGIA">Energia Eletrica</option>
+                            <option value="AGUA">Agua</option>
+                            <option value="INTERNET">Internet</option>
+                            <option value="MANUTENCAO">Manutencao</option>
+                            <option value="EMBALAGEM">Embalagem</option>
+                            <option value="MAO_DE_OBRA">Mao de Obra</option>
+                            <option value="OUTRO">Outro</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Valor (R$) *</label>
+                        <input type="number" id="despesa-valor" step="0.01" min="0.01" required placeholder="0.00">
+                    </div>
+                </div>
+                <div class="form-grid-2">
+                    <div class="input-group">
+                        <label>Data Registro *</label>
+                        <input type="date" id="despesa-data" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Data Vencimento</label>
+                        <input type="date" id="despesa-vencimento">
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label>Observação</label>
+                    <input type="text" id="despesa-observacao" placeholder="Detalhes adicionais...">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" onclick="fecharModalDespesa()">Cancelar</button>
+                    <button type="submit" class="botao-primario"><i class="fa-solid fa-check"></i> Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL DE RETIRADA -->
+    <div class="modal-overlay" id="modal-retirada" style="display: none;">
+        <div class="modal-card">
+            <button class="close-modal" onclick="fecharModalRetirada()"><i class="fa-solid fa-xmark"></i></button>
+            <div class="modal-header">
+                <h2>Registrar Retirada do Proprietário</h2>
+                <p>Sangrias de caixa ou retiradas pessoais.</p>
+            </div>
+            <form id="form-retirada" onsubmit="salvarRetirada(event)">
+                <div class="input-group">
+                    <label>Valor da Retirada (R$) *</label>
+                    <input type="number" id="retirada-valor" step="0.01" min="0.01" required placeholder="0.00">
+                </div>
+                <div class="input-group">
+                    <label>Descrição / Motivo</label>
+                    <input type="text" id="retirada-descricao" placeholder="Ex: Pro-labore quinzenal">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" onclick="fecharModalRetirada()">Cancelar</button>
+                    <button type="submit" class="botao-primario"><i class="fa-solid fa-check"></i> Confirmar Retirada</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2026 BeeFlux. Todos os direitos reservados.</p>
+        </div>
+    </footer>
+
+    <script src="../js/global.js" defer></script>
+    <script src="../js/financeiro.js" defer></script>
+</body>
+</html>
