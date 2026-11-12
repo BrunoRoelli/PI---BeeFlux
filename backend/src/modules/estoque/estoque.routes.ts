@@ -48,16 +48,30 @@ const numero = (v: unknown) => {
   return Number.isFinite(parsed) ? parsed : undefined;
 };
 
-function filtroMovimentacao(req: Request, idProduto?: number): FiltroMovimentacao {
+
+function filtroMovimentacao(
+  req: Request,
+  idProduto?: number
+): FiltroMovimentacao {
+  const idProdutoFinal = idProduto ?? numero(req.query.id_produto);
+  const tipo = texto(req.query.tipo) as TipoMovimentacao | undefined;
+  const de = texto(req.query.de);
+  const ate = texto(req.query.ate);
+  const limite = numero(req.query.limite);
+  const pagina = numero(req.query.pagina);
+
   return {
-    id_produto: idProduto ?? numero(req.query.id_produto),
-    tipo: texto(req.query.tipo) as TipoMovimentacao | undefined,
-    de: texto(req.query.de),
-    ate: texto(req.query.ate),
-    limite: numero(req.query.limite),
-    pagina: numero(req.query.pagina)
+    ...(idProdutoFinal !== undefined && {
+      id_produto: idProdutoFinal
+    }),
+    ...(tipo !== undefined && { tipo }),
+    ...(de !== undefined && { de }),
+    ...(ate !== undefined && { ate }),
+    ...(limite !== undefined && { limite }),
+    ...(pagina !== undefined && { pagina })
   };
 }
+
 
 // ----- Consultas -----
 router.get('/', async (req, res) => {
@@ -182,20 +196,24 @@ router.get('/pedidos/:id_pedido/producoes', async (req, res) => {
   }
 });
 
+
 router.post('/pedidos/:id_pedido/feitos/:id_produto/baixa', async (req, res) => {
   try {
-    res.status(201).json(
-      await service.baixarFeitoPedido({
-        id_pedido: id(req.params.id_pedido),
-        id_produto_feito: id(req.params.id_produto),
-        quantidade: Number(req.body?.quantidade),
-        id_user: req.body?.id_user ? id(req.body.id_user) : undefined
-      })
-    );
+    const resultado = await service.baixarFeitoPedido({
+      id_pedido: id(req.params.id_pedido),
+      id_produto_feito: id(req.params.id_produto),
+      quantidade: Number(req.body?.quantidade),
+      ...(req.body?.id_user
+        ? { id_user: id(req.body.id_user) }
+        : {})
+    });
+
+    return res.status(201).json(resultado);
   } catch (e) {
-    erro(res, e);
+    return erro(res, e);
   }
 });
+
 
 // ----- Compras e Pedidos -----
 router.post('/compras/:id_compra/receber', async (req, res) => {
