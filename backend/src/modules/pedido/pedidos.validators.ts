@@ -223,12 +223,20 @@ export function validarAtualizarItens(dados: unknown): AtualizarItensInput {
     throw new Error('Taxa de entrega não pode ser negativa.');
   }
 
-  return {
+  const resultado: AtualizarItensInput = {
     itens: itensValidados,
-    taxa_entrega: taxa !== undefined ? arredondarMoeda(taxa) : undefined,
-    observacao: typeof observacao === 'string' ? observacao.trim() : undefined,
     id_user: userId
   };
+
+  if (taxa !== undefined) {
+    resultado.taxa_entrega = arredondarMoeda(taxa);
+  }
+
+  if (typeof observacao === 'string') {
+    resultado.observacao = observacao.trim();
+  }
+
+  return resultado;
 }
 
 export function validarAtualizarStatus(dados: unknown): AtualizarStatusInput {
@@ -247,11 +255,16 @@ export function validarAtualizarStatus(dados: unknown): AtualizarStatusInput {
     throw new Error(`Status de pedido inválido. Opções válidas: ${STATUS_PEDIDO_VALIDOS.join(', ')}.`);
   }
 
-  return {
+  const resultado: AtualizarStatusInput = {
     status_pedido: status_pedido as StatusPedido,
-    motivo: typeof motivo === 'string' && motivo.trim() !== '' ? motivo.trim() : undefined,
     id_user: userId
   };
+
+  if (typeof motivo === 'string' && motivo.trim() !== '') {
+    resultado.motivo = motivo.trim();
+  }
+
+  return resultado;
 }
 
 export function validarFiltroPedidos(query: Record<string, unknown>): FiltroPedidos {
