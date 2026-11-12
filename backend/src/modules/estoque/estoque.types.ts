@@ -128,3 +128,18 @@ export interface UsoLote {
   quantidade: number;
   saldo_restante: number;
 }
+
+export interface ProdutoEstoque {
+  id_produto: number;
+  nome_produto: string;
+  tipo_produto: TipoProduto;
+  unidade_medida: string;
+  preco_produto: number;        // Incluído para consulta imediata de venda
+  estoque_minimo: number;
+  saldo_atual: number;          // Lotes vigentes ou saldo atual de FEITO
+  saldo_fisico: number;         // Todos os lotes (inclusive vencidos) ou FEITO
+  saldo_disponivel: number;     // Saldo válido descontando reservas ativas
+  alerta_minimo: boolean;
+  alerta_excesso: boolean;
+  controla_estoque: boolean;
+}

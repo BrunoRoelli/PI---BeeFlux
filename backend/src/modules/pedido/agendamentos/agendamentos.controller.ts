@@ -1,8 +1,7 @@
 import type { Request, Response } from 'express';
 import * as service from './agendamentos.service';
-import * as regras from '../pedidos/pedidos.regras';
-import type { TipoAtendimento } from '../pedidos/pedidos.types';
-
+import * as regras from '../pedidos.regras';
+import type { TipoAtendimento } from '../pedidos.types';
 export async function listar(req: Request, res: Response) {
   try {
     const de = req.query.de;
@@ -22,11 +21,16 @@ export async function listar(req: Request, res: Response) {
       return res.status(400).json({ mensagem: 'Filtro tipo_atendimento deve ser RETIRADA ou ENTREGA.' });
     }
 
-    const filtro = {
-      de: de as string | undefined,
-      ate: ate as string | undefined,
-      tipo_atendimento: tipo as TipoAtendimento | undefined
-    };
+    const filtro: {
+      de?: string;
+      ate?: string;
+      tipo_atendimento?: TipoAtendimento;
+    } = {};
+
+    if (typeof de === 'string') filtro.de = de;
+    if (typeof ate === 'string') filtro.ate = ate;
+    if (tipo === 'RETIRADA' || tipo === 'ENTREGA') filtro.tipo_atendimento = tipo;
+
     const agendamentos = await service.listarAgendamentos(filtro);
     res.json(agendamentos);
   } catch (e: any) {

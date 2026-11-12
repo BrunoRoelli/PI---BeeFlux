@@ -1,4 +1,4 @@
-import type { TipoPedido, TipoAtendimento } from '../pedidos/pedidos.types';
+import type { TipoPedido, TipoAtendimento } from '../pedidos.types';
 
 export interface AgendamentoCompleto {
   id_pedido: number;

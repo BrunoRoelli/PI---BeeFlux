@@ -1,6 +1,8 @@
 import * as repo from './pedidos.repository';
 import * as regras from './pedidos.regras';
-import * as agendamentoRepo from '../agendamentos/agendamentos.repository';
+// Corrigido:
+// Corrigido:
+import * as agendamentoRepo from './agendamentos/agendamentos.repository';
 import * as estoqueService from '../estoque/estoque.service';
 import type {
   CriarPedidoInput,

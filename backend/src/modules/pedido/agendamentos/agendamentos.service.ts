@@ -1,7 +1,7 @@
 import * as repo from './agendamentos.repository';
-import * as pedidoRepo from '../pedidos/pedidos.repository';
-import * as pedidoService from '../pedidos/pedidos.service';
-import * as regras from '../pedidos/pedidos.regras';
+import * as pedidoRepo from '../pedidos.repository';
+import * as pedidoService from '../pedidos.service';
+import * as regras from '../pedidos.regras';
 import type { FiltroAgendamentos, AtualizarAgendamentoInput } from './agendamentos.types';
 
 export async function listarAgendamentos(filtro: FiltroAgendamentos) {
@@ -76,12 +76,19 @@ export async function atualizarAgendamento(idPedido: number, dados: AtualizarAge
       }
     }
 
-    await repo.atualizarAgendamentoRepo(conn, idPedido, {
-      data_hora_agendada: dados.data_hora_agendada,
-      tipo_atendimento: dados.tipo_atendimento,
-      endereco_entrega: dados.endereco_entrega,
-      observacao: dados.observacao
-    });
+ const camposAtualizacao: {
+      data_hora_agendada?: string;
+      tipo_atendimento?: any;
+      endereco_entrega?: string | null;
+      observacao?: string | null;
+    } = {};
+
+    if (dados.data_hora_agendada !== undefined) camposAtualizacao.data_hora_agendada = dados.data_hora_agendada;
+    if (dados.tipo_atendimento !== undefined) camposAtualizacao.tipo_atendimento = dados.tipo_atendimento;
+    if (dados.endereco_entrega !== undefined) camposAtualizacao.endereco_entrega = dados.endereco_entrega;
+    if (dados.observacao !== undefined) camposAtualizacao.observacao = dados.observacao;
+
+    await repo.atualizarAgendamentoRepo(conn, idPedido, camposAtualizacao);
 
     await pedidoRepo.registrarHistorico(conn, {
       id_pedido: idPedido,

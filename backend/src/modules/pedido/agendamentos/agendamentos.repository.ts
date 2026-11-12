@@ -1,7 +1,8 @@
 import type { PoolConnection, RowDataPacket, ResultSetHeader } from 'mysql2/promise';
-import { pool } from '../../database/connection';
+// Corrigido (3 níveis):
+import { pool } from '../../../database/connection';
 import type { AgendamentoCompleto, FiltroAgendamentos } from './agendamentos.types';
-import type { TipoPedido, TipoAtendimento } from '../pedidos/pedidos.types';
+import type { TipoPedido, TipoAtendimento } from '../pedidos.types';
 
 // Correção 3: Inserção de agendamento isolada no repositório de agendamentos
 export async function inserirAgendamentoRepo(

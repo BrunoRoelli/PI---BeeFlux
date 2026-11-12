@@ -11,6 +11,8 @@ import type {
 } from './estoque.types';
 import { paginacaoSegura } from './estoque.regras';
 
+
+
 export async function listarEstoque(tipo?: TipoProduto): Promise<ProdutoEstoque[]> {
   const sql = `
     SELECT 
@@ -19,6 +21,7 @@ export async function listarEstoque(tipo?: TipoProduto): Promise<ProdutoEstoque[
       p.tipo_produto, 
       p.unidade_medida, 
       p.estoque_minimo,
+      COALESCE(p.preco_produto, 0) AS preco_produto,
       CASE 
         WHEN p.tipo_produto = 'FEITO' THEN COALESCE(ef.quantidade_atual, 0)
         ELSE COALESCE(ls.saldo_valido, 0) 
@@ -53,12 +56,15 @@ export async function listarEstoque(tipo?: TipoProduto): Promise<ProdutoEstoque[
     const fisico = Number(r.saldo_fisico);
     const minimo = Number(r.estoque_minimo);
     const reservado = Number(r.reservado);
+    const preco = Number(r.preco_produto ?? 0);
     const disponivel = Math.max(0, Math.round((saldo - reservado) * 1000) / 1000);
+
     return {
       id_produto: Number(r.id_produto),
       nome_produto: r.nome_produto,
       tipo_produto: r.tipo_produto,
       unidade_medida: r.unidade_medida,
+      preco_produto: preco,
       estoque_minimo: minimo,
       saldo_atual: saldo,
       saldo_fisico: fisico,
@@ -692,6 +698,7 @@ export async function registrarHistoricoPedido(
   );
 }
 
+
 export async function atualizarStatusPedido(conn: PoolConnection, idPedido: number, statusNovo: string) {
   await conn.execute('UPDATE pedidos SET status_pedido = ? WHERE id_pedido = ?', [statusNovo, idPedido]);
 }
@@ -705,4 +712,5 @@ export async function listarProducoes(idPedido: number) {
     [idPedido]
   );
   return rows;
+
 }

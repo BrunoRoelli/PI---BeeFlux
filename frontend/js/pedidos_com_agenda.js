@@ -615,4 +615,32 @@ async function salvarNovoPedido(e) {
     } catch (err) {
         alert(err.message);
     }
+
+    async function carregarProdutos() {
+    try {
+        const res = await fetch(API_ESTOQUE_URL);
+        if (!res.ok) {
+            console.error('Falha ao aceder à API de estoque:', res.statusText);
+            return;
+        }
+        const produtos = await res.json();
+        listaProdutosDisponiveis = produtos.filter(p => p.tipo_produto !== 'INGREDIENTE');
+
+        const select = document.getElementById('novo-produto');
+        if (select) {
+            if (listaProdutosDisponiveis.length === 0) {
+                select.innerHTML = '<option value="">Nenhum produto vendável encontrado</option>';
+                return;
+            }
+
+            select.innerHTML = listaProdutosDisponiveis.map(p => {
+                const precoFmt = p.preco_produto ? ` - R$ ${Number(p.preco_produto).toFixed(2)}` : '';
+                const saldoFmt = ` (Disp: ${p.saldo_disponivel} ${p.unidade_medida})`;
+                return `<option value="${p.id_produto}">${p.nome_produto} [${p.tipo_produto}]${precoFmt}${saldoFmt}</option>`;
+            }).join('');
+        }
+    } catch (e) {
+        console.error('Erro ao carregar produtos para o pedido:', e);
+    }
+}
 }
