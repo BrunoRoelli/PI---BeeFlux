@@ -1,3 +1,43 @@
+// ==========================================
+// ENVIO AUTOMÁTICO DO TOKEN PARA A API
+// ==========================================
+(function () {
+    const API_BASE = "http://localhost:3000/api";
+    const fetchOriginal = window.fetch.bind(window);
+
+    window.fetch = async function (recurso, opcoes = {}) {
+        const url = typeof recurso === "string" ? recurso : recurso.url;
+        const ehApi = url.startsWith(API_BASE);
+        const ehAuth = url.startsWith(API_BASE + "/auth/");
+        const token = localStorage.getItem("beeflux_token");
+
+        if (ehApi && !ehAuth && token) {
+            const headers = new Headers(opcoes.headers || {});
+            if (!headers.has("Authorization")) {
+                headers.set("Authorization", "Bearer " + token);
+            }
+            opcoes = { ...opcoes, headers };
+        }
+
+        const resposta = await fetchOriginal(recurso, opcoes);
+
+        // Token ausente, inválido ou expirado: volta para o login.
+        if (ehApi && !ehAuth && resposta.status === 401) {
+            limparSessao();
+            irParaLogin();
+        }
+
+        return resposta;
+    };
+})();
+
+function limparSessao() {
+    localStorage.removeItem("beeflux_token");
+    localStorage.removeItem("beeflux_usuario_logado");
+    localStorage.removeItem("beeflux_nome_usuario");
+    localStorage.removeItem("beeflux_usuario_id");
+}
+
 //ativar menu sanduiche
 const menuBtn = document.getElementById("menu-btn");
 const mobileMenu = document.getElementById("mobile-menu");
@@ -16,8 +56,7 @@ function irParaLogin() {
 function realizarLogout() {
     if (!confirm("Deseja realmente sair do sistema?")) return;
     // Remove os dados da sessão simulada
-    localStorage.removeItem("beeflux_usuario_logado");
-    localStorage.removeItem("beeflux_nome_usuario");
+    limparSessao();
     alert("Sessão encerrada com sucesso.");
     irParaLogin();
 }
@@ -26,7 +65,7 @@ function realizarLogout() {
 // ==========================================
 document.addEventListener("DOMContentLoaded", () => {
     // 1. VERIFICA SE A USUÁRIA ESTÁ LOGADA
-    if (!localStorage.getItem("beeflux_usuario_logado")) {
+    if (!localStorage.getItem("beeflux_usuario_logado") || !localStorage.getItem("beeflux_token")) {
         irParaLogin();
         return;
     }

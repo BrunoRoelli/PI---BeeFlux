@@ -182,3 +182,15 @@ Para verificar se o servidor está funcionando, acesse esse endereço no navegad
 O BeeFlux busca integrar as principais operações de uma confeitaria em um único sistema web, facilitando a organização dos dados, o acompanhamento das atividades e o gerenciamento das informações utilizadas no dia a dia.
 
 O projeto também permite aplicar, na prática, os conhecimentos adquiridos durante o curso de Análise e Desenvolvimento de Sistemas, envolvendo desenvolvimento web, organização de código, APIs, bancos de dados e testes automatizados.
+
+## Variáveis de ambiente (.env)
+
+O arquivo `.env` **não** é versionado. Para rodar o projeto:
+
+1. Copie `.env.example` para `.env`.
+2. Preencha `DB_PASSWORD` e as demais credenciais do MySQL.
+3. Defina `JWT_SECRET` com um valor aleatório (o comando para gerar está no `.env.example`). Sem ele a API não inicia.
+
+## Autenticação
+
+O login (`POST /api/auth/login`) devolve um token JWT. O frontend o guarda e envia automaticamente em `Authorization: Bearer <token>`. Somente `/api/auth/*` e `/api/cardapio/publico` são abertos; as demais rotas exigem o token.

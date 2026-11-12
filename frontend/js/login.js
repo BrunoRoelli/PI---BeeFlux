@@ -49,6 +49,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             // Salva somente informações básicas para a interface.
+            localStorage.setItem("beeflux_token", dados.token);
             localStorage.setItem("beeflux_usuario_logado", "true");
             localStorage.setItem(
                 "beeflux_nome_usuario",
