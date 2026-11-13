@@ -189,8 +189,3 @@ O arquivo `.env` **não** é versionado. Para rodar o projeto:
 
 1. Copie `.env.example` para `.env`.
 2. Preencha `DB_PASSWORD` e as demais credenciais do MySQL.
-3. Defina `JWT_SECRET` com um valor aleatório (o comando para gerar está no `.env.example`). Sem ele a API não inicia.
-
-## Autenticação
-
-O login (`POST /api/auth/login`) devolve um token JWT. O frontend o guarda e envia automaticamente em `Authorization: Bearer <token>`. Somente `/api/auth/*` e `/api/cardapio/publico` são abertos; as demais rotas exigem o token.

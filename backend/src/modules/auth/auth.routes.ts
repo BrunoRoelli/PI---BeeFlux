@@ -1,6 +1,5 @@
 import { Router } from "express";
 import { cadastrarUsuario, autenticarUsuario } from "./auth.service";
-import { gerarToken } from "./auth.token";
 
 export const authRoutes = Router();
 
@@ -68,12 +67,10 @@ authRoutes.post("/login", async (req, res) => {
     }
 
     const usuario = await autenticarUsuario(email, senha);
-    const token = gerarToken({ id: usuario.id, nome: usuario.nome });
 
     res.status(200).json({
       mensagem: "Login realizado com sucesso!",
-      usuario,
-      token
+      usuario
     });
   } catch (erro: unknown) {
     const mensagem =

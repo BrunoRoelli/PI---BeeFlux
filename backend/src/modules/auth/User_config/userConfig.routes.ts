@@ -17,11 +17,6 @@ userConfigRoutes.patch("/:id/nome", async (req, res) => {
       return;
     }
 
-    if (id !== res.locals.idUsuario) {
-      res.status(403).json({ mensagem: "Você só pode alterar os dados da sua própria conta." });
-      return;
-    }
-
     const nomeAtualizado = await alterarNomeUsuario(id, nome);
     res.status(200).json({
       mensagem: "Nome alterado com sucesso!",
@@ -48,11 +43,6 @@ userConfigRoutes.patch("/:id/senha", async (req, res) => {
       res.status(400).json({
         mensagem: "Informe o ID, a senha atual e a nova senha corretamente.",
       });
-      return;
-    }
-
-    if (id !== res.locals.idUsuario) {
-      res.status(403).json({ mensagem: "Você só pode alterar os dados da sua própria conta." });
       return;
     }
 
