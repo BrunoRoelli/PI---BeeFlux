@@ -120,9 +120,9 @@
                 <div class="seçao-açoes">
                     <button class="botao-acao" onclick="abrirNovoPedido()"><i class="fa-solid fa-plus-circle"></i>Novo Pedido</button>
                     <button class="botao-acao" onclick="abrirCadastroContato()"><i class="fa-solid fa-user-plus"></i>Cadastrar Contato</button>
-                    <button class="botao-acao" onclick="abrirReceitas()"><i class="fa-solid fa-utensils"></i>Ver Receitas</button>
-                    <button class="botao-acao" onclick="abrirPrecificador()"><i class="fa-solid fa-calculator"></i>Precificar Produto</button>
+                    <button class="botao-acao" onclick="abrirFinanceiro()"><i class="fa-solid fa-calculator"></i>Ver financeiro</button>
                     <button class="botao-acao" onclick="abrirEstoque()"><i class="fa-solid fa-boxes-stacked"></i>Ver estoque</button>
+                    <button class="botao-acao" onclick="abrirReceitas()"><i class="fa-solid fa-book-open"></i>Ver receitas</button>
                 </div>
             </div>
             <div class="encomendas-recentes">
@@ -182,6 +182,16 @@
         function abrirEstoque(){
             window.location.href = "html/estoque.html?abrirModal=true";
         }
+        function abrirFinanceiro(){
+            window.location.href = "html/financeiro.html?abrirModal=true";
+        }
+        function abrirReceitas(){
+            window.location.href = "html/receitas.html?abrirModal=true";
+        }
+        function abrirNovoPedido(){
+            window.location.href = "html/pedidos.html?abrirModal=true";
+        }
+        
     </script>
 </body>
 </html>
