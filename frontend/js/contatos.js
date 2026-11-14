@@ -1,54 +1,17 @@
-//definindo valores para teste
-let clientesData = [
-    {
-        id: 1,
-        nome: "Ana Souza",
-        telefone: "(11) 98765-4321",
-        aniversario: "1994-05-12",
-        observacoes: "Alérgica a lactose, prefere recheios de Ninho.",
-        totalGasto: "R$ 380,00",
-        historico: [
-            { produto: "Bolo de Chocolate c/ Morango", data: "28/05/2026", valor: "R$ 95,00" },
-            { produto: "Caixa 12 Brigadeiros Gourmet", data: "14/04/2026", valor: "R$ 45,00" }
-        ]
-    },
-    {
-        id: 2,
-        nome: "Carlos Lima",
-        telefone: "(11) 91234-5678",
-        aniversario: "1988-11-20",
-        observacoes: "Prefere entrega no período da manhã.",
-        totalGasto: "R$ 150,00",
-        historico: [
-            { produto: "Caixa 12 Brigadeiros Gourmet", data: "10/05/2026", valor: "R$ 45,00" }
-        ]
-    }
-];
-
-let fornecedoresData = [
-    {
-        id: 1,
-        nome: "Distribuidora Doces & Cia",
-        telefone: "(11) 93333-4444",
-        produtoConsumido: "Leite Condensado e Chocolate",
-        observacoes: "Entrega toda terça-feira. Pedido mínimo de R$ 300.",
-        totalGasto: "R$ 1.250,00",
-        historico: [
-            { produto: "Caixa Leite Condensado (24un)", data: "01/06/2026", valor: "R$ 180,00" },
-            { produto: "Chocolate Nobre 2kg", data: "15/05/2026", valor: "R$ 110,00" }
-        ]
-    }
-];
-
 document.addEventListener("DOMContentLoaded", () => {
+    const API_BASE = "http://localhost:3000/api";
+
+    let clientesData = [];
+    let fornecedoresData = [];
+
     // Tabelas cliente e fornecedor
     const clientsTableBody = document.getElementById("clients-table-body");
     const supplierTableBody = document.getElementById("supplier-table-body");
-    
+
     // Total cliente e fornecedor
     const totalClientsCount = document.getElementById("total-clients-count");
     const totalSuppliersCount = document.getElementById("total-suppliers-count");
-    
+
     // Pesquisa contato e botões de filtro
     const searchContactInput = document.getElementById("search-contact");
     const sectionClients = document.getElementById("section-clients");
@@ -65,7 +28,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const clientNameInput = document.getElementById("client-name");
     const labelClientName = document.getElementById("label-client-name");
     const stockProductsDatalist = document.getElementById("stock-products-datalist");
-    
+
     // Elementos para controle de Edição
     const editContactDbIdInput = document.getElementById("edit-contact-db-id");
     const modalTitleElem = document.getElementById("modal-title");
@@ -74,7 +37,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const historyModal = document.getElementById("history-modal");
     const closeHistoryModal = document.getElementById("close-history-modal");
-    
+
     const historyClientName = document.getElementById("history-client-name");
     const historyClientPhone = document.getElementById("history-client-phone");
     const historyClientEmail = document.getElementById("history-client-email");
@@ -85,21 +48,85 @@ document.addEventListener("DOMContentLoaded", () => {
 
     let currentFilter = "todos";
 
-    // Carregar produtos do estoque para o datalist de autopreenchimento
-    function carregarProdutosEstoqueParaDatalist() {
+    // --- FUNÇÃO DE COMUNICAÇÃO COM A API ---
+    async function apiRequest(endpoint, options = {}) {
+        const response = await fetch(`${API_BASE}${endpoint}`, {
+            headers: {
+                "Content-Type": "application/json",
+                ...(options.headers || {})
+            },
+            ...options
+        });
+
+        const data = await response.json().catch(() => null);
+        if (!response.ok) {
+            throw new Error(data?.mensagem || data?.erro || `Erro HTTP ${response.status}`);
+        }
+        return data;
+    }
+
+    function formatarMoeda(valor) {
+        const num = Number(valor || 0);
+        return num.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+    }
+
+    function formatarData(dataStr) {
+        if (!dataStr) return "-";
+        const iso = String(dataStr).split("T")[0];
+        const partes = iso.split("-");
+        if (partes.length === 3) return `${partes[2]}/${partes[1]}/${partes[0]}`;
+        return dataStr;
+    }
+
+    // Carregar Clientes e Fornecedores do MySQL
+    async function carregarContatosDoBanco() {
+        try {
+            const [clientesApi, fornecedoresApi] = await Promise.all([
+                apiRequest("/clientes?status=ativo"),
+                apiRequest("/fornecedores?status=ativo")
+            ]);
+
+            clientesData = (clientesApi || []).map(c => ({
+                id: c.id_cliente ?? c.id,
+                nome: c.nome_cliente ?? c.nome ?? "",
+                telefone: c.telefone_cliente ?? c.telefone ?? "",
+                email: c.email_cliente ?? c.email ?? "",
+                aniversario: c.data_nascimento ? String(c.data_nascimento).split("T")[0] : "",
+                observacoes: c.observacao ?? c.observacoes ?? "",
+                totalGasto: formatarMoeda(c.total_pedidos ?? c.total_gasto ?? 0)
+            }));
+
+            fornecedoresData = (fornecedoresApi || []).map(f => ({
+                id: f.id_fornecedor ?? f.id,
+                nome: f.nome_fornecedor ?? f.nome ?? "",
+                telefone: f.telefone_fornecedor ?? f.telefone ?? "",
+                email: f.email_fornecedor ?? f.email ?? "",
+                produtoConsumido: f.produto_consumido || f.cidade || "-",
+                observacoes: f.observacao ?? f.observacoes ?? "",
+                totalGasto: formatarMoeda(f.total_compras ?? f.total_gasto ?? 0)
+            }));
+
+            renderContacts(searchContactInput.value);
+        } catch (err) {
+            console.error("Erro ao carregar contatos:", err);
+            alert(`Não foi possível carregar os contatos do banco: ${err.message}`);
+        }
+    }
+
+    // Carregar produtos reais do estoque no MySQL para o datalist
+    async function carregarProdutosEstoqueParaDatalist() {
         if (!stockProductsDatalist) return;
         stockProductsDatalist.innerHTML = "";
-        const estoque = JSON.parse(localStorage.getItem("beeflux_estoque")) || [
-            { nome: "Leite Condensado" },
-            { nome: "Cacau em Pó 50%" },
-            { nome: "Manteiga Extra" }
-        ];
-        
-        estoque.forEach(item => {
-            const option = document.createElement("option");
-            option.value = item.nome;
-            stockProductsDatalist.appendChild(option);
-        });
+        try {
+            const produtos = await apiRequest("/estoque");
+            (produtos || []).forEach(item => {
+                const option = document.createElement("option");
+                option.value = item.nome_produto || item.nome;
+                stockProductsDatalist.appendChild(option);
+            });
+        } catch {
+            // Ignora silenciosamente caso o estoque ainda esteja vazio
+        }
     }
 
     // Verificar se veio do index.html para abrir o modal automaticamente
@@ -119,7 +146,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             dynamicFieldContainer.innerHTML = `
                 <label for="client-birthday">Data de Nascimento</label>
-                <input type="date" id="client-birthday" required>
+                <input type="date" id="client-birthday">
             `;
             if (!isEditing) {
                 modalTitleElem.textContent = "Cadastrar Novo Cliente";
@@ -133,7 +160,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             dynamicFieldContainer.innerHTML = `
                 <label for="client-product">Produto Consumido / Fornecido</label>
-                <input type="text" id="client-product" list="stock-products-datalist" required placeholder="Ex: Embalagens, Leite Condensado">
+                <input type="text" id="client-product" list="stock-products-datalist" placeholder="Ex: Embalagens, Leite Condensado">
             `;
             if (!isEditing) {
                 modalTitleElem.textContent = "Cadastrar Novo Fornecedor";
@@ -155,7 +182,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (apenasNumeros.length === 10) {
             return apenasNumeros.replace(/^(\d{2})(\d{4})(\d{4})$/, "($1) $2-$3");
         }
-        return telefone; 
+        return telefone;
     }
 
     // Função para renderizar as tabelas aplicando busca e o filtro de botões
@@ -165,11 +192,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const searchLower = search.toLowerCase();
 
-        const filteredClients = clientesData.filter(c => 
+        const filteredClients = clientesData.filter(c =>
             c.nome.toLowerCase().includes(searchLower) || c.telefone.includes(search)
         );
 
-        const filteredSuppliers = fornecedoresData.filter(f => 
+        const filteredSuppliers = fornecedoresData.filter(f =>
             f.nome.toLowerCase().includes(searchLower) || f.telefone.includes(search)
         );
 
@@ -275,7 +302,7 @@ document.addEventListener("DOMContentLoaded", () => {
             btn.addEventListener("click", (e) => {
                 const id = parseInt(e.currentTarget.getAttribute("data-id"));
                 const type = e.currentTarget.getAttribute("data-type");
-                
+
                 if (editContactDbIdInput) editContactDbIdInput.value = id;
                 contactTypeSelect.value = type;
                 contactTypeSelect.dispatchEvent(new Event("change"));
@@ -287,7 +314,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     document.getElementById("client-phone").value = client.telefone;
                     const emailInput = document.getElementById("client-email");
                     if (emailInput) emailInput.value = client.email || "";
-                    document.getElementById("client-birthday").value = client.aniversario || "";
+                    const bdayInput = document.getElementById("client-birthday");
+                    if (bdayInput) bdayInput.value = client.aniversario || "";
                     document.getElementById("client-notes").value = client.observacoes || "";
 
                     modalTitleElem.textContent = "Editar Cliente";
@@ -299,7 +327,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     document.getElementById("client-phone").value = supplier.telefone;
                     const emailInput = document.getElementById("client-email");
                     if (emailInput) emailInput.value = supplier.email || "";
-                    document.getElementById("client-product").value = supplier.produtoConsumido || "";
+                    const prodInput = document.getElementById("client-product");
+                    if (prodInput) prodInput.value = supplier.produtoConsumido !== "-" ? supplier.produtoConsumido : "";
                     document.getElementById("client-notes").value = supplier.observacoes || "";
 
                     modalTitleElem.textContent = "Editar Fornecedor";
@@ -311,40 +340,43 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         });
 
-        // Evento para Ver Histórico
+        // Evento para Ver Histórico (busca direto do MySQL)
         document.querySelectorAll(".history-btn").forEach(btn => {
-            btn.addEventListener("click", (e) => {
+            btn.addEventListener("click", async (e) => {
                 const id = parseInt(e.currentTarget.getAttribute("data-id"));
                 const type = e.currentTarget.getAttribute("data-type");
-                openHistoryModal(id, type);
+                await openHistoryModal(id, type);
             });
         });
 
-        // Evento para Excluir Contato (Substituiu o WhatsApp)
+        // Evento para Excluir/Desativar Contato (PATCH /clientes/:id/status ou /fornecedores/:id/status)
         document.querySelectorAll(".delete-contact-btn").forEach(btn => {
-            btn.addEventListener("click", (e) => {
+            btn.addEventListener("click", async (e) => {
                 const id = parseInt(e.currentTarget.getAttribute("data-id"));
                 const type = e.currentTarget.getAttribute("data-type");
-
                 const tipoTexto = type === "cliente" ? "este cliente" : "este fornecedor";
 
-                if (confirm(`Deseja realmente excluir ${tipoTexto}?`)) {
-                    if (type === "cliente") {
-                        clientesData = clientesData.filter(c => c.id !== id);
-                    } else {
-                        fornecedoresData = fornecedoresData.filter(f => f.id !== id);
-                    }
+                if (!confirm(`Deseja realmente excluir ${tipoTexto}?`)) return;
 
-                    renderContacts(searchContactInput.value);
+                try {
+                    const rota = type === "cliente" ? `/clientes/${id}/status` : `/fornecedores/${id}/status`;
+                    await apiRequest(rota, {
+                        method: "PATCH",
+                        body: JSON.stringify({ ativo: false })
+                    });
+
+                    await carregarContatosDoBanco();
                     alert(`${type === "cliente" ? "Cliente" : "Fornecedor"} excluído com sucesso!`);
+                } catch (err) {
+                    alert(`Erro ao excluir: ${err.message}`);
                 }
             });
         });
     }
 
-    function openHistoryModal(id, type) {
-        let contact = type === "cliente" 
-            ? clientesData.find(c => c.id === id) 
+    async function openHistoryModal(id, type) {
+        const contact = type === "cliente"
+            ? clientesData.find(c => c.id === id)
             : fornecedoresData.find(f => f.id === id);
 
         if (!contact) return;
@@ -352,10 +384,10 @@ document.addEventListener("DOMContentLoaded", () => {
         historyClientName.textContent = contact.nome;
         historyClientPhone.innerHTML = `<i class="fa-brands fa-whatsapp text-success"></i> ${formatarTelefone(contact.telefone)}`;
         if (historyClientEmail) {
-            historyClientEmail.innerHTML = `<i class="fa-regular fa-envelope" style="color: rgb(218, 26, 26);"></i> ${contact.email || 'Sem e-mail cadastrado'}`;
+            historyClientEmail.innerHTML = `<i class="fa-regular fa-envelope" style="color: rgb(218, 26, 26);"></i> ${contact.email || "Sem e-mail cadastrado"}`;
         }
-        historyClientNotes.textContent = contact.observacoes && contact.observacoes.trim() !== "" 
-            ? contact.observacoes 
+        historyClientNotes.textContent = contact.observacoes && contact.observacoes.trim() !== ""
+            ? contact.observacoes
             : "Nenhuma observação cadastrada.";
 
         if (type === "cliente") {
@@ -366,22 +398,34 @@ document.addEventListener("DOMContentLoaded", () => {
             historySectionTitle.textContent = "Últimas Compras/Insumos Adquiridos";
         }
 
-        historyOrdersBody.innerHTML = "";
-        if (contact.historico && contact.historico.length > 0) {
-            contact.historico.forEach(order => {
-                const tr = document.createElement("tr");
-                tr.innerHTML = `
-                    <td>${order.produto}</td>
-                    <td>${order.data}</td>
-                    <td><strong>${order.valor}</strong></td>
-                `;
-                historyOrdersBody.appendChild(tr);
-            });
-        } else {
+        historyOrdersBody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: var(--text-muted);">Carregando histórico...</td></tr>`;
+        historyModal.classList.add("active");
+
+        try {
+            const rota = type === "cliente" ? `/clientes/${id}/historico` : `/fornecedores/${id}/historico`;
+            const historicoApi = await apiRequest(rota);
+
+            historyOrdersBody.innerHTML = "";
+            if (Array.isArray(historicoApi) && historicoApi.length > 0) {
+                historicoApi.forEach(order => {
+                    const tr = document.createElement("tr");
+                    const descricao = order.produto || order.descricao || order.nome_produto || `Registro #${order.id_pedido || order.id_compra || ""}`;
+                    const data = formatarData(order.data || order.data_pedido || order.data_compra || order.created_at);
+                    const valor = formatarMoeda(order.valor ?? order.valor_total ?? 0);
+
+                    tr.innerHTML = `
+                        <td>${descricao}</td>
+                        <td>${data}</td>
+                        <td><strong>${valor}</strong></td>
+                    `;
+                    historyOrdersBody.appendChild(tr);
+                });
+            } else {
+                historyOrdersBody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: var(--text-muted);">Nenhum registro encontrado.</td></tr>`;
+            }
+        } catch (err) {
             historyOrdersBody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: var(--text-muted);">Nenhum registro encontrado.</td></tr>`;
         }
-
-        historyModal.classList.add("active");
     }
 
     // Botão para Novo Contato (Limpa o ID de edição)
@@ -404,85 +448,78 @@ document.addEventListener("DOMContentLoaded", () => {
         if (e.target === historyModal) historyModal.classList.remove("active");
     });
 
-    // Submissão do Formulário (Suporta tanto Criação quanto Atualização/Edição)
-    clientForm.addEventListener("submit", (e) => {
+    // Submissão do Formulário (POST ou PUT direto no MySQL)
+    clientForm.addEventListener("submit", async (e) => {
         e.preventDefault();
         const type = contactTypeSelect.value;
-        const nome = document.getElementById("client-name").value;
-        const telefone = document.getElementById("client-phone").value;
+        const nome = document.getElementById("client-name").value.trim();
+        const telefone = document.getElementById("client-phone").value.trim();
         const emailInput = document.getElementById("client-email");
-        const email = emailInput ? emailInput.value : "";
-        const observacoes = document.getElementById("client-notes").value;
+        const email = emailInput && emailInput.value.trim() !== "" ? emailInput.value.trim() : null;
+        const observacaoInput = document.getElementById("client-notes").value.trim();
+        const observacao = observacaoInput !== "" ? observacaoInput : null;
         const editId = editContactDbIdInput ? editContactDbIdInput.value : "";
 
-        if (editId) {
-            // FLUXO DE ATUALIZAÇÃO / EDIÇÃO
-            const idNum = parseInt(editId);
+        try {
             if (type === "cliente") {
-                const client = clientesData.find(c => c.id === idNum);
-                if (client) {
-                    client.nome = nome;
-                    client.telefone = telefone;
-                    client.email = email;
-                    client.aniversario = document.getElementById("client-birthday").value;
-                    client.observacoes = observacoes;
-                    alert("Cliente atualizado com sucesso!");
-                }
-            } else {
-                const supplier = fornecedoresData.find(f => f.id === idNum);
-                if (supplier) {
-                    supplier.nome = nome;
-                    supplier.telefone = telefone;
-                    supplier.email = email;
-                    supplier.produtoConsumido = document.getElementById("client-product").value;
-                    supplier.observacoes = observacoes;
-                    alert("Fornecedor atualizado com sucesso!");
-                }
-            }
-        } else {
-            // FLUXO DE CRIAÇÃO / NOVO CONTATO
-            if (type === "cliente") {
-                const aniversario = document.getElementById("client-birthday").value;
-                clientesData.push({
-                    id: clientesData.length > 0 ? Math.max(...clientesData.map(c => c.id)) + 1 : 1,
+                const payloadCliente = {
                     nome,
                     telefone,
                     email,
-                    aniversario,
-                    observacoes,
-                    totalGasto: "R$ 0,00",
-                    historico: []
-                });
-                alert("Cliente cadastrado com sucesso!");
-            } else {
-                const produtoConsumido = document.getElementById("client-product").value;
-                fornecedoresData.push({
-                    id: fornecedoresData.length > 0 ? Math.max(...fornecedoresData.map(f => f.id)) + 1 : 1,
-                    nome,
-                    telefone,
-                    email,
-                    produtoConsumido,
-                    observacoes,
-                    totalGasto: "R$ 0,00",
-                    historico: []
-                });
-                alert("Fornecedor cadastrado com sucesso!");
-            }
-        }
+                    observacao
+                };
 
-        renderContacts();
-        clientForm.reset();
-        if (editContactDbIdInput) editContactDbIdInput.value = "";
-        contactTypeSelect.value = "cliente";
-        contactTypeSelect.dispatchEvent(new Event("change"));
-        clientModal.classList.remove("active");
+                if (editId) {
+                    await apiRequest(`/clientes/${editId}`, {
+                        method: "PUT",
+                        body: JSON.stringify(payloadCliente)
+                    });
+                    alert("Cliente atualizado no banco de dados com sucesso!");
+                } else {
+                    await apiRequest("/clientes", {
+                        method: "POST",
+                        body: JSON.stringify(payloadCliente)
+                    });
+                    alert("Cliente cadastrado no banco de dados com sucesso!");
+                }
+            } else {
+                const payloadFornecedor = {
+                    nome,
+                    telefone: telefone || null,
+                    email
+                };
+
+                if (editId) {
+                    await apiRequest(`/fornecedores/${editId}`, {
+                        method: "PUT",
+                        body: JSON.stringify(payloadFornecedor)
+                    });
+                    alert("Fornecedor atualizado no banco de dados com sucesso!");
+                } else {
+                    await apiRequest("/fornecedores", {
+                        method: "POST",
+                        body: JSON.stringify(payloadFornecedor)
+                    });
+                    alert("Fornecedor cadastrado no banco de dados com sucesso!");
+                }
+            }
+
+            await carregarContatosDoBanco();
+            clientForm.reset();
+            if (editContactDbIdInput) editContactDbIdInput.value = "";
+            contactTypeSelect.value = "cliente";
+            contactTypeSelect.dispatchEvent(new Event("change"));
+            clientModal.classList.remove("active");
+        } catch (err) {
+            alert(`Erro ao salvar contato: ${err.message}`);
+        }
     });
 
     searchContactInput.addEventListener("input", (e) => {
         renderContacts(e.target.value);
     });
 
-    // Inicialização
+    // Inicialização buscando direto do MySQL
     carregarProdutosEstoqueParaDatalist();
-    renderContacts();
+    carregarContatosDoBanco();
 });
