@@ -1,23 +1,9 @@
 document.addEventListener("DOMContentLoaded", () => {
-    // 1. Dados Iniciais de Insumos
-    let estoqueData = JSON.parse(localStorage.getItem("beeflux_estoque")) || [
-        { id: 1, nome: "Leite Condensado", categoria: "ingrediente", quantidade: 15, minimo: 10, unidade: "latas", fornecedorId: 1 },
-        { id: 2, nome: "Cacau em Pó 50%", categoria: "ingrediente", quantidade: 2.5, minimo: 1.0, unidade: "kg", fornecedorId: null },
-        { id: 3, nome: "Caixas para Bolo Redondo", categoria: "embalagem", quantidade: 4, minimo: 15, unidade: "un", fornecedorId: null },
-        { id: 4, nome: "Manteiga Extra", categoria: "ingrediente", quantidade: 3, minimo: 2, unidade: "kg", fornecedorId: null }
-    ];
+    const API_BASE = "http://localhost:3000/api";
 
-    // 2. Dados Iniciais de Lotes
-    let lotesData = JSON.parse(localStorage.getItem("beeflux_lotes")) || [
-        { id: 1, insumoId: 1, codigoLote: "Lote 10/05/2026", dataAquisicao: "2026-05-10", dataValidade: "2026-05-15", quantidade: 10 },
-        { id: 2, insumoId: 1, codigoLote: "Lote 11/05/2026", dataAquisicao: "2026-05-11", dataValidade: "2026-05-16", quantidade: 5 },
-        { id: 3, insumoId: 2, codigoLote: "Lote 01/04/2026", dataAquisicao: "2026-04-01", dataValidade: "2026-11-10", quantidade: 2.5 }
-    ];
-
-    // 3. Dados dos Fornecedores
-    let fornecedoresData = JSON.parse(localStorage.getItem("beeflux_fornecedores")) || [
-        { id: 1, nome: "Distribuidora Doces & Cia", telefone: "(11) 93333-4444" }
-    ];
+    let estoqueData = [];
+    let lotesData = [];
+    let fornecedoresData = [];
 
     // Elementos do DOM
     const tableBody = document.getElementById("inventory-table-body");
@@ -110,9 +96,88 @@ document.addEventListener("DOMContentLoaded", () => {
 
     let currentSelectedItemForModal = null;
 
-    function salvarEstoque() {
-        localStorage.setItem("beeflux_estoque", JSON.stringify(estoqueData));
-        localStorage.setItem("beeflux_lotes", JSON.stringify(lotesData));
+    // --- FUNÇÕES DE COMUNICAÇÃO COM A API ---
+    async function apiRequest(endpoint, options = {}) {
+        const response = await fetch(`${API_BASE}${endpoint}`, {
+            headers: {
+                "Content-Type": "application/json",
+                ...(options.headers || {})
+            },
+            ...options
+        });
+
+        const data = await response.json().catch(() => null);
+        if (!response.ok) {
+            throw new Error(data?.mensagem || `Erro HTTP ${response.status}`);
+        }
+        return data;
+    }
+
+    function mapearTipoParaApi(categoriaFront) {
+        const c = (categoriaFront || "").toLowerCase().trim();
+        if (c === "feito" || c === "produzido") return "FEITO";
+        if (c === "revenda" || c === "embalagem") return "REVENDA";
+        return "INGREDIENTE";
+    }
+
+    function mapearTipoParaFront(tipoApi) {
+        const t = (tipoApi || "").toUpperCase();
+        if (t === "FEITO") return "feito";
+        if (t === "REVENDA") return "revenda";
+        return "ingrediente";
+    }
+
+    async function carregarDadosDoBanco() {
+        try {
+            // 1. Busca todos os produtos do estoque no MySQL
+            const produtosApi = await apiRequest("/estoque");
+
+            estoqueData = produtosApi.map(p => ({
+                id: p.id_produto,
+                nome: p.nome_produto,
+                categoria: mapearTipoParaFront(p.tipo_produto),
+                tipoOriginal: p.tipo_produto,
+                quantidade: Number(p.saldo_atual ?? 0),
+                minimo: Number(p.estoque_minimo ?? 0),
+                unidade: p.unidade_medida,
+                fornecedorId: p.id_fornecedor || null
+            }));
+
+            // 2. Busca os lotes de cada produto
+            const promessasLotes = estoqueData.map(item =>
+                apiRequest(`/estoque/lotes/${item.id}`).catch(() => [])
+            );
+            const resultadosLotes = await Promise.all(promessasLotes);
+
+            lotesData = resultadosLotes.flat().map(l => ({
+                id: l.id_lote,
+                insumoId: l.id_produto,
+                codigoLote: l.codigo_lote || `Lote #${l.id_lote}`,
+                dataAquisicao: l.data_entrada ? String(l.data_entrada).split("T")[0] : "",
+                dataValidade: l.data_validade ? String(l.data_validade).split("T")[0] : null,
+                quantidade: Number(l.quantidade_atual ?? l.quantidade ?? 0)
+            }));
+
+            // 3. Busca fornecedores (caso a rota exista)
+            try {
+                const fornecedoresApi = await apiRequest("/fornecedores");
+                fornecedoresData = fornecedoresApi.map(f => ({
+                    id: f.id_fornecedor || f.id,
+                    nome: f.nome || f.nome_fornecedor,
+                    telefone: f.telefone || ""
+                }));
+            } catch {
+                fornecedoresData = [];
+            }
+
+            carregarDatalistProdutos();
+            carregarSelectFornecedores();
+            renderInventory();
+            renderExpiringLots();
+        } catch (err) {
+            console.error("Erro ao carregar estoque da API:", err);
+            alert(`Não foi possível carregar o estoque do banco de dados: ${err.message}`);
+        }
     }
 
     function obterPasso(unidade) {
@@ -160,7 +225,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         lotesData.forEach(lote => {
             const insumo = estoqueData.find(i => i.id === lote.insumoId);
-            if (!insumo || lote.quantidade <= 0) return;
+            if (!insumo || lote.quantidade <= 0 || !lote.dataValidade) return;
 
             const dataVal = new Date(lote.dataValidade + "T00:00:00");
             const diffTempo = dataVal.getTime() - hoje.getTime();
@@ -254,55 +319,64 @@ document.addEventListener("DOMContentLoaded", () => {
             tableBody.appendChild(tr);
         });
 
-        // Evento: Botão Aumentar Quantidade [+]
+        // Evento: Botão Aumentar Quantidade [+] -> Cria entrada no primeiro lote ou abre modal de lote
         document.querySelectorAll(".add-qty-btn").forEach(btn => {
-            btn.addEventListener("click", (e) => {
+            btn.addEventListener("click", async (e) => {
                 const id = parseInt(e.currentTarget.getAttribute("data-id"));
                 const item = estoqueData.find(i => i.id === id);
-                if (item) {
+                if (!item) return;
+
+                const lotesDoItem = lotesData.filter(l => l.insumoId === item.id);
+                if (lotesDoItem.length === 0) {
+                    batchProductInput.value = item.nome;
+                    batchModal.classList.add("active");
+                    return;
+                }
+
+                try {
                     const passo = obterPasso(item.unidade);
-                    item.quantidade = parseFloat((item.quantidade + passo).toFixed(2));
-                    salvarEstoque();
-                    renderInventory();
-                    renderExpiringLots();
+                    await apiRequest("/estoque/movimentacoes", {
+                        method: "POST",
+                        body: JSON.stringify({
+                            id_lote: lotesDoItem[0].id,
+                            tipo_movimentacao: "ENTRADA",
+                            quantidade: passo,
+                            motivo: "Ajuste rápido (+)"
+                        })
+                    });
+                    await carregarDadosDoBanco();
+                } catch (err) {
+                    alert(err.message);
                 }
             });
         });
 
-        // Evento: Botão Diminuir Quantidade [-] (Exige lote se não for embalagem)
+        // Evento: Botão Diminuir Quantidade [-]
         document.querySelectorAll(".remove-qty-btn").forEach(btn => {
             btn.addEventListener("click", (e) => {
                 const id = parseInt(e.currentTarget.getAttribute("data-id"));
                 const item = estoqueData.find(i => i.id === id);
                 if (!item) return;
 
-                if (item.categoria !== "embalagem") {
-                    const lotesDisponiveis = lotesData.filter(l => l.insumoId === item.id && l.quantidade > 0);
-                    if (lotesDisponiveis.length === 0) {
-                        alert("Não há lotes com saldo positivo cadastrados para este insumo. Cadastre um lote primeiro.");
-                        return;
-                    }
-
-                    baixaInsumoIdInput.value = item.id;
-                    baixaLoteItemName.textContent = `Insumo: ${item.nome} (${item.unidade})`;
-                    baixaLoteSelect.innerHTML = "";
-                    
-                    lotesDisponiveis.forEach(lote => {
-                        const opt = document.createElement("option");
-                        opt.value = lote.id;
-                        opt.textContent = `${lote.codigoLote} - Validade: ${formatarData(lote.dataValidade)} (Disponível: ${lote.quantidade})`;
-                        baixaLoteSelect.appendChild(opt);
-                    });
-
-                    baixaQtdInput.value = obterPasso(item.unidade);
-                    baixaLoteModal.classList.add("active");
-                } else {
-                    const passo = obterPasso(item.unidade);
-                    item.quantidade = Math.max(0, parseFloat((item.quantidade - passo).toFixed(2)));
-                    salvarEstoque();
-                    renderInventory();
-                    renderExpiringLots();
+                const lotesDisponiveis = lotesData.filter(l => l.insumoId === item.id && l.quantidade > 0);
+                if (lotesDisponiveis.length === 0) {
+                    alert("Não há lotes com saldo positivo cadastrados para este insumo. Cadastre um lote primeiro.");
+                    return;
                 }
+
+                baixaInsumoIdInput.value = item.id;
+                baixaLoteItemName.textContent = `Insumo: ${item.nome} (${item.unidade})`;
+                baixaLoteSelect.innerHTML = "";
+
+                lotesDisponiveis.forEach(lote => {
+                    const opt = document.createElement("option");
+                    opt.value = lote.id;
+                    opt.textContent = `${lote.codigoLote} | Validade: ${formatarData(lote.dataValidade)} (Disponível: ${lote.quantidade})`;
+                    baixaLoteSelect.appendChild(opt);
+                });
+
+                baixaQtdInput.value = obterPasso(item.unidade);
+                baixaLoteModal.classList.add("active");
             });
         });
 
@@ -318,7 +392,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 document.getElementById("item-category").value = item.categoria;
                 document.getElementById("item-qty").value = item.quantidade;
                 document.getElementById("item-min").value = item.minimo;
-                
+
                 if (item.fornecedorId) {
                     document.getElementById("item-supplier-select").value = item.fornecedorId;
                 } else {
@@ -338,12 +412,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 modalTitleElem.textContent = "Editar Insumo";
                 modalDescElem.textContent = "Modifique as informações do insumo selecionado.";
-
                 itemModal.classList.add("active");
             });
         });
 
-        // Evento para abrir o Modal de Edição de Quantidade Direta
+        // Evento: Abrir Modal de Edição de Quantidade Direta
         document.querySelectorAll(".edit-qty-direct").forEach(span => {
             span.addEventListener("click", (e) => {
                 const id = parseInt(e.currentTarget.getAttribute("data-id"));
@@ -368,67 +441,95 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         });
 
-        // Evento: Excluir Item
+        // Evento: Excluir Item (DELETE /api/estoque/produtos/:id)
         document.querySelectorAll(".delete-item-btn").forEach(btn => {
-            btn.addEventListener("click", (e) => {
+            btn.addEventListener("click", async (e) => {
                 const id = parseInt(e.currentTarget.getAttribute("data-id"));
-                if (confirm("Deseja realmente excluir este item do estoque e seus lotes?")) {
-                    estoqueData = estoqueData.filter(i => i.id !== id);
-                    lotesData = lotesData.filter(l => l.insumoId !== id);
-                    salvarEstoque();
-                    carregarDatalistProdutos();
-                    renderInventory();
-                    renderExpiringLots();
+                if (!confirm("Deseja realmente desativar/excluir este item do estoque?")) return;
+
+                try {
+                    await apiRequest(`/estoque/produtos/${id}`, { method: "DELETE" });
+                    await carregarDadosDoBanco();
+                } catch (err) {
+                    alert(`Erro ao excluir: ${err.message}`);
                 }
             });
         });
     }
 
-    // Submissão da Retirada por Lote
+    // Submissão da Retirada por Lote (POST /api/estoque/movimentacoes)
     if (baixaLoteForm) {
-        baixaLoteForm.addEventListener("submit", (e) => {
+        baixaLoteForm.addEventListener("submit", async (e) => {
             e.preventDefault();
-            const insumoId = parseInt(baixaInsumoIdInput.value);
             const loteId = parseInt(baixaLoteSelect.value);
             const qtdRetirada = parseFloat(baixaQtdInput.value);
-
-            const item = estoqueData.find(i => i.id === insumoId);
             const lote = lotesData.find(l => l.id === loteId);
 
-            if (!item || !lote) return;
-
+            if (!lote) return;
             if (qtdRetirada > lote.quantidade) {
                 alert(`A quantidade informada excede o saldo deste lote (${lote.quantidade}).`);
                 return;
             }
 
-            lote.quantidade = parseFloat((lote.quantidade - qtdRetirada).toFixed(2));
-            item.quantidade = Math.max(0, parseFloat((item.quantidade - qtdRetirada).toFixed(2)));
+            try {
+                await apiRequest("/estoque/movimentacoes", {
+                    method: "POST",
+                    body: JSON.stringify({
+                        id_lote: loteId,
+                        tipo_movimentacao: "SAIDA",
+                        quantidade: qtdRetirada,
+                        motivo: "Retirada manual no estoque",
+                        confirmar_vencido: true
+                    })
+                });
 
-            salvarEstoque();
-            baixaLoteModal.classList.remove("active");
-            baixaLoteForm.reset();
-            alert("Retirada registrada com sucesso no lote selecionado!");
-
-            renderInventory();
-            renderExpiringLots();
+                baixaLoteModal.classList.remove("active");
+                baixaLoteForm.reset();
+                alert("Retirada registrada com sucesso no banco de dados!");
+                await carregarDadosDoBanco();
+            } catch (err) {
+                alert(`Erro ao registrar retirada: ${err.message}`);
+            }
         });
     }
 
-    // Submissão do Modal de Edição Rápida de Quantidade Direta
+    // Submissão do Modal de Edição Rápida de Quantidade Direta (AJUSTE)
     if (editQtyForm) {
-        editQtyForm.addEventListener("submit", (e) => {
+        editQtyForm.addEventListener("submit", async (e) => {
             e.preventDefault();
             const id = parseInt(editItemIdInput.value);
             const novaQuantidade = parseFloat(editItemQtyInput.value);
-
             const item = estoqueData.find(i => i.id === id);
-            if (item && !isNaN(novaQuantidade) && novaQuantidade >= 0) {
-                item.quantidade = novaQuantidade;
-                salvarEstoque();
-                renderInventory();
-                renderExpiringLots();
+
+            if (!item || isNaN(novaQuantidade) || novaQuantidade < 0) return;
+
+            const lotesDoItem = lotesData.filter(l => l.insumoId === id);
+            try {
+                if (lotesDoItem.length > 0) {
+                    await apiRequest("/estoque/movimentacoes", {
+                        method: "POST",
+                        body: JSON.stringify({
+                            id_lote: lotesDoItem[0].id,
+                            tipo_movimentacao: "AJUSTE",
+                            quantidade: novaQuantidade,
+                            motivo: "Ajuste direto de saldo"
+                        })
+                    });
+                } else if (novaQuantidade > 0) {
+                    await apiRequest("/estoque/lotes", {
+                        method: "POST",
+                        body: JSON.stringify({
+                            id_produto: id,
+                            quantidade: novaQuantidade,
+                            codigo_lote: `Lote Inicial`
+                        })
+                    });
+                }
+
                 editQtyModal.classList.remove("active");
+                await carregarDadosDoBanco();
+            } catch (err) {
+                alert(`Erro ao ajustar quantidade: ${err.message}`);
             }
         });
     }
@@ -445,13 +546,8 @@ document.addEventListener("DOMContentLoaded", () => {
         infoItemMin.textContent = `${item.minimo} ${item.unidade}`;
 
         const fornecedor = fornecedoresData.find(f => f.id === item.fornecedorId);
-        if (fornecedor) {
-            infoItemSupplier.textContent = fornecedor.nome;
-            infoContactSupplierBtn.style.display = "flex";
-        } else {
-            infoItemSupplier.textContent = "Não há fornecedor";
-            infoContactSupplierBtn.style.display = "flex";
-        }
+        infoItemSupplier.textContent = fornecedor ? fornecedor.nome : "Não há fornecedor";
+        infoContactSupplierBtn.style.display = "flex";
 
         infoItemLotsBody.innerHTML = "";
         const lotesDoItem = lotesData.filter(l => l.insumoId === item.id);
@@ -476,7 +572,6 @@ document.addEventListener("DOMContentLoaded", () => {
     infoAddBatchBtn.addEventListener("click", () => {
         if (!currentSelectedItemForModal) return;
         infoModal.classList.remove("active");
-        
         batchProductInput.value = currentSelectedItemForModal.nome;
         batchModal.classList.add("active");
     });
@@ -492,11 +587,10 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // Submissão do Modal de Cadastro de Lotes
-    batchForm.addEventListener("submit", (e) => {
+    // Submissão do Modal de Cadastro de Lotes (POST /api/estoque/lotes)
+    batchForm.addEventListener("submit", async (e) => {
         e.preventDefault();
         const nomeProduto = batchProductInput.value.trim();
-
         const insumoExistente = estoqueData.find(i => i.nome.toLowerCase() === nomeProduto.toLowerCase());
 
         if (!insumoExistente) {
@@ -506,72 +600,86 @@ document.addEventListener("DOMContentLoaded", () => {
 
         batchProductError.style.display = "none";
 
-        const novoLote = {
-            id: lotesData.length > 0 ? Math.max(...lotesData.map(l => l.id)) + 1 : 1,
-            insumoId: insumoExistente.id,
-            codigoLote: document.getElementById("batch-code").value,
-            dataAquisicao: document.getElementById("batch-acquisition-date").value,
-            dataValidade: document.getElementById("batch-expiration-date").value,
-            quantidade: parseFloat(document.getElementById("batch-qty").value)
+        const payloadLote = {
+            id_produto: insumoExistente.id,
+            quantidade: parseFloat(document.getElementById("batch-qty").value),
+            codigo_lote: document.getElementById("batch-code").value || null,
+            data_validade: document.getElementById("batch-expiration-date").value || null
         };
 
-        insumoExistente.quantidade += novoLote.quantidade;
+        try {
+            await apiRequest("/estoque/lotes", {
+                method: "POST",
+                body: JSON.stringify(payloadLote)
+            });
 
-        lotesData.push(novoLote);
-        salvarEstoque();
-
-        batchForm.reset();
-        batchModal.classList.remove("active");
-        alert("Lote cadastrado com sucesso!");
-
-        renderInventory();
-        renderExpiringLots();
+            batchForm.reset();
+            batchModal.classList.remove("active");
+            alert("Lote cadastrado no banco de dados com sucesso!");
+            await carregarDadosDoBanco();
+        } catch (err) {
+            alert(`Erro ao cadastrar lote: ${err.message}`);
+        }
     });
 
-    // Submissão do Formulário de Insumo (Criação ou Atualização/Edição)
-    itemForm.addEventListener("submit", (e) => {
+    // Submissão do Formulário de Insumo (POST /api/estoque/produtos ou PUT /api/estoque/produtos/:id)
+    itemForm.addEventListener("submit", async (e) => {
         e.preventDefault();
 
         const unidadeMedida = unitSelect.value === "outro" ? customUnitInput.value : unitSelect.value;
-        const fornecedorVal = itemSupplierSelect.value ? parseInt(itemSupplierSelect.value) : null;
         const editId = editItemDbIdInput.value;
+        const nomeProduto = document.getElementById("item-name").value.trim();
+        const categoriaFront = document.getElementById("item-category").value;
+        const qtdInicial = parseFloat(document.getElementById("item-qty").value) || 0;
+        const estoqueMinimo = parseFloat(document.getElementById("item-min").value) || 0;
 
-        if (editId) {
-            // Atualizar item existente
-            const item = estoqueData.find(i => i.id === parseInt(editId));
-            if (item) {
-                item.nome = document.getElementById("item-name").value;
-                item.categoria = document.getElementById("item-category").value;
-                item.quantidade = parseFloat(document.getElementById("item-qty").value);
-                item.minimo = parseFloat(document.getElementById("item-min").value);
-                item.unidade = unidadeMedida;
-                item.fornecedorId = fornecedorVal;
+        try {
+            if (editId) {
+                // Atualizar item existente (PUT /api/estoque/produtos/:id)
+                await apiRequest(`/estoque/produtos/${editId}`, {
+                    method: "PUT",
+                    body: JSON.stringify({
+                        nome_produto: nomeProduto,
+                        unidade_medida: unidadeMedida,
+                        estoque_minimo: estoqueMinimo
+                    })
+                });
+                alert("Insumo atualizado no banco de dados com sucesso!");
+            } else {
+                // Cadastrar novo item (POST /api/estoque/produtos)
+                const criado = await apiRequest("/estoque/produtos", {
+                    method: "POST",
+                    body: JSON.stringify({
+                        nome_produto: nomeProduto,
+                        tipo_produto: mapearTipoParaApi(categoriaFront),
+                        unidade_medida: unidadeMedida,
+                        estoque_minimo: estoqueMinimo
+                    })
+                });
 
-                alert("Insumo atualizado com sucesso!");
+                // Se informou quantidade inicial > 0, cria um lote inicial para gerar saldo
+                const novoId = criado?.id_produto || criado?.id;
+                if (novoId && qtdInicial > 0) {
+                    await apiRequest("/estoque/lotes", {
+                        method: "POST",
+                        body: JSON.stringify({
+                            id_produto: novoId,
+                            quantidade: qtdInicial,
+                            codigo_lote: "Lote Inicial"
+                        })
+                    });
+                }
+
+                alert("Insumo cadastrado no banco de dados com sucesso!");
             }
-        } else {
-            // Cadastrar novo item
-            const newItem = {
-                id: estoqueData.length > 0 ? Math.max(...estoqueData.map(i => i.id)) + 1 : 1,
-                nome: document.getElementById("item-name").value,
-                categoria: document.getElementById("item-category").value,
-                quantidade: parseFloat(document.getElementById("item-qty").value),
-                minimo: parseFloat(document.getElementById("item-min").value),
-                unidade: unidadeMedida,
-                fornecedorId: fornecedorVal
-            };
-            estoqueData.push(newItem);
-            alert("Insumo cadastrado com sucesso!");
+
+            itemForm.reset();
+            customUnitGroup.style.display = "none";
+            itemModal.classList.remove("active");
+            await carregarDadosDoBanco();
+        } catch (err) {
+            alert(`Erro ao salvar insumo: ${err.message}`);
         }
-
-        salvarEstoque();
-        carregarDatalistProdutos();
-        renderInventory();
-        renderExpiringLots();
-
-        itemForm.reset();
-        customUnitGroup.style.display = "none";
-        itemModal.classList.remove("active");
     });
 
     if (unitSelect) {
@@ -621,9 +729,6 @@ document.addEventListener("DOMContentLoaded", () => {
     searchItemInput.addEventListener("input", renderInventory);
     categoryFilterSelect.addEventListener("change", renderInventory);
 
-    // Inicialização da Página
-    carregarDatalistProdutos();
-    carregarSelectFornecedores();
-    renderInventory();
-    renderExpiringLots();
+    // Inicialização da Página buscando direto do MySQL
+    carregarDadosDoBanco();
 });
