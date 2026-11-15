@@ -105,6 +105,35 @@ td button.action-icon-btn {
 /* ==========================================
    RESPONSIVIDADE DO MODAL (Correção do Scroll)
    ========================================== */
+   /* Sobrescreve o modal.css para exibir o modal de detalhes */
+#modal-detalhes-pedido.modal-overlay.aberto {
+    display: flex !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    background-color: rgba(0, 0, 0, 0.55) !important;
+    z-index: 9999 !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+#modal-detalhes-pedido.modal-overlay.aberto .modal-card {
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: none !important;
+    background: #fff !important;
+    padding: 24px !important;
+    border-radius: 12px !important;
+    width: 90% !important;
+    max-width: 650px !important;
+    max-height: 90vh !important;
+    overflow-y: auto !important;
+    position: relative !important;
+}
 @media (max-width: 576px) {
     .modal-card {
         padding: 20px 16px; /* Reduz o padding lateral em telas pequenas */

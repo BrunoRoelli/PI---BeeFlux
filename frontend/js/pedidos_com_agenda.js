@@ -375,9 +375,21 @@ async function abrirDetalhesPedido(idPedido) {
             `;
         }
 
-        document.getElementById('modal-detalhes-pedido').style.display = 'flex';
+        const modal = document.getElementById('modal-detalhes-pedido');
+        if (modal) {
+            modal.style.display = 'flex';
+            modal.classList.add('aberto');
+        }
     } catch (e) {
         alert(e.message);
+    }
+}
+
+function fecharModalDetalhes() {
+    const modal = document.getElementById('modal-detalhes-pedido');
+    if (modal) {
+        modal.style.display = 'none';
+        modal.classList.remove('aberto');
     }
 }
 
