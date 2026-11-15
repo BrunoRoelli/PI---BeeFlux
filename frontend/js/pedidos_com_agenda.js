@@ -525,7 +525,6 @@ async function carregarProdutos() {
     }
 }
 
-
 async function carregarClientes() {
     try {
         const select = document.getElementById('novo-cliente');
@@ -587,6 +586,11 @@ function removerItemRascunho(idx) {
 
 async function salvarNovoPedido(e) {
     e.preventDefault();
+
+    if (itensRascunho.length === 0 && document.getElementById('novo-produto').value) {
+        adicionarItemRascunho();
+    }
+
     if (itensRascunho.length === 0) {
         return alert('Adicione pelo menos um produto ao pedido.');
     }
@@ -617,7 +621,7 @@ async function salvarNovoPedido(e) {
             return alert('Informe o endereço de entrega.');
         }
 
-        taxaEntrega = atend === 'ENTREga' || atend === 'ENTREGA' ? Number(document.getElementById('novo-taxa').value) || 0 : 0;
+        taxaEntrega = atend === 'ENTREGA' ? Number(document.getElementById('novo-taxa').value) || 0 : 0;
 
         agendamento = {
             tipo_atendimento: atend,
@@ -652,39 +656,4 @@ async function salvarNovoPedido(e) {
     } catch (err) {
         alert(err.message);
     }
-
-    async function carregarProdutos() {
-    const select = document.getElementById('novo-produto');
-    if (!select) return;
-
-    try {
-        const res = await fetch(API_ESTOQUE_URL);
-        if (!res.ok) {
-            select.innerHTML = '<option value="">Erro ao carregar estoque da API</option>';
-            console.error('Erro HTTP ao buscar estoque:', res.status, res.statusText);
-            return;
-        }
-
-        const produtos = await res.json();
-        
-        // Exibe apenas REVENDA e FEITO (oculta INGREDIENTE)
-        listaProdutosDisponiveis = produtos.filter(p => p.tipo_produto !== 'INGREDIENTE');
-
-        if (listaProdutosDisponiveis.length === 0) {
-            select.innerHTML = '<option value="">Nenhum produto (REVENDA/FEITO) cadastrado ou ativo</option>';
-            return;
-        }
-
-        select.innerHTML = '<option value="">Selecione um produto...</option>' + 
-            listaProdutosDisponiveis.map(p => {
-                const preco = Number(p.preco_produto || 0).toFixed(2);
-                const saldo = p.saldo_disponivel !== undefined ? p.saldo_disponivel : 0;
-                return `<option value="${p.id_produto}">${p.nome_produto} (${p.tipo_produto}) - R$ ${preco} [Disp: ${saldo} ${p.unidade_medida}]</option>`;
-            }).join('');
-
-    } catch (e) {
-        console.error('Erro de conexão ao carregar produtos:', e);
-        select.innerHTML = '<option value="">Falha de conexão com a API de estoque</option>';
-    }
-}
 }
