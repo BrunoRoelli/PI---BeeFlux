@@ -953,6 +953,12 @@ SELECT *
 FROM vw_estoque_atual
 WHERE saldo_atual < estoque_minimo;
 
+ALTER TABLE clientes 
+ADD COLUMN ativo TINYINT(1) NOT NULL DEFAULT 1;
+
+ALTER TABLE fornecedores 
+ADD COLUMN ativo TINYINT(1) NOT NULL DEFAULT 1;
+
 CREATE VIEW vw_saldo_pedidos AS
 SELECT
     pe.id_pedido,
