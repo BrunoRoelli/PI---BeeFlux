@@ -388,14 +388,23 @@ async function abrirDetalhesPedido(idPedido) {
 function fecharModalDetalhes() {
     const modal = document.getElementById('modal-detalhes-pedido');
     if (modal) {
-        modal.style.display = 'none';
         modal.classList.remove('aberto');
+        modal.style.display = 'none';
     }
 }
 
-function fecharModalDetalhes() {
-    document.getElementById('modal-detalhes-pedido').style.display = 'none';
-}
+// Fecha o modal de detalhes ou o painel lateral ao clicar no fundo escuro (overlay)
+window.addEventListener('click', (event) => {
+    const modalDetalhes = document.getElementById('modal-detalhes-pedido');
+    if (event.target === modalDetalhes) {
+        fecharModalDetalhes();
+    }
+
+    const painelNovo = document.getElementById('modal-novo-pedido');
+    if (event.target === painelNovo) {
+        fecharModalNovoPedido();
+    }
+});
 
 async function atualizarStatus(idPedido, novoStatus) {
     if (!confirm(`Deseja alterar o status do pedido para ${novoStatus}?`)) return;
@@ -610,11 +619,20 @@ async function salvarNovoPedido(e) {
     const tipo = document.getElementById('novo-tipo').value;
     const clienteVal = document.getElementById('novo-cliente').value;
     const idCliente = clienteVal ? Number(clienteVal) : null;
-    const observacao = document.getElementById('novo-observacao').value;
+    const observacao = document.getElementById('novo-observacao').value.trim();
     const idUser = Number(localStorage.getItem('beeflux_usuario_id')) || 1;
 
-    let agendamento = null;
-    let taxaEntrega = 0;
+    const payload = {
+        id_cliente: idCliente,
+        tipo_pedido: tipo,
+        observacao: observacao || null,
+        taxa_entrega: 0,
+        itens: itensRascunho.map(it => ({
+            id_produto: Number(it.id_produto),
+            quantidade: Number(it.quantidade)
+        })),
+        id_user: idUser
+    };
 
     if (tipo === 'AGENDADO') {
         if (!idCliente) {
@@ -627,30 +645,26 @@ async function salvarNovoPedido(e) {
         }
 
         const atend = document.getElementById('novo-atendimento').value;
-        const endereco = document.getElementById('novo-endereco').value;
+        const endereco = document.getElementById('novo-endereco').value.trim();
 
-        if (atend === 'ENTREGA' && (!endereco || endereco.trim() === '')) {
+        if (atend === 'ENTREGA' && !endereco) {
             return alert('Informe o endereço de entrega.');
         }
 
-        taxaEntrega = atend === 'ENTREGA' ? Number(document.getElementById('novo-taxa').value) || 0 : 0;
-
-        agendamento = {
+        payload.taxa_entrega = atend === 'ENTREGA' ? (Number(document.getElementById('novo-taxa').value) || 0) : 0;
+        payload.agendamento = {
             tipo_atendimento: atend,
             data_hora_agendada: dataHora.replace('T', ' ') + ':00',
             endereco_entrega: atend === 'ENTREGA' ? endereco : null
         };
     }
 
-    const payload = {
-        id_cliente: idCliente,
-        tipo_pedido: tipo,
-        observacao: observacao || null,
-        taxa_entrega: taxaEntrega,
-        itens: itensRascunho.map(it => ({ id_produto: it.id_produto, quantidade: it.quantidade })),
-        agendamento: agendamento,
-        id_user: idUser
-    };
+    const btnSubmit = e.target.querySelector('button[type="submit"]');
+    const textoOriginal = btnSubmit ? btnSubmit.innerHTML : '';
+    if (btnSubmit) {
+        btnSubmit.disabled = true;
+        btnSubmit.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Salvando...';
+    }
 
     try {
         const res = await fetch(API_PEDIDOS_URL, {
@@ -659,13 +673,30 @@ async function salvarNovoPedido(e) {
             body: JSON.stringify(payload)
         });
 
-        const dados = await res.json();
-        if (!res.ok) throw new Error(dados.mensagem || 'Erro ao criar pedido.');
+        const textoResposta = await res.text();
+        let dados = {};
+        try {
+            dados = JSON.parse(textoResposta);
+        } catch {
+            throw new Error(`Resposta inválida do servidor (HTTP ${res.status}): ${textoResposta}`);
+        }
 
-        alert(`Pedido #${dados.id_pedido || 'criado'} gerado com sucesso!`);
+        if (!res.ok) {
+            throw new Error(dados.mensagem || dados.error || dados.message || `Erro HTTP ${res.status} ao criar pedido.`);
+        }
+
+        alert(`Pedido #${dados.id_pedido || dados.pedido?.id_pedido || 'criado'} gerado com sucesso!`);
+        itensRascunho = [];
+        atualizarListaRascunho();
         fecharModalNovoPedido();
-        carregarPedidos();
+        await carregarPedidos();
     } catch (err) {
+        console.error('Erro ao salvar pedido:', err);
         alert(err.message);
+    } finally {
+        if (btnSubmit) {
+            btnSubmit.disabled = false;
+            btnSubmit.innerHTML = textoOriginal;
+        }
     }
 }
