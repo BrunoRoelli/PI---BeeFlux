@@ -4,6 +4,10 @@ document.addEventListener("DOMContentLoaded", () => {
     let clientesData = [];
     let fornecedoresData = [];
 
+    // Estado de edição (não depende de input hidden no HTML)
+    let editingContactId = null;
+    let editingOriginalType = null; // 'cliente' ou 'fornecedor'
+
     // Tabelas cliente e fornecedor
     const clientsTableBody = document.getElementById("clients-table-body");
     const supplierTableBody = document.getElementById("supplier-table-body");
@@ -29,8 +33,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const labelClientName = document.getElementById("label-client-name");
     const stockProductsDatalist = document.getElementById("stock-products-datalist");
 
-    // Elementos para controle de Edição
-    const editContactDbIdInput = document.getElementById("edit-contact-db-id");
     const modalTitleElem = document.getElementById("modal-title");
     const modalDescElem = clientModal.querySelector(".modal-header p");
     const saveBtnTextElem = document.getElementById("save-btn-text");
@@ -78,32 +80,32 @@ document.addEventListener("DOMContentLoaded", () => {
         return dataStr;
     }
 
-    // Carregar Clientes e Fornecedores do MySQL
+    // Carregar Clientes e Fornecedores ativos do MySQL
     async function carregarContatosDoBanco() {
         try {
             const [clientesApi, fornecedoresApi] = await Promise.all([
-                apiRequest("/clientes?status=ativo"),
-                apiRequest("/fornecedores?status=ativo")
+                apiRequest("/clientes?status=ativos"),
+                apiRequest("/fornecedores?status=ativos")
             ]);
 
             clientesData = (clientesApi || []).map(c => ({
-                id: c.id_cliente ?? c.id,
-                nome: c.nome_cliente ?? c.nome ?? "",
-                telefone: c.telefone_cliente ?? c.telefone ?? "",
-                email: c.email_cliente ?? c.email ?? "",
-                aniversario: c.data_nascimento ? String(c.data_nascimento).split("T")[0] : "",
-                observacoes: c.observacao ?? c.observacoes ?? "",
-                totalGasto: formatarMoeda(c.total_pedidos ?? c.total_gasto ?? 0)
+                id: Number(c.id_cliente),
+                nome: c.nome_cliente || "",
+                telefone: c.telefone_cliente || "",
+                email: c.email_cliente || "",
+                aniversario: "",
+                observacoes: c.observacao || "",
+                totalGasto: formatarMoeda(c.total_pedidos ?? 0)
             }));
 
             fornecedoresData = (fornecedoresApi || []).map(f => ({
-                id: f.id_fornecedor ?? f.id,
-                nome: f.nome_fornecedor ?? f.nome ?? "",
-                telefone: f.telefone_fornecedor ?? f.telefone ?? "",
-                email: f.email_fornecedor ?? f.email ?? "",
-                produtoConsumido: f.produto_consumido || f.cidade || "-",
-                observacoes: f.observacao ?? f.observacoes ?? "",
-                totalGasto: formatarMoeda(f.total_compras ?? f.total_gasto ?? 0)
+                id: Number(f.id_fornecedor),
+                nome: f.nome_fornecedor || "",
+                telefone: f.telefone_fornecedor || "",
+                email: f.email_fornecedor || "",
+                produtoConsumido: f.produtos_fornecidos || "-",
+                observacoes: f.complemento || "",
+                totalGasto: formatarMoeda(f.total_comprado ?? 0)
             }));
 
             renderContacts(searchContactInput.value);
@@ -125,7 +127,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 stockProductsDatalist.appendChild(option);
             });
         } catch {
-            // Ignora silenciosamente caso o estoque ainda esteja vazio
+            // Ignora caso não haja produtos
         }
     }
 
@@ -138,7 +140,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // Alternar campos do modal conforme seleção (Cliente vs Fornecedor)
     contactTypeSelect.addEventListener("change", (e) => {
         const type = e.target.value;
-        const isEditing = editContactDbIdInput && editContactDbIdInput.value !== "";
+        const isEditing = editingContactId !== null;
 
         if (type === "cliente") {
             if (labelClientName) labelClientName.textContent = "Nome Completo";
@@ -149,29 +151,30 @@ document.addEventListener("DOMContentLoaded", () => {
                 <input type="date" id="client-birthday">
             `;
             if (!isEditing) {
-                modalTitleElem.textContent = "Cadastrar Novo Cliente";
-                saveBtnTextElem.textContent = "Salvar Cliente";
+                if (modalTitleElem) modalTitleElem.textContent = "Cadastrar Novo Cliente";
+                if (saveBtnTextElem) saveBtnTextElem.textContent = "Salvar Cliente";
             }
-            document.getElementById("client-notes").placeholder = "Ex: Intolerante a lactose";
+            const notesEl = document.getElementById("client-notes");
+            if (notesEl) notesEl.placeholder = "Ex: Intolerante a lactose";
         } else {
             if (labelClientName) labelClientName.textContent = "Nome do Fornecedor";
             if (clientNameInput) clientNameInput.placeholder = "Ex: Distribuidora Doces & Cia";
-            document.getElementById("client-notes").placeholder = "Ex: Entregam 2 dias após o pedido";
+            const notesEl = document.getElementById("client-notes");
+            if (notesEl) notesEl.placeholder = "Ex: Entregam 2 dias após o pedido";
 
             dynamicFieldContainer.innerHTML = `
                 <label for="client-product">Produto Consumido / Fornecido</label>
                 <input type="text" id="client-product" list="stock-products-datalist" placeholder="Ex: Embalagens, Leite Condensado">
             `;
             if (!isEditing) {
-                modalTitleElem.textContent = "Cadastrar Novo Fornecedor";
-                saveBtnTextElem.textContent = "Salvar Fornecedor";
+                if (modalTitleElem) modalTitleElem.textContent = "Cadastrar Novo Fornecedor";
+                if (saveBtnTextElem) saveBtnTextElem.textContent = "Salvar Fornecedor";
             }
 
             carregarProdutosEstoqueParaDatalist();
         }
     });
 
-    // Função para formatar o telefone automaticamente
     function formatarTelefone(telefone) {
         if (!telefone) return "Sem telefone";
         const apenasNumeros = String(telefone).replace(/\D/g, "");
@@ -185,7 +188,6 @@ document.addEventListener("DOMContentLoaded", () => {
         return telefone;
     }
 
-    // Função para renderizar as tabelas aplicando busca e o filtro de botões
     function renderContacts(search = "") {
         clientsTableBody.innerHTML = "";
         supplierTableBody.innerHTML = "";
@@ -233,13 +235,13 @@ document.addEventListener("DOMContentLoaded", () => {
                         <td>${aniversarioFormatado}</td>
                         <td><strong>${client.totalGasto}</strong></td>
                         <td>
-                            <button class="action-icon-btn edit-contact-btn" title="Editar Cliente" data-type="cliente" data-id="${client.id}">
+                            <button type="button" class="action-icon-btn edit-contact-btn" title="Editar Cliente" data-type="cliente" data-id="${client.id}">
                                 <i class="fa-solid fa-pen-to-square"></i>
                             </button>
-                            <button class="action-icon-btn history-btn" title="Ver Histórico e Observações" data-type="cliente" data-id="${client.id}">
+                            <button type="button" class="action-icon-btn history-btn" title="Ver Histórico e Observações" data-type="cliente" data-id="${client.id}">
                                 <i class="fa-regular fa-circle-user"></i>
                             </button>
-                            <button class="action-icon-btn delete-contact-btn" title="Excluir Cliente" data-type="cliente" data-id="${client.id}">
+                            <button type="button" class="action-icon-btn delete-contact-btn" title="Excluir Cliente" data-type="cliente" data-id="${client.id}">
                                 <i class="fa-solid fa-trash"></i>
                             </button>
                         </td>
@@ -262,13 +264,13 @@ document.addEventListener("DOMContentLoaded", () => {
                         <td>${supplier.produtoConsumido}</td>
                         <td><strong>${supplier.totalGasto}</strong></td>
                         <td>
-                            <button class="action-icon-btn edit-contact-btn" title="Editar Fornecedor" data-type="fornecedor" data-id="${supplier.id}">
+                            <button type="button" class="action-icon-btn edit-contact-btn" title="Editar Fornecedor" data-type="fornecedor" data-id="${supplier.id}">
                                 <i class="fa-solid fa-pen-to-square"></i>
                             </button>
-                            <button class="action-icon-btn history-btn" title="Ver Histórico e Observações" data-type="fornecedor" data-id="${supplier.id}">
+                            <button type="button" class="action-icon-btn history-btn" title="Ver Histórico e Observações" data-type="fornecedor" data-id="${supplier.id}">
                                 <i class="fa-regular fa-circle-user"></i>
                             </button>
-                            <button class="action-icon-btn delete-contact-btn" title="Excluir Fornecedor" data-type="fornecedor" data-id="${supplier.id}">
+                            <button type="button" class="action-icon-btn delete-contact-btn" title="Excluir Fornecedor" data-type="fornecedor" data-id="${supplier.id}">
                                 <i class="fa-solid fa-trash"></i>
                             </button>
                         </td>
@@ -277,6 +279,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 });
             }
         }
+
         attachEventListeners();
     }
 
@@ -297,13 +300,15 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     function attachEventListeners() {
-        // Evento para Editar Contato
+        // 1. EDITAR CONTATO
         document.querySelectorAll(".edit-contact-btn").forEach(btn => {
             btn.addEventListener("click", (e) => {
-                const id = parseInt(e.currentTarget.getAttribute("data-id"));
+                const id = Number(e.currentTarget.getAttribute("data-id"));
                 const type = e.currentTarget.getAttribute("data-type");
 
-                if (editContactDbIdInput) editContactDbIdInput.value = id;
+                editingContactId = id;
+                editingOriginalType = type;
+
                 contactTypeSelect.value = type;
                 contactTypeSelect.dispatchEvent(new Event("change"));
 
@@ -318,8 +323,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     if (bdayInput) bdayInput.value = client.aniversario || "";
                     document.getElementById("client-notes").value = client.observacoes || "";
 
-                    modalTitleElem.textContent = "Editar Cliente";
-                    saveBtnTextElem.textContent = "Salvar Alterações";
+                    if (modalTitleElem) modalTitleElem.textContent = "Editar Cliente";
+                    if (saveBtnTextElem) saveBtnTextElem.textContent = "Salvar Alterações";
                 } else {
                     const supplier = fornecedoresData.find(f => f.id === id);
                     if (!supplier) return;
@@ -331,28 +336,28 @@ document.addEventListener("DOMContentLoaded", () => {
                     if (prodInput) prodInput.value = supplier.produtoConsumido !== "-" ? supplier.produtoConsumido : "";
                     document.getElementById("client-notes").value = supplier.observacoes || "";
 
-                    modalTitleElem.textContent = "Editar Fornecedor";
-                    saveBtnTextElem.textContent = "Salvar Alterações";
+                    if (modalTitleElem) modalTitleElem.textContent = "Editar Fornecedor";
+                    if (saveBtnTextElem) saveBtnTextElem.textContent = "Salvar Alterações";
                 }
 
-                modalDescElem.textContent = "Modifique as informações do contato selecionado.";
+                if (modalDescElem) modalDescElem.textContent = "Modifique as informações ou altere o tipo (Cliente/Fornecedor).";
                 clientModal.classList.add("active");
             });
         });
 
-        // Evento para Ver Histórico (busca direto do MySQL)
+        // 2. VER HISTÓRICO
         document.querySelectorAll(".history-btn").forEach(btn => {
             btn.addEventListener("click", async (e) => {
-                const id = parseInt(e.currentTarget.getAttribute("data-id"));
+                const id = Number(e.currentTarget.getAttribute("data-id"));
                 const type = e.currentTarget.getAttribute("data-type");
                 await openHistoryModal(id, type);
             });
         });
 
-        // Evento para Excluir/Desativar Contato (PATCH /clientes/:id/status ou /fornecedores/:id/status)
+        // 3. EXCLUIR / DESATIVAR CONTATO
         document.querySelectorAll(".delete-contact-btn").forEach(btn => {
             btn.addEventListener("click", async (e) => {
-                const id = parseInt(e.currentTarget.getAttribute("data-id"));
+                const id = Number(e.currentTarget.getAttribute("data-id"));
                 const type = e.currentTarget.getAttribute("data-type");
                 const tipoTexto = type === "cliente" ? "este cliente" : "este fornecedor";
 
@@ -409,9 +414,9 @@ document.addEventListener("DOMContentLoaded", () => {
             if (Array.isArray(historicoApi) && historicoApi.length > 0) {
                 historicoApi.forEach(order => {
                     const tr = document.createElement("tr");
-                    const descricao = order.produto || order.descricao || order.nome_produto || `Registro #${order.id_pedido || order.id_compra || ""}`;
-                    const data = formatarData(order.data || order.data_pedido || order.data_compra || order.created_at);
-                    const valor = formatarMoeda(order.valor ?? order.valor_total ?? 0);
+                    const descricao = order.itens || `Registro #${order.id_pedido || order.id_compra || ""}`;
+                    const data = formatarData(order.data_pedido || order.data_compra);
+                    const valor = formatarMoeda(order.valor_total ?? 0);
 
                     tr.innerHTML = `
                         <td>${descricao}</td>
@@ -423,20 +428,21 @@ document.addEventListener("DOMContentLoaded", () => {
             } else {
                 historyOrdersBody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: var(--text-muted);">Nenhum registro encontrado.</td></tr>`;
             }
-        } catch (err) {
+        } catch {
             historyOrdersBody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: var(--text-muted);">Nenhum registro encontrado.</td></tr>`;
         }
     }
 
-    // Botão para Novo Contato (Limpa o ID de edição)
+    // Botão para Novo Contato (reseta o estado de edição)
     openNewClientModalBtn.addEventListener("click", () => {
-        if (editContactDbIdInput) editContactDbIdInput.value = "";
+        editingContactId = null;
+        editingOriginalType = null;
         clientForm.reset();
         contactTypeSelect.value = "cliente";
         contactTypeSelect.dispatchEvent(new Event("change"));
-        modalTitleElem.textContent = "Cadastrar Novo Cliente";
-        modalDescElem.textContent = "Adicione as informações de clientes ou fornecedores.";
-        saveBtnTextElem.textContent = "Salvar Cliente";
+        if (modalTitleElem) modalTitleElem.textContent = "Cadastrar Novo Cliente";
+        if (modalDescElem) modalDescElem.textContent = "Adicione as informações de clientes ou fornecedores.";
+        if (saveBtnTextElem) saveBtnTextElem.textContent = "Salvar Cliente";
         clientModal.classList.add("active");
     });
 
@@ -448,7 +454,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (e.target === historyModal) historyModal.classList.remove("active");
     });
 
-    // Submissão do Formulário (POST ou PUT direto no MySQL)
+    // Submissão do Formulário (Criação, Edição e Conversão Cliente <-> Fornecedor)
     clientForm.addEventListener("submit", async (e) => {
         e.preventDefault();
         const type = contactTypeSelect.value;
@@ -458,55 +464,93 @@ document.addEventListener("DOMContentLoaded", () => {
         const email = emailInput && emailInput.value.trim() !== "" ? emailInput.value.trim() : null;
         const observacaoInput = document.getElementById("client-notes").value.trim();
         const observacao = observacaoInput !== "" ? observacaoInput : null;
-        const editId = editContactDbIdInput ? editContactDbIdInput.value : "";
 
         try {
-            if (type === "cliente") {
-                const payloadCliente = {
-                    nome,
-                    telefone,
-                    email,
-                    observacao
-                };
-
-                if (editId) {
-                    await apiRequest(`/clientes/${editId}`, {
+            // CASO 1: Estava editando e TROCOU o tipo (Cliente -> Fornecedor ou Fornecedor -> Cliente)
+            if (editingContactId !== null && editingOriginalType !== null && editingOriginalType !== type) {
+                if (type === "fornecedor") {
+                    // Cria como fornecedor
+                    await apiRequest("/fornecedores", {
+                        method: "POST",
+                        body: JSON.stringify({
+                            nome,
+                            telefone: telefone || null,
+                            email,
+                            complemento: observacao
+                        })
+                    });
+                    // Desativa o cliente antigo
+                    await apiRequest(`/clientes/${editingContactId}/status`, {
+                        method: "PATCH",
+                        body: JSON.stringify({ ativo: false })
+                    });
+                    alert("Contato convertido de Cliente para Fornecedor com sucesso!");
+                } else {
+                    // Cria como cliente
+                    await apiRequest("/clientes", {
+                        method: "POST",
+                        body: JSON.stringify({
+                            nome,
+                            telefone,
+                            email,
+                            observacao
+                        })
+                    });
+                    // Desativa o fornecedor antigo
+                    await apiRequest(`/fornecedores/${editingContactId}/status`, {
+                        method: "PATCH",
+                        body: JSON.stringify({ ativo: false })
+                    });
+                    alert("Contato convertido de Fornecedor para Cliente com sucesso!");
+                }
+            }
+            // CASO 2: Edição normal no mesmo tipo
+            else if (editingContactId !== null) {
+                if (type === "cliente") {
+                    await apiRequest(`/clientes/${editingContactId}`, {
                         method: "PUT",
-                        body: JSON.stringify(payloadCliente)
+                        body: JSON.stringify({ nome, telefone, email, observacao })
                     });
                     alert("Cliente atualizado no banco de dados com sucesso!");
                 } else {
-                    await apiRequest("/clientes", {
-                        method: "POST",
-                        body: JSON.stringify(payloadCliente)
-                    });
-                    alert("Cliente cadastrado no banco de dados com sucesso!");
-                }
-            } else {
-                const payloadFornecedor = {
-                    nome,
-                    telefone: telefone || null,
-                    email
-                };
-
-                if (editId) {
-                    await apiRequest(`/fornecedores/${editId}`, {
+                    await apiRequest(`/fornecedores/${editingContactId}`, {
                         method: "PUT",
-                        body: JSON.stringify(payloadFornecedor)
+                        body: JSON.stringify({
+                            nome,
+                            telefone: telefone || null,
+                            email,
+                            complemento: observacao
+                        })
                     });
                     alert("Fornecedor atualizado no banco de dados com sucesso!");
+                }
+            }
+            // CASO 3: Novo cadastro
+            else {
+                if (type === "cliente") {
+                    await apiRequest("/clientes", {
+                        method: "POST",
+                        body: JSON.stringify({ nome, telefone, email, observacao })
+                    });
+                    alert("Cliente cadastrado no banco de dados com sucesso!");
                 } else {
                     await apiRequest("/fornecedores", {
                         method: "POST",
-                        body: JSON.stringify(payloadFornecedor)
+                        body: JSON.stringify({
+                            nome,
+                            telefone: telefone || null,
+                            email,
+                            complemento: observacao
+                        })
                     });
                     alert("Fornecedor cadastrado no banco de dados com sucesso!");
                 }
             }
 
+            editingContactId = null;
+            editingOriginalType = null;
             await carregarContatosDoBanco();
             clientForm.reset();
-            if (editContactDbIdInput) editContactDbIdInput.value = "";
             contactTypeSelect.value = "cliente";
             contactTypeSelect.dispatchEvent(new Event("change"));
             clientModal.classList.remove("active");
@@ -519,7 +563,7 @@ document.addEventListener("DOMContentLoaded", () => {
         renderContacts(e.target.value);
     });
 
-    // Inicialização buscando direto do MySQL
+    // Inicialização
     carregarProdutosEstoqueParaDatalist();
     carregarContatosDoBanco();
 });
