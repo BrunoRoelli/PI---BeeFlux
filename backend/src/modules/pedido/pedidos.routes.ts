@@ -9,6 +9,7 @@ router.post('/', controller.criarPedido);
 router.put('/:id/itens', controller.atualizarItens);
 router.delete('/:id', controller.excluirPedidoPendente);
 router.post('/:id/pagamentos', controller.registrarPagamento);
+router.post('/:id/pagar', controller.registrarPagamento);
 router.patch('/:id/status', controller.atualizarStatus);
 router.post('/:id/cancelar', controller.cancelarPedido);
 
