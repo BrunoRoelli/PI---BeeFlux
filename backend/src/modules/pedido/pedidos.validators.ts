@@ -127,26 +127,38 @@ function validarAgendamento(
   };
 }
 
-export function validarPagamento(pagamento: unknown): PagamentoInput | null {
+export function validarPagamento(pagamento: unknown, exigirValor = true): PagamentoInput | null {
   if (pagamento === undefined || pagamento === null) return null;
 
   if (typeof pagamento !== 'object') {
     throw new Error('Dados de pagamento inválidos.');
   }
 
-  const { valor_pagamento, forma_pagamento } = pagamento as Record<string, unknown>;
-
-  if (typeof valor_pagamento !== 'number' || !Number.isFinite(valor_pagamento) || valor_pagamento <= 0) {
-    throw new Error('Valor do pagamento deve ser um número maior que zero.');
-  }
+  const { valor_pagamento, forma_pagamento, status_pagamento } = pagamento as Record<string, unknown>;
 
   if (!FORMAS_PAGAMENTO_VALIDAS.includes(forma_pagamento as FormaPagamento)) {
     throw new Error(`Forma de pagamento inválida. Opções aceitas: ${FORMAS_PAGAMENTO_VALIDAS.join(', ')}.`);
   }
 
+  if (valor_pagamento !== undefined && valor_pagamento !== null) {
+    const valNum = Number(valor_pagamento);
+    if (!Number.isFinite(valNum) || valNum <= 0) {
+      throw new Error('Valor do pagamento deve ser um número maior que zero.');
+    }
+    return {
+      valor_pagamento: arredondarMoeda(valNum),
+      forma_pagamento: forma_pagamento as FormaPagamento,
+      status_pagamento: (status_pagamento as PagamentoInput['status_pagamento']) || 'CONFIRMADO'
+    };
+  }
+
+  if (exigirValor) {
+    throw new Error('Valor do pagamento deve ser um número maior que zero.');
+  }
+
   return {
-    valor_pagamento: arredondarMoeda(valor_pagamento),
-    forma_pagamento: forma_pagamento as FormaPagamento
+    forma_pagamento: forma_pagamento as FormaPagamento,
+    status_pagamento: (status_pagamento as PagamentoInput['status_pagamento']) || 'CONFIRMADO'
   };
 }
 
@@ -191,7 +203,7 @@ export function validarCriarPedido(dados: unknown): CriarPedidoInput {
 
   const itensValidados = validarItens(itens);
   const agendamentoValidado = validarAgendamento(agendamento, tipo_pedido, taxa);
-  const pagamentoValidado = validarPagamento(pagamento);
+  const pagamentoValidado = validarPagamento(pagamento, false);
 
   return {
     id_cliente: clienteId,

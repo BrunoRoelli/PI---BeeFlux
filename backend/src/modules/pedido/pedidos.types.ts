@@ -46,8 +46,9 @@ export interface AgendamentoInput {
 }
 
 export interface PagamentoInput {
-  valor_pagamento: number;
+  valor_pagamento?: number;
   forma_pagamento: FormaPagamento;
+  status_pagamento?: StatusPagamento;
 }
 
 export interface CriarPedidoInput {
