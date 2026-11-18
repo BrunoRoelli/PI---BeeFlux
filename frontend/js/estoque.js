@@ -192,11 +192,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function carregarDatalistProdutos() {
         productsDatalist.innerHTML = "";
-        estoqueData.forEach(item => {
-            const option = document.createElement("option");
-            option.value = item.nome;
-            productsDatalist.appendChild(option);
-        });
+        estoqueData
+            .filter(item => item.tipoOriginal !== "FEITO" && item.ativo)
+            .forEach(item => {
+                const option = document.createElement("option");
+                option.value = item.nome;
+                productsDatalist.appendChild(option);
+            });
     }
 
     function carregarSelectFornecedores() {
@@ -293,17 +295,20 @@ document.addEventListener("DOMContentLoaded", () => {
                 <td style="text-transform: capitalize;">${item.categoria}</td>
                 <td>R$ ${item.preco.toFixed(2).replace(".", ",")}</td>
                 <td style="white-space: nowrap;">
-                    <button class="action-icon-btn remove-qty-btn" title="Diminuir quantidade" data-id="${item.id}">
-                        <i class="fa-solid fa-minus"></i>
-                    </button>
-                    
-                    <strong class="edit-qty-direct" title="Clique para alterar a quantidade exata" data-id="${item.id}" style="margin: 0 8px; font-size: 0.95rem; cursor: pointer; text-decoration: underline dotted; color: var(--pink-escuro);">
-                        ${item.quantidade} ${item.unidade}
-                    </strong>
-                    
-                    <button class="action-icon-btn add-qty-btn" title="Aumentar quantidade" data-id="${item.id}">
-                        <i class="fa-solid fa-plus"></i>
-                    </button>
+                    ${item.tipoOriginal === "FEITO" ? `
+                        <strong title="Estoque atualizado pelo registro de produção">${item.quantidade} ${item.unidade}</strong>
+                        <small style="display:block;color:var(--text-muted);">Atualizado pela produção</small>
+                    ` : `
+                        <button class="action-icon-btn remove-qty-btn" title="Diminuir quantidade" data-id="${item.id}">
+                            <i class="fa-solid fa-minus"></i>
+                        </button>
+                        <strong class="edit-qty-direct" title="Clique para alterar a quantidade exata" data-id="${item.id}" style="margin: 0 8px; font-size: 0.95rem; cursor: pointer; text-decoration: underline dotted; color: var(--pink-escuro);">
+                            ${item.quantidade} ${item.unidade}
+                        </strong>
+                        <button class="action-icon-btn add-qty-btn" title="Aumentar quantidade" data-id="${item.id}">
+                            <i class="fa-solid fa-plus"></i>
+                        </button>
+                    `}
                 </td>
                 <td>${item.minimo} ${item.unidade}</td>
                 <td>
@@ -517,6 +522,10 @@ document.addEventListener("DOMContentLoaded", () => {
             const item = estoqueData.find(i => i.id === id);
 
             if (!item || isNaN(novaQuantidade) || novaQuantidade < 0) return;
+            if (item.tipoOriginal === "FEITO") {
+                alert("O saldo de produtos FEITOS é atualizado pelo registro de produção. Não ajuste a quantidade diretamente.");
+                return;
+            }
 
             const lotesDoItem = lotesData.filter(l => l.insumoId === id);
             try {
@@ -586,6 +595,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     infoAddBatchBtn.addEventListener("click", () => {
         if (!currentSelectedItemForModal) return;
+        if (currentSelectedItemForModal.tipoOriginal === "FEITO") {
+            alert("Produtos FEITOS não possuem lotes. Utilize o registro de produção.");
+            return;
+        }
         infoModal.classList.remove("active");
         batchProductInput.value = currentSelectedItemForModal.nome;
         batchModal.classList.add("active");
@@ -610,6 +623,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (!insumoExistente) {
             batchProductError.style.display = "block";
+            return;
+        }
+        if (insumoExistente.tipoOriginal === "FEITO") {
+            alert("Produtos do tipo FEITO não recebem lotes diretamente. Registre a produção para atualizar o estoque.");
             return;
         }
 
@@ -675,9 +692,11 @@ document.addEventListener("DOMContentLoaded", () => {
                     })
                 });
 
-                // Se informou quantidade inicial > 0, cria um lote inicial para gerar saldo
+                // Ingredientes e revendas usam lotes. Produtos FEITOS recebem saldo
+                // exclusivamente pelo fluxo de registro de produção.
+                const tipoNovoProduto = mapearTipoParaApi(categoriaFront);
                 const novoId = criado?.id_produto || criado?.id;
-                if (novoId && qtdInicial > 0) {
+                if (novoId && qtdInicial > 0 && tipoNovoProduto !== "FEITO") {
                     await apiRequest("/estoque/lotes", {
                         method: "POST",
                         body: JSON.stringify({
@@ -688,7 +707,11 @@ document.addEventListener("DOMContentLoaded", () => {
                     });
                 }
 
-                alert("Insumo cadastrado no banco de dados com sucesso!");
+                if (tipoNovoProduto === "FEITO" && qtdInicial > 0) {
+                    alert("Produto FEITO cadastrado. A quantidade inicial informada não foi lançada: registre a produção para atualizar o estoque.");
+                } else {
+                    alert("Insumo cadastrado no banco de dados com sucesso!");
+                }
             }
 
             itemForm.reset();
