@@ -37,6 +37,7 @@ async function carregarPedidos() {
         listaPedidos = await res.json();
         renderizarTabela(listaPedidos);
         atualizarMetricas(listaPedidos);
+        await atualizarContadorProntos();
         renderizarAgenda();
     } catch (e) {
         if (tbody) {
@@ -54,6 +55,7 @@ async function carregarPedidosSilencioso() {
         listaPedidos = await res.json();
         filtrarPedidos();
         atualizarMetricas(listaPedidos);
+        await atualizarContadorProntos();
         renderizarAgenda();
     } catch {
         // Falhas silenciosas de rede mantêm o estado atual
@@ -110,19 +112,42 @@ function renderizarTabela(pedidos) {
 function atualizarMetricas(pedidos) {
     const pendentes = pedidos.filter(p => p.status_pedido === 'PENDENTE').length;
     const preparacao = pedidos.filter(p => p.status_pedido === 'EM_PREPARACAO').length;
-    const prontos = pedidos.filter(p => p.status_pedido === 'PRONTO').length;
     const faturamento = pedidos.filter(p => p.status_pedido !== 'CANCELADO')
                                .reduce((acc, p) => acc + Number(p.valor_total || 0), 0);
 
     const elPend = document.getElementById('total-pendentes');
     const elPrep = document.getElementById('total-em-preparacao');
-    const elPron = document.getElementById('total-prontos');
     const elFat = document.getElementById('total-faturamento');
 
     if (elPend) elPend.textContent = pendentes;
     if (elPrep) elPrep.textContent = preparacao;
-    if (elPron) elPron.textContent = prontos;
     if (elFat) elFat.textContent = `R$ ${faturamento.toFixed(2)}`;
+}
+
+// Consulta separadamente os pedidos PRONTO para que o contador não dependa
+// apenas dos 50 pedidos retornados pela listagem geral.
+async function atualizarContadorProntos() {
+    const contador = document.getElementById('total-prontos');
+    if (!contador) return;
+
+    try {
+        let pagina = 1;
+        let totalProntos = 0;
+        let lote = [];
+
+        do {
+            const res = await fetch(`${API_PEDIDOS_URL}?status=PRONTO&limite=100&pagina=${pagina}`);
+            if (!res.ok) throw new Error('Falha ao consultar pedidos prontos.');
+            lote = await res.json();
+            if (!Array.isArray(lote)) throw new Error('Resposta inválida ao consultar pedidos prontos.');
+            totalProntos += lote.length;
+            pagina += 1;
+        } while (lote.length === 100);
+
+        contador.textContent = totalProntos;
+    } catch (erro) {
+        console.warn('Não foi possível atualizar o contador de prontos/entregas:', erro);
+    }
 }
 
 function filtrarPedidos() {
@@ -456,6 +481,7 @@ function abrirModalNovoPedido() {
     const form = document.getElementById('form-novo-pedido');
     if (form) form.reset();
     alternarCamposAgendamento();
+    alternarCamposPagamento();
     
     // Aciona a classe 'ativo' para o painel deslizar para dentro da tela
     const painel = document.getElementById('modal-novo-pedido');
@@ -465,6 +491,18 @@ function abrirModalNovoPedido() {
 function fecharModalNovoPedido() {
     const painel = document.getElementById('modal-novo-pedido');
     if (painel) painel.classList.remove('ativo');
+}
+
+function alternarCamposPagamento() {
+    const statusEl = document.getElementById('novo-status-financeiro');
+    const grupoForma = document.getElementById('grupo-forma-pagamento');
+    const formaEl = document.getElementById('novo-forma-pagamento');
+    if (!statusEl || !grupoForma || !formaEl) return;
+
+    const jaPago = statusEl.value === 'PAGO';
+    grupoForma.style.display = jaPago ? 'block' : 'none';
+    formaEl.required = jaPago;
+    if (!jaPago) formaEl.value = '';
 }
 
 function alternarCamposAgendamento() {
@@ -658,6 +696,22 @@ async function salvarNovoPedido(e) {
             endereco_entrega: atend === 'ENTREGA' ? endereco : null
         };
     }
+
+    const situacaoFinanceira = document.getElementById('novo-status-financeiro').value;
+    if (situacaoFinanceira === 'PAGO') {
+        const formaPagamento = document.getElementById('novo-forma-pagamento').value;
+        if (!formaPagamento) {
+            return alert('Selecione a forma de pagamento para registrar o pedido como pago.');
+        }
+
+        // O backend calcula o total com os preços oficiais do banco e registra
+        // o pagamento integral, evitando diferenças de arredondamento no navegador.
+        payload.pagamento = {
+            forma_pagamento: formaPagamento,
+            status_pagamento: 'CONFIRMADO'
+        };
+    }
+    // Quando a situação é PENDENTE, não é criado pagamento confirmado.
 
     const btnSubmit = e.target.querySelector('button[type="submit"]');
     const textoOriginal = btnSubmit ? btnSubmit.innerHTML : '';

@@ -93,8 +93,12 @@ export async function criarPedido(
       dados.taxa_entrega ?? 0
     );
 
-    if (dados.pagamento) {
-      regras.validarValorPagamento(dados.pagamento.valor_pagamento, valorTotal);
+    const valorPagamento = dados.pagamento
+      ? (dados.pagamento.valor_pagamento ?? valorTotal)
+      : undefined;
+
+    if (dados.pagamento && valorPagamento !== undefined) {
+      regras.validarValorPagamento(valorPagamento, valorTotal);
     }
 
     if (dados.agendamento && dados.agendamento.data_hora_agendada) {
@@ -134,10 +138,10 @@ export async function criarPedido(
       });
     }
 
-    if (dados.pagamento) {
+    if (dados.pagamento && valorPagamento !== undefined) {
       await repo.inserirPagamento(conn, {
         id_pedido: idPedido,
-        valor_pagamento: dados.pagamento.valor_pagamento,
+        valor_pagamento: valorPagamento,
         forma_pagamento: dados.pagamento.forma_pagamento
       });
     }
@@ -150,12 +154,12 @@ export async function criarPedido(
       descricao_historico: `Pedido criado pelo usuário ${usuario.nome_user} com ${itensProcessados.length} item(ns). Valor Itens: R$ ${valorItens.toFixed(2)}, Taxa Entrega: R$ ${(dados.taxa_entrega ?? 0).toFixed(2)}, Total: R$ ${valorTotal.toFixed(2)}.`
     });
 
-    if (dados.pagamento) {
+    if (dados.pagamento && valorPagamento !== undefined) {
       await repo.registrarHistorico(conn, {
         id_pedido: idPedido,
         tipo_evento: 'ALTERACAO_VALOR',
-        valor_historico: dados.pagamento.valor_pagamento,
-        descricao_historico: `Pagamento integral de R$ ${dados.pagamento.valor_pagamento.toFixed(2)} confirmado via ${dados.pagamento.forma_pagamento}.`
+        valor_historico: valorPagamento,
+        descricao_historico: `Pagamento integral de R$ ${valorPagamento.toFixed(2)} confirmado via ${dados.pagamento.forma_pagamento}.`
       });
     }
 

@@ -145,6 +145,26 @@
                         </div>
 
                         <div class="input-group" style="margin-bottom: 16px;">
+                            <label for="novo-status-financeiro">Situação Financeira</label>
+                            <select id="novo-status-financeiro" onchange="alternarCamposPagamento()">
+                                <option value="PENDENTE" selected>Pendente (pagar depois)</option>
+                                <option value="PAGO">Já pago</option>
+                            </select>
+                        </div>
+
+                        <div class="input-group" id="grupo-forma-pagamento" style="display: none; margin-bottom: 16px;">
+                            <label for="novo-forma-pagamento">Forma de Pagamento</label>
+                            <select id="novo-forma-pagamento">
+                                <option value="">Selecione a forma de pagamento</option>
+                                <option value="DINHEIRO">Dinheiro</option>
+                                <option value="PIX">PIX</option>
+                                <option value="CARTAO_DEBITO">Cartão de débito</option>
+                                <option value="CARTAO_CREDITO">Cartão de crédito</option>
+                                <option value="OUTRO">Outro</option>
+                            </select>
+                        </div>
+
+                        <div class="input-group" style="margin-bottom: 16px;">
                             <label>Observações Gerais</label>
                             <input type="text" id="novo-observacao" placeholder="Ex: Sem cebola, embalar para presente...">
                         </div>
