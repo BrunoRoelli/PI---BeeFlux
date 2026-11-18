@@ -125,11 +125,7 @@ tr:last-child td { border-bottom: none; }
 }
 
 /* MODAIS */
-.modal-overlay:target {
-    opacity: 1;
-    visibility: visible;
-}
-.modal-overlay:target .modal-card { transform: translateY(0); }
+/* Os modais abrem pela classe .active (definida em modal.css e controlada pelo receitas.js) */
 
 /* Modal mais largo, pois o formulário de receita tem mais campos */
 .modal-card.modal-largo { max-width: 760px; }
@@ -218,3 +214,17 @@ tr:last-child td { border-bottom: none; }
 
     .caixa-pesquisa { width: 100%; }
 }
+
+/* Mensagens e estados vazios */
+[hidden] { display: none !important; }
+.msg {
+    padding: 12px 16px;
+    border-radius: 10px;
+    margin-bottom: 16px;
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+.msg-ok { background-color: #d1fae5; color: #047857; }
+.msg-erro { background-color: #fee2e2; color: #b91c1c; }
+.linha-vazia { text-align: center; padding: 28px 12px; opacity: 0.75; }
+.ingredientes-container { display: flex; flex-direction: column; gap: 12px; margin: 12px 0; }
