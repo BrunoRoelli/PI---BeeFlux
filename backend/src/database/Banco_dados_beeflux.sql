@@ -104,7 +104,6 @@ CREATE TABLE produtos (
 
     nome_produto VARCHAR(120) NOT NULL,
     descricao_produto VARCHAR(500),
-    marca VARCHAR(100),
 
     tipo_produto ENUM('REVENDA', 'INGREDIENTE', 'FEITO') NOT NULL,
     unidade_medida VARCHAR(20) NOT NULL DEFAULT 'un',

@@ -92,3 +92,15 @@ tr:last-child td { border-bottom: none; }
         display: none;
     }
 }
+/* Status de ativação do produto */
+.badge.inactive {
+    background-color: #e5e7eb;
+    color: #4b5563;
+}
+.item-inativo {
+    opacity: 0.68;
+    background-color: #f3f4f6;
+}
+.item-inativo .item-name {
+    text-decoration: line-through;
+}

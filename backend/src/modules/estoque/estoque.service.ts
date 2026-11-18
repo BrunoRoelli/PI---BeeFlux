@@ -24,8 +24,8 @@ async function executarComConexao<T>(
   return connExterna ? operacao(connExterna) : repo.executarTransacao(operacao);
 }
 
-export async function listar(tipo?: TipoProduto) {
-  return await repo.listarEstoque(tipo);
+export async function listar(tipo?: TipoProduto, incluirInativos = false) {
+  return await repo.listarEstoque(tipo, incluirInativos);
 }
 
 export async function lotes(idProduto: number) {
@@ -106,7 +106,6 @@ export async function editarProduto(id: number, d: EdicaoProduto) {
   await repo.atualizarProduto(id, {
     nome_produto: d.nome_produto,
     descricao_produto: d.descricao_produto,
-    marca: d.marca,
     unidade_medida: d.unidade_medida,
     preco_produto: d.preco_produto,
     estoque_minimo: d.estoque_minimo,
@@ -116,21 +115,26 @@ export async function editarProduto(id: number, d: EdicaoProduto) {
   return { mensagem: 'Produto atualizado com sucesso.' };
 }
 
-export async function desativarProduto(id: number) {
+export async function alterarStatusProduto(id: number, ativo: boolean) {
   if (!regras.inteiroPositivo(id)) throw new Error('ID do produto inválido.');
+  if (typeof ativo !== 'boolean') throw new Error('O status ativo deve ser verdadeiro ou falso.');
+  const atual = await repo.obterProduto(id);
+  if (!atual) throw new Error('Produto não encontrado.');
+  if (atual.ativo === ativo) return { mensagem: `Produto já está ${ativo ? 'ativo' : 'inativo'}.` };
 
-  const saldoFisico = await repo.saldoFisicoTotalProduto(id);
-  if (saldoFisico > 0) {
-    throw new Error(`Não é possível desativar um produto que ainda possui saldo em estoque (${saldoFisico}).`);
+  if (!ativo) {
+    const saldoFisico = await repo.saldoFisicoTotalProduto(id);
+    if (saldoFisico > 0) {
+      throw new Error(`Não é possível desativar um produto que ainda possui saldo em estoque (${saldoFisico}).`);
+    }
+
+    const reservas = await repo.reservasAtivasProduto(id);
+    if (reservas > 0) {
+      throw new Error(`Não é possível desativar um produto com reservas ativas pendentes (${reservas}).`);
+    }
   }
-
-  const reservas = await repo.reservasAtivasProduto(id);
-  if (reservas > 0) {
-    throw new Error(`Não é possível desativar um produto com reservas ativas pendentes (${reservas}).`);
-  }
-
-  await repo.desativarProduto(id);
-  return { mensagem: 'Produto desativado com sucesso.' };
+  await repo.alterarStatusProduto(id, ativo);
+  return { mensagem: `Produto ${ativo ? 'ativado' : 'desativado'} com sucesso.` };
 }
 
 export async function criarLote(d: NovoLote) {

@@ -9,6 +9,8 @@ export interface ProdutoEstoque {
   nome_produto: string;
   tipo_produto: TipoProduto;
   unidade_medida: string;
+  preco_produto: number;
+  ativo: boolean;
   estoque_minimo: number;
   saldo_atual: number;      // Lotes vigentes ou saldo atual de FEITO
   saldo_fisico: number;     // Todos os lotes (inclusive vencidos) ou FEITO
@@ -23,7 +25,6 @@ export interface Produto {
   id_categoria: number | null;
   nome_produto: string;
   descricao_produto: string | null;
-  marca: string | null;
   tipo_produto: TipoProduto;
   unidade_medida: string;
   preco_produto: number;
@@ -38,7 +39,6 @@ export interface CadastroProduto {
   preco_produto?: number;
   estoque_minimo?: number;
   descricao_produto?: string | null;
-  marca?: string | null;
   id_categoria?: number | null;
 }
 
@@ -48,7 +48,6 @@ export interface EdicaoProduto {
   preco_produto?: number;
   estoque_minimo?: number;
   descricao_produto?: string | null;
-  marca?: string | null;
   id_categoria?: number | null;
 }
 

@@ -130,7 +130,7 @@ document.addEventListener("DOMContentLoaded", () => {
     async function carregarDadosDoBanco() {
         try {
             // 1. Busca todos os produtos do estoque no MySQL
-            const produtosApi = await apiRequest("/estoque");
+            const produtosApi = await apiRequest("/estoque?incluir_inativos=true");
 
             estoqueData = produtosApi.map(p => ({
                 id: p.id_produto,
@@ -139,6 +139,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 tipoOriginal: p.tipo_produto,
                 quantidade: Number(p.saldo_atual ?? 0),
                 minimo: Number(p.estoque_minimo ?? 0),
+                preco: Number(p.preco_produto ?? 0),
+                ativo: Boolean(p.ativo),
                 unidade: p.unidade_medida,
                 fornecedorId: p.id_fornecedor || null
             }));
@@ -276,7 +278,7 @@ document.addEventListener("DOMContentLoaded", () => {
         lowStockCount.textContent = countLow;
 
         if (filtered.length === 0) {
-            tableBody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--cor-corpo-texto); padding: 25px;">Nenhum insumo encontrado.</td></tr>`;
+            tableBody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--cor-corpo-texto); padding: 25px;">Nenhum insumo encontrado.</td></tr>`;
             return;
         }
 
@@ -284,11 +286,12 @@ document.addEventListener("DOMContentLoaded", () => {
             const isLow = item.quantidade < item.minimo;
             const badgeClass = isLow ? "danger" : "success";
             const badgeText = isLow ? "Estoque Baixo" : "Normal";
-
             const tr = document.createElement("tr");
+            tr.classList.toggle("item-inativo", !item.ativo);
             tr.innerHTML = `
                 <td><span class="item-name">${item.nome}</span></td>
                 <td style="text-transform: capitalize;">${item.categoria}</td>
+                <td>R$ ${item.preco.toFixed(2).replace(".", ",")}</td>
                 <td style="white-space: nowrap;">
                     <button class="action-icon-btn remove-qty-btn" title="Diminuir quantidade" data-id="${item.id}">
                         <i class="fa-solid fa-minus"></i>
@@ -303,17 +306,24 @@ document.addEventListener("DOMContentLoaded", () => {
                     </button>
                 </td>
                 <td>${item.minimo} ${item.unidade}</td>
-                <td><span class="badge ${badgeClass}">${badgeText}</span></td>
+                <td>
+                    <span class="badge ${item.ativo ? "success" : "inactive"}">${item.ativo ? "Ativo" : "Inativo"}</span>
+                    ${item.ativo ? `<span class="badge ${badgeClass}">${badgeText}</span>` : ""}
+                </td>
                 <td>
                     <button class="action-icon-btn edit-item-btn" title="Editar Informações do Insumo" data-id="${item.id}">
                         <i class="fa-solid fa-pen-to-square"></i>
                     </button>
+                    ${item.ativo ? `
                     <button class="action-icon-btn info-item-btn" title="Ver Informações e Lotes" data-id="${item.id}">
                         <i class="fa-solid fa-eye"></i>
                     </button>
-                    <button class="action-icon-btn delete-item-btn" title="Excluir Item" data-id="${item.id}">
-                        <i class="fa-solid fa-trash"></i>
-                    </button>
+                    <button class="action-icon-btn toggle-item-btn" title="Desativar Item" data-id="${item.id}" data-ativo="false">
+                        <i class="fa-solid fa-toggle-on"></i>
+                    </button>` : `
+                    <button class="action-icon-btn toggle-item-btn" title="Ativar Item" data-id="${item.id}" data-ativo="true">
+                        <i class="fa-solid fa-toggle-off"></i>
+                    </button>`}
                 </td>
             `;
             tableBody.appendChild(tr);
@@ -392,6 +402,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 document.getElementById("item-category").value = item.categoria;
                 document.getElementById("item-qty").value = item.quantidade;
                 document.getElementById("item-min").value = item.minimo;
+                document.getElementById("item-price").value = item.preco.toFixed(2);
 
                 if (item.fornecedorId) {
                     document.getElementById("item-supplier-select").value = item.fornecedorId;
@@ -441,23 +452,27 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         });
 
-        // Evento: Excluir Item (DELETE /api/estoque/produtos/:id)
-        document.querySelectorAll(".delete-item-btn").forEach(btn => {
+        // Alterna o status ativo/inativo sem excluir o registro.
+        document.querySelectorAll(".toggle-item-btn").forEach(btn => {
             btn.addEventListener("click", async (e) => {
-                const id = parseInt(e.currentTarget.getAttribute("data-id"));
-                if (!confirm("Deseja realmente desativar/excluir este item do estoque?")) return;
-
+                const id = Number(e.currentTarget.getAttribute("data-id"));
+                const ativo = e.currentTarget.getAttribute("data-ativo") === "true";
+                const acao = ativo ? "ativar" : "desativar";
+                if (!confirm(`Deseja realmente ${acao} este item?`)) return;
                 try {
-                    await apiRequest(`/estoque/produtos/${id}`, { method: "DELETE" });
+                    await apiRequest(`/estoque/produtos/${id}/status`, {
+                        method: "PATCH",
+                        body: JSON.stringify({ ativo })
+                    });
                     await carregarDadosDoBanco();
                 } catch (err) {
-                    alert(`Erro ao excluir: ${err.message}`);
+                    alert(`Erro ao ${acao} item: ${err.message}`);
                 }
             });
         });
     }
 
-    // Submissão da Retirada por Lote (POST /api/estoque/movimentacoes)
+        // Submissão da Retirada por Lote (POST /api/estoque/movimentacoes)
     if (baixaLoteForm) {
         baixaLoteForm.addEventListener("submit", async (e) => {
             e.preventDefault();
@@ -632,6 +647,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const categoriaFront = document.getElementById("item-category").value;
         const qtdInicial = parseFloat(document.getElementById("item-qty").value) || 0;
         const estoqueMinimo = parseFloat(document.getElementById("item-min").value) || 0;
+        const precoProduto = parseFloat(document.getElementById("item-price").value) || 0;
 
         try {
             if (editId) {
@@ -641,7 +657,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     body: JSON.stringify({
                         nome_produto: nomeProduto,
                         unidade_medida: unidadeMedida,
-                        estoque_minimo: estoqueMinimo
+                        estoque_minimo: estoqueMinimo,
+                        preco_produto: precoProduto
                     })
                 });
                 alert("Insumo atualizado no banco de dados com sucesso!");
@@ -653,7 +670,8 @@ document.addEventListener("DOMContentLoaded", () => {
                         nome_produto: nomeProduto,
                         tipo_produto: mapearTipoParaApi(categoriaFront),
                         unidade_medida: unidadeMedida,
-                        estoque_minimo: estoqueMinimo
+                        estoque_minimo: estoqueMinimo,
+                        preco_produto: precoProduto
                     })
                 });
 

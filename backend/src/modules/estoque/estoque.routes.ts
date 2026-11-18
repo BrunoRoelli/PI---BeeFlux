@@ -76,7 +76,7 @@ function filtroMovimentacao(
 // ----- Consultas -----
 router.get('/', async (req, res) => {
   try {
-    res.json(await service.listar(texto(req.query.tipo) as TipoProduto | undefined));
+    res.json(await service.listar(texto(req.query.tipo) as TipoProduto | undefined, req.query.incluir_inativos === 'true'));
   } catch (e) {
     erro(res, e);
   }
@@ -139,9 +139,18 @@ router.put('/produtos/:id', async (req, res) => {
   }
 });
 
+router.patch('/produtos/:id/status', async (req, res) => {
+  try {
+    res.json(await service.alterarStatusProduto(id(req.params.id), req.body?.ativo));
+  } catch (e) {
+    erro(res, e);
+  }
+});
+
+// Compatibilidade: DELETE continua significando desativar, sem apagar o registro.
 router.delete('/produtos/:id', async (req, res) => {
   try {
-    res.json(await service.desativarProduto(id(req.params.id)));
+    res.json(await service.alterarStatusProduto(id(req.params.id), false));
   } catch (e) {
     erro(res, e);
   }

@@ -13,7 +13,7 @@ import { paginacaoSegura } from './estoque.regras';
 
 
 
-export async function listarEstoque(tipo?: TipoProduto): Promise<ProdutoEstoque[]> {
+export async function listarEstoque(tipo?: TipoProduto, incluirInativos = false): Promise<ProdutoEstoque[]> {
   const sql = `
     SELECT 
       p.id_produto, 
@@ -21,6 +21,7 @@ export async function listarEstoque(tipo?: TipoProduto): Promise<ProdutoEstoque[
       p.tipo_produto, 
       p.unidade_medida, 
       p.estoque_minimo,
+      p.ativo,
       COALESCE(p.preco_produto, 0) AS preco_produto,
       CASE 
         WHEN p.tipo_produto = 'FEITO' THEN COALESCE(ef.quantidade_atual, 0)
@@ -47,7 +48,7 @@ export async function listarEstoque(tipo?: TipoProduto): Promise<ProdutoEstoque[
       WHERE status_reserva = 'ATIVA'
       GROUP BY id_produto
     ) rv ON rv.id_produto = p.id_produto
-    WHERE p.ativo = 1 ${tipo ? 'AND p.tipo_produto = ?' : ''}
+    WHERE (${incluirInativos ? '1 = 1' : 'p.ativo = 1'}) ${tipo ? 'AND p.tipo_produto = ?' : ''}
     ORDER BY p.nome_produto`;
 
   const [rows] = await pool.query<RowDataPacket[]>(sql, tipo ? [tipo] : []);
@@ -65,6 +66,7 @@ export async function listarEstoque(tipo?: TipoProduto): Promise<ProdutoEstoque[
       tipo_produto: r.tipo_produto,
       unidade_medida: r.unidade_medida,
       preco_produto: preco,
+      ativo: Boolean(r.ativo),
       estoque_minimo: minimo,
       saldo_atual: saldo,
       saldo_fisico: fisico,
@@ -189,7 +191,7 @@ export async function categoriaAtiva(idCategoria: number): Promise<boolean> {
 
 export async function obterProduto(id: number): Promise<Produto | undefined> {
   const [rows] = await pool.query<RowDataPacket[]>(
-    `SELECT id_produto, id_categoria, nome_produto, descricao_produto, marca, tipo_produto,
+    `SELECT id_produto, id_categoria, nome_produto, descricao_produto, tipo_produto,
        unidade_medida, preco_produto, estoque_minimo, ativo
      FROM produtos WHERE id_produto = ?`,
     [id]
@@ -201,7 +203,6 @@ export async function obterProduto(id: number): Promise<Produto | undefined> {
     id_categoria: r.id_categoria,
     nome_produto: r.nome_produto,
     descricao_produto: r.descricao_produto,
-    marca: r.marca,
     tipo_produto: r.tipo_produto,
     unidade_medida: r.unidade_medida,
     preco_produto: Number(r.preco_produto),
@@ -214,11 +215,11 @@ export async function cadastrarProduto(d: CadastroProduto) {
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
-    const preco = d.tipo_produto === 'INGREDIENTE' ? 0 : (d.preco_produto ?? 0);
+    const preco = d.preco_produto ?? 0;
     const [result] = await conn.execute<ResultSetHeader>(
       `INSERT INTO produtos (nome_produto, tipo_produto, unidade_medida, preco_produto,
-       estoque_minimo, descricao_produto, marca, id_categoria)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+       estoque_minimo, descricao_produto, id_categoria)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [
         d.nome_produto,
         d.tipo_produto,
@@ -226,7 +227,6 @@ export async function cadastrarProduto(d: CadastroProduto) {
         preco,
         d.estoque_minimo ?? 0,
         d.descricao_produto ?? null,
-        d.marca ?? null,
         d.id_categoria ?? null
       ]
     );
@@ -249,7 +249,6 @@ export async function cadastrarProduto(d: CadastroProduto) {
 const COLUNAS_EDITAVEIS = [
   'nome_produto',
   'descricao_produto',
-  'marca',
   'unidade_medida',
   'preco_produto',
   'estoque_minimo',
@@ -296,8 +295,8 @@ export async function reservasAtivasProduto(idProduto: number): Promise<number> 
   return Number(rows[0]?.total ?? 0);
 }
 
-export async function desativarProduto(idProduto: number): Promise<void> {
-  await pool.execute('UPDATE produtos SET ativo = 0 WHERE id_produto = ?', [idProduto]);
+export async function alterarStatusProduto(idProduto: number, ativo: boolean): Promise<void> {
+  await pool.execute('UPDATE produtos SET ativo = ? WHERE id_produto = ?', [ativo ? 1 : 0, idProduto]);
 }
 
 export async function executarTransacao<T>(fn: (conn: PoolConnection) => Promise<T>): Promise<T> {
