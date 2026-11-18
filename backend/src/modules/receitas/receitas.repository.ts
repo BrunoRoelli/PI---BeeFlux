@@ -36,10 +36,12 @@ export async function ingredientesCadastrados(conn: PoolConnection, ids: number[
 
 export async function receita(conn: PoolConnection, id: number) {
   const [detalhes] = await conn.query<RowDataPacket[]>(
-    `SELECT id_produto_feito, tempo_preparo_minutos, rendimento_receita, instrucoes,
-            custos_fixos, custo_mao_obra, margem_lucro, status_receita
-     FROM detalhes_receita
-     WHERE id_produto_feito = ?`,
+    `SELECT d.id_produto_feito, p.nome_produto, p.unidade_medida AS unidade_produto,
+            d.tempo_preparo_minutos, d.rendimento_receita, d.instrucoes,
+            d.custos_fixos, d.custo_mao_obra, d.margem_lucro, d.status_receita
+     FROM detalhes_receita d
+     JOIN produtos p ON p.id_produto = d.id_produto_feito
+     WHERE d.id_produto_feito = ?`,
     [id]
   );
   if (!detalhes.length) return null;
@@ -71,7 +73,7 @@ export async function receita(conn: PoolConnection, id: number) {
 
 export async function listar() {
   const [rows] = await pool.query<RowDataPacket[]>(
-    `SELECT d.id_produto_feito, p.nome_produto, d.rendimento_receita, d.tempo_preparo_minutos, d.status_receita
+    `SELECT d.id_produto_feito, p.nome_produto, p.unidade_medida AS unidade_produto, d.rendimento_receita, d.tempo_preparo_minutos, d.status_receita
      FROM detalhes_receita d
      JOIN produtos p ON p.id_produto = d.id_produto_feito
      WHERE p.ativo = 1
