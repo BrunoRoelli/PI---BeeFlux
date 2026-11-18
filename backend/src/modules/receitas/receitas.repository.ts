@@ -87,8 +87,8 @@ export async function salvar(conn: PoolConnection, d: SalvarReceita, atualizar: 
     const [result] = await conn.execute<ResultSetHeader>(
       `UPDATE detalhes_receita
        SET tempo_preparo_minutos = ?, rendimento_receita = ?, instrucoes = ?, custos_fixos = ?,
-           custo_mao_obra = ?, margem_lucro = ?, status_receita = 'ATIVA'
-       WHERE id_produto_feito = ?`,
+           custo_mao_obra = ?, margem_lucro = ?,
+           WHERE id_produto_feito = ?`,
       [
         d.tempo_preparo_minutos,
         d.rendimento_receita,
