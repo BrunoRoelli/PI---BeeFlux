@@ -680,6 +680,8 @@ CREATE TABLE despesas (
     CHECK (valor_despesa > 0),
 
     INDEX idx_despesas_data (data_despesa)
+,
+    data_pagamento DATETIME NULL
 );
 
 
@@ -987,7 +989,7 @@ SELECT data_pagamento, 'SAIDA', 'COMPRA_ESTOQUE', valor_pagamento,
 FROM pagamentos_compra
 WHERE status_pagamento = 'CONFIRMADO'
 UNION ALL
-SELECT CAST(data_despesa AS DATETIME), 'SAIDA', categoria_despesa,
+SELECT COALESCE(data_pagamento, CAST(data_despesa AS DATETIME)), 'SAIDA', categoria_despesa,
        valor_despesa, 'DESPESA' AS origem, id_despesa AS id_referencia,
        NULL AS id_pedido
 FROM despesas

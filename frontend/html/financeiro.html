@@ -11,10 +11,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300..700&display=swap" rel="stylesheet">
-    <!-- Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
+    <div id="toast-container"></div>
+    
     <header>
         <div class="container-header">
             <a href="../index.html" class="logo">
@@ -61,7 +62,7 @@
         <section class="topo-financeiro">
             <div>
                 <h1>Gestão Financeira <i class="fa-solid fa-chart-line"></i></h1>
-                <p>Acompanhe o fluxo de caixa, despesas, retiradas e faturamento da confeitaria.</p>
+                <p>Acompanhe o fluxo de caixa, despesas, retiradas e faturamento real da confeitaria.</p>
             </div>
             <div class="botoes-topo">
                 <button class="botao-primario" onclick="abrirModalNovaDespesa()">
@@ -112,7 +113,7 @@
                 <div class="card metric-card">
                     <div class="metric-icon green"><i class="fa-solid fa-arrow-trend-up"></i></div>
                     <div class="metric-info">
-                        <h3>Entradas</h3>
+                        <h3>Entradas (Pagas)</h3>
                         <span class="value" id="val-entradas">R$ 0,00</span>
                         <span class="trend positive">Vendas confirmadas</span>
                     </div>
@@ -120,9 +121,9 @@
                 <div class="card metric-card">
                     <div class="metric-icon red"><i class="fa-solid fa-arrow-trend-down"></i></div>
                     <div class="metric-info">
-                        <h3>Saídas</h3>
+                        <h3>Saídas (Pagas)</h3>
                         <span class="value" id="val-saidas">R$ 0,00</span>
-                        <span class="trend negative">Compras e despesas pagas</span>
+                        <span class="trend negative">Compras, Despesas e Retiradas</span>
                     </div>
                 </div>
                 <div class="card metric-card">
@@ -138,7 +139,7 @@
                     <div class="metric-info">
                         <h3>Despesas Pendentes</h3>
                         <span class="value" id="val-pendentes">R$ 0,00</span>
-                        <span class="trend neutral">Contas a pagar</span>
+                        <span class="trend neutral">Contas a pagar (Não afeta saldo)</span>
                     </div>
                 </div>
             </div>
@@ -181,11 +182,11 @@
                                 <th>Categoria</th>
                                 <th>Origem</th>
                                 <th>Valor</th>
-                                <th>Ref. Pedido</th>
+                                <th>Ref. Documento</th>
                             </tr>
                         </thead>
                         <tbody id="tabela-movimentacoes-body">
-                            <tr><td colspan="6" style="text-align:center;">Carregando movimentações...</td></tr>
+                            <!-- JS Injeta Aqui -->
                         </tbody>
                     </table>
                 </div>
@@ -217,7 +218,7 @@
                             </tr>
                         </thead>
                         <tbody id="tabela-despesas-body">
-                            <tr><td colspan="7" style="text-align:center;">Carregando despesas...</td></tr>
+                           <!-- JS Injeta Aqui -->
                         </tbody>
                     </table>
                 </div>
@@ -239,10 +240,11 @@
                                 <th>Descrição</th>
                                 <th>Data</th>
                                 <th>Valor</th>
+                                <th style="text-align: right;">Ações</th>
                             </tr>
                         </thead>
                         <tbody id="tabela-retiradas-body">
-                            <tr><td colspan="5" style="text-align:center;">Carregando retiradas...</td></tr>
+                           <!-- JS Injeta Aqui -->
                         </tbody>
                     </table>
                 </div>
@@ -268,13 +270,14 @@
                     <div class="input-group">
                         <label>Categoria *</label>
                         <select id="despesa-categoria" required>
+                            <option value="">Selecione...</option>
                             <option value="ALUGUEL">Aluguel</option>
-                            <option value="ENERGIA">Energia Eletrica</option>
-                            <option value="AGUA">Agua</option>
+                            <option value="ENERGIA">Energia Elétrica</option>
+                            <option value="AGUA">Água</option>
                             <option value="INTERNET">Internet</option>
-                            <option value="MANUTENCAO">Manutencao</option>
+                            <option value="MANUTENCAO">Manutenção</option>
                             <option value="EMBALAGEM">Embalagem</option>
-                            <option value="MAO_DE_OBRA">Mao de Obra</option>
+                            <option value="MAO_DE_OBRA">Mão de Obra</option>
                             <option value="OUTRO">Outro</option>
                         </select>
                     </div>
@@ -285,21 +288,21 @@
                 </div>
                 <div class="form-grid-2">
                     <div class="input-group">
-                        <label>Data Registro *</label>
+                        <label>Data da Despesa *</label>
                         <input type="date" id="despesa-data" required>
                     </div>
                     <div class="input-group">
-                        <label>Data Vencimento</label>
+                        <label>Data Vencimento (Opcional)</label>
                         <input type="date" id="despesa-vencimento">
                     </div>
                 </div>
                 <div class="input-group">
-                    <label>Observação</label>
-                    <input type="text" id="despesa-observacao" placeholder="Detalhes adicionais...">
+                    <label>Observação (Opcional)</label>
+                    <input type="text" id="despesa-observacao" placeholder="Detalhes adicionais..." maxlength="500">
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn-secondary" onclick="fecharModalDespesa()">Cancelar</button>
-                    <button type="submit" class="botao-primario"><i class="fa-solid fa-check"></i> Salvar</button>
+                    <button type="submit" class="botao-primario" id="btn-salvar-despesa"><i class="fa-solid fa-check"></i> Salvar</button>
                 </div>
             </form>
         </div>
@@ -310,8 +313,8 @@
         <div class="modal-card">
             <button class="close-modal" onclick="fecharModalRetirada()"><i class="fa-solid fa-xmark"></i></button>
             <div class="modal-header">
-                <h2>Registrar Retirada do Proprietário</h2>
-                <p>Sangrias de caixa ou retiradas pessoais.</p>
+                <h2>Registrar Retirada</h2>
+                <p>Sangrias de caixa ou retiradas do proprietário (impacta o saldo).</p>
             </div>
             <form id="form-retirada" onsubmit="salvarRetirada(event)">
                 <div class="input-group">
@@ -319,22 +322,20 @@
                     <input type="number" id="retirada-valor" step="0.01" min="0.01" required placeholder="0.00">
                 </div>
                 <div class="input-group">
-                    <label>Descrição / Motivo</label>
-                    <input type="text" id="retirada-descricao" placeholder="Ex: Pro-labore quinzenal">
+                    <label>Data da Retirada *</label>
+                    <input type="datetime-local" id="retirada-data" required>
+                </div>
+                <div class="input-group">
+                    <label>Descrição / Motivo (Opcional)</label>
+                    <input type="text" id="retirada-descricao" placeholder="Ex: Pro-labore quinzenal" maxlength="255">
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn-secondary" onclick="fecharModalRetirada()">Cancelar</button>
-                    <button type="submit" class="botao-primario"><i class="fa-solid fa-check"></i> Confirmar Retirada</button>
+                    <button type="submit" class="botao-primario" id="btn-salvar-retirada"><i class="fa-solid fa-check"></i> Confirmar Retirada</button>
                 </div>
             </form>
         </div>
     </div>
-
-    <footer class="footer">
-        <div class="container">
-            <p>&copy; 2026 BeeFlux. Todos os direitos reservados.</p>
-        </div>
-    </footer>
 
     <script src="../js/global.js" defer></script>
     <script src="../js/financeiro.js" defer></script>
