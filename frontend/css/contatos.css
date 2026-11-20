@@ -2,15 +2,18 @@
     --bg-color: #f8f9fa;
     --primary-light: #ffe3e9;
 }
+
 /* Início */
-.cabeçalho{
+.cabeçalho {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 2rem;
 }
+
 .titulo h1 { font-size: 1.75rem; font-weight: 700; }
-.titulo p { color: var( --cor-corpo-texto); font-size: 1rem; margin-top: 4px; }
+.titulo p { color: var(--cor-corpo-texto); font-size: 1rem; margin-top: 4px; }
+
 .botao-primario {
     background-color: var(--pink-escuro);
     color: white;
@@ -24,8 +27,7 @@
     gap: 8px;
     transition: var(--transicao);
 }
-.botao-primario:hover { background-color: var(--aviso);}
-
+.botao-primario:hover { background-color: var(--aviso); }
 
 .btn-secondary {
     background-color: var(--bg-color);
@@ -48,7 +50,8 @@
     gap: 2rem;
     flex-wrap: wrap;
 }
-.caixa-pesquisa{
+
+.caixa-pesquisa {
     display: flex;
     align-items: center;
     background: var(--bg-color);
@@ -58,6 +61,7 @@
     width: 320px;
     gap: 10px;
 }
+
 .caixa-pesquisa input {
     border: none;
     outline: none;
@@ -65,12 +69,14 @@
     font-size: 0.9rem;
     background: transparent;
 }
+
 .caixa-pesquisa i { color: var(--cor-corpo-texto); }
+
 .total {
     font-size: 1rem;
     color: var(--cor-corpo-texto);
 }
-.total strong { color:var(--Black);}
+.total strong { color: var(--Black); }
 
 /* Card e Tabela */
 .card {
@@ -81,33 +87,96 @@
     box-shadow: 0 2px 6px rgba(0,0,0,0.02);
     margin-bottom: 2rem;
 }
+
 .card h2 {
     color: var(--pink-escuro);
     margin-bottom: 1rem;
     text-align: center;
 }
+
 .table-responsive {
     overflow-x: auto;
 }
-table {
-    width: 100%;
-    border-collapse: collapse;
-    text-align: left;
+
+.card-tabela table {
+    display: table !important;
+    width: 100% !important;
+    table-layout: fixed !important;
+    border-collapse: collapse !important;
     font-size: 0.9rem;
 }
-th {
-    font-weight: 500;
-    padding-bottom: 14px;
-    border-bottom: 1px solid var(--pink-escuro);
+
+.card-tabela thead {
+    display: table-header-group !important;
 }
-td {
-    padding: 14px 0;
+
+.card-tabela tbody {
+    display: table-row-group !important;
+}
+
+.card-tabela tr {
+    display: table-row !important;
+}
+
+.card-tabela thead th {
+    display: table-cell !important;
+    font-weight: 600;
+    padding: 0 12px 14px 12px !important;
+    border-bottom: 1px solid var(--pink-escuro);
+    vertical-align: middle !important;
+    box-sizing: border-box !important;
+}
+
+.card-tabela tbody td {
+    display: table-cell !important;
+    padding: 14px 12px !important;
     border-bottom: 1px solid var(--pink-escuro);
     color: var(--cor-corpo-texto);
+    vertical-align: middle !important;
+    box-sizing: border-box !important;
 }
-tr:last-child td { border-bottom: none; }
+
+.card-tabela tbody tr:last-child td { border-bottom: none; }
+
 .info-name {
     font-weight: 600;
+}
+
+/* Distribuição uniforme de 20% por coluna, mantendo alinhamento idêntico em Clientes e Fornecedores */
+.card-tabela thead th:nth-child(1),
+.card-tabela tbody td:nth-child(1) {
+    width: 22% !important;
+    text-align: left !important;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.card-tabela thead th:nth-child(2),
+.card-tabela tbody td:nth-child(2) {
+    width: 22% !important;
+    text-align: left !important;
+}
+
+.card-tabela thead th:nth-child(3),
+.card-tabela tbody td:nth-child(3) {
+    width: 22% !important;
+    text-align: center !important;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.card-tabela thead th:nth-child(4),
+.card-tabela tbody td:nth-child(4) {
+    width: 17% !important;
+    text-align: center !important;
+}
+
+.card-tabela thead th:nth-child(5),
+.card-tabela tbody td:nth-child(5) {
+    width: 17% !important;
+    text-align: center !important;
 }
 
 /* Ações na Tabela */
@@ -123,7 +192,7 @@ tr:last-child td { border-bottom: none; }
     align-items: center;
     justify-content: center;
     transition: all 0.2s;
-    margin-right: 4px;
+    margin: 0 3px;
 }
 
 .action-icon-btn:hover {
@@ -134,12 +203,22 @@ tr:last-child td { border-bottom: none; }
 
 /* Responsividade da tabela de contatos: Oculta colunas secundárias no celular */
 @media (max-width: 768px) {
-    .card-tabela th:nth-child(2),
-    .card-tabela td:nth-child(2),
-    .card-tabela th:nth-child(3),
-    .card-tabela td:nth-child(3),
-    .card-tabela th:nth-child(4),
-    .card-tabela td:nth-child(4) {
-        display: none;
+    .card-tabela thead th:nth-child(2),
+    .card-tabela tbody td:nth-child(2),
+    .card-tabela thead th:nth-child(3),
+    .card-tabela tbody td:nth-child(3),
+    .card-tabela thead th:nth-child(4),
+    .card-tabela tbody td:nth-child(4) {
+        display: none !important;
+    }
+
+    .card-tabela thead th:nth-child(1),
+    .card-tabela tbody td:nth-child(1) {
+        width: 60% !important;
+    }
+
+    .card-tabela thead th:nth-child(5),
+    .card-tabela tbody td:nth-child(5) {
+        width: 40% !important;
     }
 }

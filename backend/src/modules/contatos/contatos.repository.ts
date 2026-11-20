@@ -9,7 +9,7 @@ export const contatosRepository = {
     const ativo = status === 'todos' ? null : status === 'inativos' ? 0 : 1;
     const [rows] = await pool.execute(
       `SELECT c.id_cliente, c.nome_cliente, c.telefone_cliente, c.email_cliente,
-              c.observacao, c.ativo, c.criado_em,
+              c.data_nascimento, c.observacao, c.ativo, c.criado_em,
               COUNT(DISTINCT p.id_pedido) AS quantidade_pedidos,
               COALESCE(SUM(CASE WHEN p.status_pedido <> 'CANCELADO' THEN p.valor_total ELSE 0 END), 0) AS total_pedidos
          FROM clientes c
@@ -25,7 +25,7 @@ export const contatosRepository = {
 
   async buscarClientePorId(id: number) {
     const [rows] = await pool.execute(
-      `SELECT id_cliente, nome_cliente, telefone_cliente, email_cliente, observacao, ativo, criado_em
+      `SELECT id_cliente, nome_cliente, telefone_cliente, email_cliente, data_nascimento, observacao, ativo, criado_em
          FROM clientes WHERE id_cliente = ? LIMIT 1`, [id]
     );
     return (rows as any[])[0] ?? null;
@@ -35,6 +35,7 @@ export const contatosRepository = {
     const [rows] = await pool.execute(
       `SELECT id_cliente FROM clientes
         WHERE REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(telefone_cliente, '(', ''), ')', ''), '-', ''), ' ', ''), '+', '') = ?
+          AND ativo = 1
           AND (? IS NULL OR id_cliente <> ?) LIMIT 1`,
       [digits(telefone), ignorarId ?? null, ignorarId ?? null]
     );
@@ -43,18 +44,32 @@ export const contatosRepository = {
 
   async criarCliente(input: ClienteInput) {
     const [result] = await pool.execute(
-      `INSERT INTO clientes (nome_cliente, telefone_cliente, email_cliente, observacao, ativo)
-       VALUES (?, ?, ?, ?, TRUE)`,
-      [input.nome.trim(), digits(input.telefone), input.email?.trim() || null, input.observacao?.trim() || null]
+      `INSERT INTO clientes (nome_cliente, telefone_cliente, email_cliente, data_nascimento, observacao, ativo)
+       VALUES (?, ?, ?, ?, ?, TRUE)`,
+      [
+        input.nome.trim(),
+        digits(input.telefone),
+        input.email?.trim() || null,
+        input.data_nascimento || null,
+        input.observacao?.trim() || null
+      ]
     );
     return (result as any).insertId as number;
   },
 
   async atualizarCliente(id: number, input: ClienteInput) {
     await pool.execute(
-      `UPDATE clientes SET nome_cliente = ?, telefone_cliente = ?, email_cliente = ?, observacao = ?
+      `UPDATE clientes
+          SET nome_cliente = ?, telefone_cliente = ?, email_cliente = ?, data_nascimento = ?, observacao = ?
         WHERE id_cliente = ?`,
-      [input.nome.trim(), digits(input.telefone), input.email?.trim() || null, input.observacao?.trim() || null, id]
+      [
+        input.nome.trim(),
+        digits(input.telefone),
+        input.email?.trim() || null,
+        input.data_nascimento || null,
+        input.observacao?.trim() || null,
+        id
+      ]
     );
   },
 
@@ -107,10 +122,19 @@ export const contatosRepository = {
        (nome_fornecedor, telefone_fornecedor, email_fornecedor, cnpj_fornecedor,
         rua, numero, bairro, cidade, estado, cep, complemento, ativo)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, TRUE)`,
-      [input.nome.trim(), input.telefone ? digits(input.telefone) : null, input.email?.trim() || null,
-       input.cnpj?.trim() || null, input.rua?.trim() || null, input.numero?.trim() || null,
-       input.bairro?.trim() || null, input.cidade?.trim() || null, input.estado?.trim() || null,
-       input.cep?.trim() || null, input.complemento?.trim() || null]
+      [
+        input.nome.trim(),
+        input.telefone ? digits(input.telefone) : null,
+        input.email?.trim() || null,
+        input.cnpj?.trim() || null,
+        input.rua?.trim() || null,
+        input.numero?.trim() || null,
+        input.bairro?.trim() || null,
+        input.cidade?.trim() || null,
+        input.estado?.trim() || null,
+        input.cep?.trim() || null,
+        input.complemento?.trim() || null
+      ]
     );
     return (result as any).insertId as number;
   },
@@ -120,10 +144,20 @@ export const contatosRepository = {
       `UPDATE fornecedores SET nome_fornecedor = ?, telefone_fornecedor = ?, email_fornecedor = ?,
        cnpj_fornecedor = ?, rua = ?, numero = ?, bairro = ?, cidade = ?, estado = ?, cep = ?, complemento = ?
        WHERE id_fornecedor = ?`,
-      [input.nome.trim(), input.telefone ? digits(input.telefone) : null, input.email?.trim() || null,
-       input.cnpj?.trim() || null, input.rua?.trim() || null, input.numero?.trim() || null,
-       input.bairro?.trim() || null, input.cidade?.trim() || null, input.estado?.trim() || null,
-       input.cep?.trim() || null, input.complemento?.trim() || null, id]
+      [
+        input.nome.trim(),
+        input.telefone ? digits(input.telefone) : null,
+        input.email?.trim() || null,
+        input.cnpj?.trim() || null,
+        input.rua?.trim() || null,
+        input.numero?.trim() || null,
+        input.bairro?.trim() || null,
+        input.cidade?.trim() || null,
+        input.estado?.trim() || null,
+        input.cep?.trim() || null,
+        input.complemento?.trim() || null,
+        id
+      ]
     );
   },
 

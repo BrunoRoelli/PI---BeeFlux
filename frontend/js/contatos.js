@@ -4,7 +4,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let clientesData = [];
     let fornecedoresData = [];
 
-    // Estado de edição (não depende de input hidden no HTML)
+    // Estado de edição
     let editingContactId = null;
     let editingOriginalType = null; // 'cliente' ou 'fornecedor'
 
@@ -30,6 +30,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const contactTypeSelect = document.getElementById("contact-type");
     const dynamicFieldContainer = document.getElementById("dynamic-field-container");
     const clientNameInput = document.getElementById("client-name");
+    const clientPhoneInput = document.getElementById("client-phone");
     const labelClientName = document.getElementById("label-client-name");
     const stockProductsDatalist = document.getElementById("stock-products-datalist");
 
@@ -49,6 +50,53 @@ document.addEventListener("DOMContentLoaded", () => {
     const historySectionTitle = document.getElementById("history-section-title");
 
     let currentFilter = "todos";
+
+    function obterDataHojeISO() {
+        const hoje = new Date();
+        const ano = hoje.getFullYear();
+        const mes = String(hoje.getMonth() + 1).padStart(2, "0");
+        const dia = String(hoje.getDate()).padStart(2, "0");
+        return `${ano}-${mes}-${dia}`;
+    }
+
+    function aplicarLimiteDataNascimento() {
+        const bdayInput = document.getElementById("client-birthday");
+        if (bdayInput) {
+            bdayInput.max = obterDataHojeISO();
+        }
+    }
+
+    // Máscara de telefone: bloqueia letras e formata (DD) 99999-9999
+    function aplicarMascaraTelefone(valor) {
+        let numeros = String(valor || "").replace(/\D/g, "").slice(0, 11);
+        if (numeros.length === 0) return "";
+        if (numeros.length <= 2) return `(${numeros}`;
+        if (numeros.length <= 6) return `(${numeros.slice(0, 2)}) ${numeros.slice(2)}`;
+        if (numeros.length <= 10) {
+            return `(${numeros.slice(0, 2)}) ${numeros.slice(2, 6)}-${numeros.slice(6)}`;
+        }
+        return `(${numeros.slice(0, 2)}) ${numeros.slice(2, 7)}-${numeros.slice(7)}`;
+    }
+
+    if (clientPhoneInput) {
+        clientPhoneInput.setAttribute("inputmode", "numeric");
+        clientPhoneInput.setAttribute("maxlength", "15");
+        clientPhoneInput.addEventListener("input", (e) => {
+            e.target.value = aplicarMascaraTelefone(e.target.value);
+        });
+    }
+
+    function fecharModalContato() {
+        editingContactId = null;
+        editingOriginalType = null;
+        clientForm.reset();
+        contactTypeSelect.value = "cliente";
+        contactTypeSelect.dispatchEvent(new Event("change"));
+        if (modalTitleElem) modalTitleElem.textContent = "Cadastrar Novo Cliente";
+        if (modalDescElem) modalDescElem.textContent = "Adicione as informações de clientes ou fornecedores.";
+        if (saveBtnTextElem) saveBtnTextElem.textContent = "Salvar Cliente";
+        clientModal.classList.remove("active");
+    }
 
     // --- FUNÇÃO DE COMUNICAÇÃO COM A API ---
     async function apiRequest(endpoint, options = {}) {
@@ -93,7 +141,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 nome: c.nome_cliente || "",
                 telefone: c.telefone_cliente || "",
                 email: c.email_cliente || "",
-                aniversario: "",
+                aniversario: c.data_nascimento ? String(c.data_nascimento).split("T")[0] : "",
                 observacoes: c.observacao || "",
                 totalGasto: formatarMoeda(c.total_pedidos ?? 0)
             }));
@@ -148,7 +196,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             dynamicFieldContainer.innerHTML = `
                 <label for="client-birthday">Data de Nascimento</label>
-                <input type="date" id="client-birthday">
+                <input type="date" id="client-birthday" max="${obterDataHojeISO()}">
             `;
             if (!isEditing) {
                 if (modalTitleElem) modalTitleElem.textContent = "Cadastrar Novo Cliente";
@@ -185,21 +233,26 @@ document.addEventListener("DOMContentLoaded", () => {
         if (apenasNumeros.length === 10) {
             return apenasNumeros.replace(/^(\d{2})(\d{4})(\d{4})$/, "($1) $2-$3");
         }
-        return telefone;
+        return apenasNumeros || "Sem telefone";
     }
 
     function renderContacts(search = "") {
         clientsTableBody.innerHTML = "";
         supplierTableBody.innerHTML = "";
 
-        const searchLower = search.toLowerCase();
+        const searchLower = search.toLowerCase().trim();
+        const searchDigits = search.replace(/\D/g, "");
 
         const filteredClients = clientesData.filter(c =>
-            c.nome.toLowerCase().includes(searchLower) || c.telefone.includes(search)
+            c.nome.toLowerCase().includes(searchLower) ||
+            (searchLower !== "" && c.telefone.includes(searchLower)) ||
+            (searchDigits.length > 0 && c.telefone.includes(searchDigits))
         );
 
         const filteredSuppliers = fornecedoresData.filter(f =>
-            f.nome.toLowerCase().includes(searchLower) || f.telefone.includes(search)
+            f.nome.toLowerCase().includes(searchLower) ||
+            (searchLower !== "" && f.telefone.includes(searchLower)) ||
+            (searchDigits.length > 0 && f.telefone.includes(searchDigits))
         );
 
         totalClientsCount.textContent = clientesData.length;
@@ -316,7 +369,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     const client = clientesData.find(c => c.id === id);
                     if (!client) return;
                     document.getElementById("client-name").value = client.nome;
-                    document.getElementById("client-phone").value = client.telefone;
+                    document.getElementById("client-phone").value = aplicarMascaraTelefone(client.telefone);
                     const emailInput = document.getElementById("client-email");
                     if (emailInput) emailInput.value = client.email || "";
                     const bdayInput = document.getElementById("client-birthday");
@@ -329,7 +382,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     const supplier = fornecedoresData.find(f => f.id === id);
                     if (!supplier) return;
                     document.getElementById("client-name").value = supplier.nome;
-                    document.getElementById("client-phone").value = supplier.telefone;
+                    document.getElementById("client-phone").value = aplicarMascaraTelefone(supplier.telefone);
                     const emailInput = document.getElementById("client-email");
                     if (emailInput) emailInput.value = supplier.email || "";
                     const prodInput = document.getElementById("client-product");
@@ -433,24 +486,17 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // Botão para Novo Contato (reseta o estado de edição)
+    // Botão para Novo Contato
     openNewClientModalBtn.addEventListener("click", () => {
-        editingContactId = null;
-        editingOriginalType = null;
-        clientForm.reset();
-        contactTypeSelect.value = "cliente";
-        contactTypeSelect.dispatchEvent(new Event("change"));
-        if (modalTitleElem) modalTitleElem.textContent = "Cadastrar Novo Cliente";
-        if (modalDescElem) modalDescElem.textContent = "Adicione as informações de clientes ou fornecedores.";
-        if (saveBtnTextElem) saveBtnTextElem.textContent = "Salvar Cliente";
+        fecharModalContato();
         clientModal.classList.add("active");
     });
 
-    closeModalBtn.addEventListener("click", () => clientModal.classList.remove("active"));
+    closeModalBtn.addEventListener("click", fecharModalContato);
     closeHistoryModal.addEventListener("click", () => historyModal.classList.remove("active"));
 
     window.addEventListener("click", (e) => {
-        if (e.target === clientModal) clientModal.classList.remove("active");
+        if (e.target === clientModal) fecharModalContato();
         if (e.target === historyModal) historyModal.classList.remove("active");
     });
 
@@ -459,44 +505,53 @@ document.addEventListener("DOMContentLoaded", () => {
         e.preventDefault();
         const type = contactTypeSelect.value;
         const nome = document.getElementById("client-name").value.trim();
-        const telefone = document.getElementById("client-phone").value.trim();
+        const telefoneDigitos = document.getElementById("client-phone").value.replace(/\D/g, "");
         const emailInput = document.getElementById("client-email");
         const email = emailInput && emailInput.value.trim() !== "" ? emailInput.value.trim() : null;
+        const bdayInput = document.getElementById("client-birthday");
+        const data_nascimento = bdayInput && bdayInput.value !== "" ? bdayInput.value : null;
         const observacaoInput = document.getElementById("client-notes").value.trim();
         const observacao = observacaoInput !== "" ? observacaoInput : null;
+
+        if (telefoneDigitos.length < 10 || telefoneDigitos.length > 11) {
+            alert("Informe um número de telefone válido com DDD (10 ou 11 dígitos).");
+            return;
+        }
+
+        if (type === "cliente" && data_nascimento && data_nascimento > obterDataHojeISO()) {
+            alert("A data de nascimento não pode ser uma data futura.");
+            return;
+        }
 
         try {
             // CASO 1: Estava editando e TROCOU o tipo (Cliente -> Fornecedor ou Fornecedor -> Cliente)
             if (editingContactId !== null && editingOriginalType !== null && editingOriginalType !== type) {
                 if (type === "fornecedor") {
-                    // Cria como fornecedor
                     await apiRequest("/fornecedores", {
                         method: "POST",
                         body: JSON.stringify({
                             nome,
-                            telefone: telefone || null,
+                            telefone: telefoneDigitos,
                             email,
                             complemento: observacao
                         })
                     });
-                    // Desativa o cliente antigo
                     await apiRequest(`/clientes/${editingContactId}/status`, {
                         method: "PATCH",
                         body: JSON.stringify({ ativo: false })
                     });
                     alert("Contato convertido de Cliente para Fornecedor com sucesso!");
                 } else {
-                    // Cria como cliente
                     await apiRequest("/clientes", {
                         method: "POST",
                         body: JSON.stringify({
                             nome,
-                            telefone,
+                            telefone: telefoneDigitos,
                             email,
+                            data_nascimento,
                             observacao
                         })
                     });
-                    // Desativa o fornecedor antigo
                     await apiRequest(`/fornecedores/${editingContactId}/status`, {
                         method: "PATCH",
                         body: JSON.stringify({ ativo: false })
@@ -509,7 +564,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (type === "cliente") {
                     await apiRequest(`/clientes/${editingContactId}`, {
                         method: "PUT",
-                        body: JSON.stringify({ nome, telefone, email, observacao })
+                        body: JSON.stringify({ nome, telefone: telefoneDigitos, email, data_nascimento, observacao })
                     });
                     alert("Cliente atualizado no banco de dados com sucesso!");
                 } else {
@@ -517,7 +572,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         method: "PUT",
                         body: JSON.stringify({
                             nome,
-                            telefone: telefone || null,
+                            telefone: telefoneDigitos,
                             email,
                             complemento: observacao
                         })
@@ -530,7 +585,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (type === "cliente") {
                     await apiRequest("/clientes", {
                         method: "POST",
-                        body: JSON.stringify({ nome, telefone, email, observacao })
+                        body: JSON.stringify({ nome, telefone: telefoneDigitos, email, data_nascimento, observacao })
                     });
                     alert("Cliente cadastrado no banco de dados com sucesso!");
                 } else {
@@ -538,7 +593,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         method: "POST",
                         body: JSON.stringify({
                             nome,
-                            telefone: telefone || null,
+                            telefone: telefoneDigitos,
                             email,
                             complemento: observacao
                         })
@@ -547,13 +602,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
             }
 
-            editingContactId = null;
-            editingOriginalType = null;
             await carregarContatosDoBanco();
-            clientForm.reset();
-            contactTypeSelect.value = "cliente";
-            contactTypeSelect.dispatchEvent(new Event("change"));
-            clientModal.classList.remove("active");
+            fecharModalContato();
         } catch (err) {
             alert(`Erro ao salvar contato: ${err.message}`);
         }
@@ -564,6 +614,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     // Inicialização
+    aplicarLimiteDataNascimento();
     carregarProdutosEstoqueParaDatalist();
     carregarContatosDoBanco();
 });

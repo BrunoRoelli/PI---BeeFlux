@@ -4,6 +4,7 @@ export interface ClienteInput {
   nome: string;
   telefone: string;
   email?: string | null;
+  data_nascimento?: string | null;
   observacao?: string | null;
 }
 
