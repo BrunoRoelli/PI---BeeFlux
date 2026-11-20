@@ -13,10 +13,10 @@ export type CategoriaDespesa =
 export type StatusDespesa = 'PENDENTE' | 'PAGO';
 
 export interface FiltroFinanceiro {
-  de?: string;
-  ate?: string;
-  tipo?: TipoMovimentacaoFinanceira;
-  categoria?: string;
+  de?: string | undefined;
+  ate?: string | undefined;
+  tipo?: TipoMovimentacaoFinanceira | undefined;
+  categoria?: string | undefined;
 }
 
 export interface CriarDespesaInput {

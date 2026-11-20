@@ -95,7 +95,7 @@ export async function confirmarPagamentoDespesa(id: number) {
 }
 
 export async function cadastrarRetirada(dados: CriarRetiradaInput) {
-  if (!Number.isInteger(dados.id_user) || dados.id_user <= 0) throw new Error('Usuário inválido.');
+  if (!Number.isInteger(dados.id_user) || dados.id_user <= 0) throw new Error('Usuário inválido ou não autenticado.');
   if (!Number.isFinite(dados.valor_retirada) || dados.valor_retirada <= 0) {
     throw new Error('O valor da retirada deve ser maior que zero.');
   }
