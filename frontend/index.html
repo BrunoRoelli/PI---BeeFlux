@@ -76,8 +76,8 @@
                     </div>
                     <div class="metric-info">
                         <h3>Pedidos Hoje</h3>
-                        <span class="value">6</span>
-                        <span class="trend positive">+2 que ontem</span>
+                        <span class="value" id="dash-pedidos">-</span>
+                        <span class="trend positive">Monitoramento de vendas</span>
                     </div>
                 </div>
 
@@ -87,8 +87,8 @@
                     </div>
                     <div class="metric-info">
                         <h3>Faturamento do Mês</h3>
-                        <span class="value">R$ 4.280,00</span>
-                        <span class="trend positive">+15% vs mês passado</span>
+                        <span class="value" id="dash-faturamento">R$ 0,00</span>
+                        <span class="trend positive" id="dash-faturamento-trend">Mês Atual</span>
                     </div>
                 </div>
 
@@ -98,8 +98,8 @@
                     </div>
                     <div class="metric-info">
                         <h3>Receitas Cadastradas</h3>
-                        <span class="value">24</span>
-                        <span class="trend neutral">Todas atualizadas</span>
+                        <span class="value" id="dash-receitas">-</span>
+                        <span class="trend neutral">Acervo Ativo</span>
                     </div>
                 </div>
 
@@ -109,11 +109,12 @@
                     </div>
                     <div class="metric-info">
                         <h3>Clientes Ativos</h3>
-                        <span class="value">142</span>
-                        <span class="trend positive">+8 novos esta semana</span>
+                        <span class="value" id="dash-clientes">-</span>
+                        <span class="trend positive">Na base de contatos</span>
                     </div>
                 </div>
         </section>
+        
         <section  class="atalhos">
             <div class="acesso-rapido">
                     <h2>Acesso Rápido</h2>
@@ -127,38 +128,21 @@
             </div>
             <div class="encomendas-recentes">
                 <h2>Próximas Encomendas do Dia</h2>
-                <div class="tabela-responsiva">
-                    <table>
-                        <thead>
-                                <tr>
-                                    <th>Cliente</th>
-                                    <th>Produto</th>
-                                    <th>Horário</th>
-                                    <th>Status</th>
-                                </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                    <td>Ana Souza</td>
-                                    <td>Bolo de Chocolate c/ Morango</td>
-                                    <td>14:00</td>
-                                    <td><span class="badge warning">Em Produção</span></td>
-                            </tr>
-                            <tr>
-                                    <td>Carlos Lima</td>
-                                    <td>Caixa com 12 Brigadeiros Gourmet</td>
-                                    <td>16:30</td>
-                                    <td><span class="badge info">Pronto</span></td>
-                            </tr>
-                            <tr>
-                                    <td>Beatriz Costa</td>
-                                    <td>Bolo Red Velvet (Festa)</td>
-                                    <td>18:00</td>
-                                    <td><span class="badge pending">Aguardando</span></td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+            <div class="tabela-responsiva">
+                        <table>
+                            <thead>
+                                    <tr>
+                                        <th>Cliente</th>
+                                        <th>Produto/Detalhes</th>
+                                        <th>Horário</th>
+                                        <th>Status</th>
+                                    </tr>
+                            </thead>
+                            <tbody id="tabela-encomendas-body">
+                                <!-- O Javascript injetará as encomendas reais aqui -->
+                            </tbody>
+                        </table>
+                    </div>
             </div>
         </section>
     </main>
@@ -173,25 +157,8 @@
                 <p>&copy; 2026 BeeFlux, todos os direitos reservados</p>
             </div>
     </footer>
+
     <script src="js/global.js" defer></script>
-    <script>
-        // Função que abre modal de cadastro dos contatos!
-        function abrirCadastroContato() {
-            window.location.href = "html/contatos.html?abrirModal=true"; 
-        }
-        function abrirEstoque(){
-            window.location.href = "html/estoque.html?abrirModal=true";
-        }
-        function abrirFinanceiro(){
-            window.location.href = "html/financeiro.html?abrirModal=true";
-        }
-        function abrirReceitas(){
-            window.location.href = "html/receitas.html?abrirModal=true";
-        }
-        function abrirNovoPedido(){
-            window.location.href = "html/pedidos.html?abrirModal=true";
-        }
-        
-    </script>
+    <script src="js/dashboard.js" defer></script>
 </body>
 </html>
