@@ -253,9 +253,9 @@
     </main>
 
     <!-- MODAL DE DESPESA (CRIAR / EDITAR) -->
-    <div class="modal-overlay" id="modal-despesa" style="display: none;">
+    <div class="modal-overlay" id="modal-despesa">
         <div class="modal-card">
-            <button class="close-modal" onclick="fecharModalDespesa()"><i class="fa-solid fa-xmark"></i></button>
+            <button type="button" class="close-modal" onclick="fecharModalDespesa()"><i class="fa-solid fa-xmark"></i></button>
             <div class="modal-header">
                 <h2 id="modal-despesa-titulo">Cadastrar Nova Despesa</h2>
                 <p>Preencha os detalhes da despesa operacional.</p>
@@ -266,7 +266,7 @@
                     <label>Descrição *</label>
                     <input type="text" id="despesa-descricao" required placeholder="Ex: Conta de Luz de Outubro">
                 </div>
-                <div class="form-grid-2">
+                <div class="input-row">
                     <div class="input-group">
                         <label>Categoria *</label>
                         <select id="despesa-categoria" required>
@@ -286,7 +286,7 @@
                         <input type="number" id="despesa-valor" step="0.01" min="0.01" required placeholder="0.00">
                     </div>
                 </div>
-                <div class="form-grid-2">
+                <div class="input-row">
                     <div class="input-group">
                         <label>Data da Despesa *</label>
                         <input type="date" id="despesa-data" required>
@@ -309,9 +309,9 @@
     </div>
 
     <!-- MODAL DE RETIRADA -->
-    <div class="modal-overlay" id="modal-retirada" style="display: none;">
+    <div class="modal-overlay" id="modal-retirada">
         <div class="modal-card">
-            <button class="close-modal" onclick="fecharModalRetirada()"><i class="fa-solid fa-xmark"></i></button>
+            <button type="button" class="close-modal" onclick="fecharModalRetirada()"><i class="fa-solid fa-xmark"></i></button>
             <div class="modal-header">
                 <h2>Registrar Retirada</h2>
                 <p>Sangrias de caixa ou retiradas do proprietário (impacta o saldo).</p>

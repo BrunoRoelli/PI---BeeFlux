@@ -259,7 +259,7 @@ function abrirModalNovaDespesa() {
     document.getElementById('despesa-id').value = '';
     document.getElementById('modal-despesa-titulo').textContent = 'Cadastrar Nova Despesa';
     document.getElementById('despesa-data').value = new Date().toISOString().split('T')[0];
-    document.getElementById('modal-despesa').style.display = 'flex';
+    document.getElementById('modal-despesa').classList.add('active');
 }
 
 function abrirModalEditarDespesa(idDespesa) {
@@ -275,11 +275,11 @@ function abrirModalEditarDespesa(idDespesa) {
     document.getElementById('despesa-vencimento').value = d.data_vencimento || '';
     document.getElementById('despesa-observacao').value = d.observacao || '';
     document.getElementById('modal-despesa-titulo').textContent = 'Editar Despesa Pendente';
-    document.getElementById('modal-despesa').style.display = 'flex';
+    document.getElementById('modal-despesa').classList.add('active');
 }
 
 function fecharModalDespesa() {
-    document.getElementById('modal-despesa').style.display = 'none';
+    document.getElementById('modal-despesa').classList.remove('active');
 }
 
 async function salvarDespesa(e) {
@@ -314,6 +314,7 @@ async function salvarDespesa(e) {
         mostrarNotificacao(id ? 'Despesa atualizada com sucesso!' : 'Nova despesa registrada!', 'success');
         fecharModalDespesa();
         carregarDespesas();
+        carregarResumoDashboard();
     } catch (err) {
         mostrarNotificacao(err.message, 'error');
     } finally {
@@ -332,6 +333,7 @@ async function marcarComoPaga(id) {
         
         mostrarNotificacao('Despesa confirmada como PAGA. Saldo atualizado.', 'success');
         carregarDespesas(); 
+        carregarResumoDashboard();
     } catch (err) { 
         mostrarNotificacao(err.message, 'error'); 
     }
@@ -347,6 +349,7 @@ async function excluirDespesa(id) {
         
         mostrarNotificacao('Despesa excluída com sucesso.', 'info');
         carregarDespesas();
+        carregarResumoDashboard();
     } catch (err) { 
         mostrarNotificacao(err.message, 'error'); 
     }
@@ -389,11 +392,11 @@ async function carregarRetiradas() {
 
 function abrirModalNovaRetirada() {
     document.getElementById('form-retirada').reset();
-    document.getElementById('modal-retirada').style.display = 'flex';
+    document.getElementById('modal-retirada').classList.add('active');
 }
 
 function fecharModalRetirada() {
-    document.getElementById('modal-retirada').style.display = 'none';
+    document.getElementById('modal-retirada').classList.remove('active');
 }
 
 async function salvarRetirada(e) {
@@ -429,6 +432,7 @@ async function salvarRetirada(e) {
         mostrarNotificacao('Retirada registrada com sucesso. O saldo foi atualizado.', 'success');
         fecharModalRetirada();
         carregarRetiradas();
+        carregarResumoDashboard();
     } catch (err) {
         mostrarNotificacao(err.message, 'error');
     } finally {
