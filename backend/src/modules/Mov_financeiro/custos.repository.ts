@@ -50,11 +50,11 @@ export async function obterResumo(de?: string, ate?: string) {
   if (de) { where.push('data_mov >= ?'); params.push(`${de} 00:00:00`); }
   if (ate) { where.push('data_mov < DATE_ADD(?, INTERVAL 1 DAY)'); params.push(ate); }
 
-  const [rows] = await pool.query<RowDataPacket[]>(
+const [rows] = await pool.query<RowDataPacket[]>(
     `SELECT
-       COALESCE(SUM(CASE WHEN tipo = 'ENTRADA' THEN valor ELSE 0 END), 0) AS total_entradas,
-       COALESCE(SUM(CASE WHEN tipo = 'SAIDA' THEN valor ELSE 0 END), 0) AS total_saidas,
-       COALESCE(SUM(CASE WHEN tipo = 'ENTRADA' THEN valor WHEN tipo = 'SAIDA' THEN -valor ELSE 0 END), 0) AS saldo_periodo,
+       COALESCE(SUM(CASE WHEN tipo COLLATE utf8mb4_general_ci = 'ENTRADA' THEN valor ELSE 0 END), 0) AS total_entradas,
+       COALESCE(SUM(CASE WHEN tipo COLLATE utf8mb4_general_ci = 'SAIDA' THEN valor ELSE 0 END), 0) AS total_saidas,
+       COALESCE(SUM(CASE WHEN tipo COLLATE utf8mb4_general_ci = 'ENTRADA' THEN valor WHEN tipo COLLATE utf8mb4_general_ci = 'SAIDA' THEN -valor ELSE 0 END), 0) AS saldo_periodo,
        COUNT(*) AS quantidade_movimentacoes
      FROM vw_movimentacoes_financeiras
      ${where.length ? `WHERE ${where.join(' AND ')}` : ''}`,
