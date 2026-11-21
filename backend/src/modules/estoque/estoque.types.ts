@@ -12,9 +12,11 @@ export interface ProdutoEstoque {
   preco_produto: number;
   ativo: boolean;
   estoque_minimo: number;
-  saldo_atual: number;      // Lotes vigentes ou saldo atual de FEITO
-  saldo_fisico: number;     // Todos os lotes (inclusive vencidos) ou FEITO
-  saldo_disponivel: number; // Saldo valido descontando reservas ativas
+  id_fornecedor?: number | null;
+  id_receita?: number | null;
+  saldo_atual: number;
+  saldo_fisico: number;
+  saldo_disponivel: number;
   alerta_minimo: boolean;
   alerta_excesso: boolean;
   controla_estoque: boolean;
@@ -23,6 +25,7 @@ export interface ProdutoEstoque {
 export interface Produto {
   id_produto: number;
   id_categoria: number | null;
+  id_fornecedor?: number | null;
   nome_produto: string;
   descricao_produto: string | null;
   tipo_produto: TipoProduto;
@@ -38,8 +41,11 @@ export interface CadastroProduto {
   unidade_medida: string;
   preco_produto?: number;
   estoque_minimo?: number;
+  quantidade_inicial?: number;
   descricao_produto?: string | null;
   id_categoria?: number | null;
+  id_fornecedor?: number | null;
+  id_receita?: number | null;
 }
 
 export interface EdicaoProduto {
@@ -49,13 +55,15 @@ export interface EdicaoProduto {
   estoque_minimo?: number;
   descricao_produto?: string | null;
   id_categoria?: number | null;
+  id_fornecedor?: number | null;
+  id_receita?: number | null;
 }
 
 export interface NovoLote {
   id_produto: number;
   quantidade: number;
   codigo_lote?: string | null;
-  data_validade?: string | null; // AAAA-MM-DD
+  data_validade?: string | null;
   id_item_compra?: number | null;
 }
 
@@ -103,8 +111,8 @@ export interface RecebimentoCompra {
 export interface RegistroProducaoFeito {
   id_produto_feito: number;
   id_pedido: number;
-  quantidade_produzida: number; // Unidades boas entregues
-  quantidade_perdida?: number;   // Refugo / descarte durante preparo
+  quantidade_produzida: number;
+  quantidade_perdida?: number;
   confirmar_vencidos?: boolean;
   id_user?: number;
 }
@@ -126,19 +134,4 @@ export interface UsoLote {
   id_lote: number;
   quantidade: number;
   saldo_restante: number;
-}
-
-export interface ProdutoEstoque {
-  id_produto: number;
-  nome_produto: string;
-  tipo_produto: TipoProduto;
-  unidade_medida: string;
-  preco_produto: number;        // Incluído para consulta imediata de venda
-  estoque_minimo: number;
-  saldo_atual: number;          // Lotes vigentes ou saldo atual de FEITO
-  saldo_fisico: number;         // Todos os lotes (inclusive vencidos) ou FEITO
-  saldo_disponivel: number;     // Saldo válido descontando reservas ativas
-  alerta_minimo: boolean;
-  alerta_excesso: boolean;
-  controla_estoque: boolean;
 }

@@ -2,20 +2,24 @@
     --bg-color: #f8f9fa;
     --primary-light: #ffe3e9;
 }
+
 /* Início */
-.topo{
+.topo {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 24px;
 }
+
 .section-title h1 { font-size: 1.75rem; font-weight: bold; }
 .section-title p { color: var(--cor-corpo-texto); font-size: 1rem; margin-top: 4px; }
+
 /* Filtros e Pesquisa */
 .filter-tags {
     display: flex;
     gap: 8px;
 }
+
 /* Tabela Responsiva */
 .card {
     background-color: var(--bg-color);
@@ -25,41 +29,54 @@
     box-shadow: 0 2px 6px rgba(0,0,0,0.02);
     margin-bottom: 2rem;
 }
+
 .card h2 {
     color: var(--pink-escuro);
     margin-bottom: 1rem;
     text-align: center;
 }
+
 .table-responsive {
     overflow-x: auto;
 }
+
 table {
     width: 100%;
     border-collapse: collapse;
     text-align: left;
     font-size: 0.9rem;
 }
+
 th {
-    font-weight: 500;
-    padding-bottom: 14px;
+    font-weight: 600;
+    padding: 12px 10px 14px 10px;
     border-bottom: 1px solid var(--pink-escuro);
+    white-space: nowrap;
 }
+
 td {
-    padding: 14px 0;
+    padding: 14px 10px;
     border-bottom: 1px solid var(--pink-escuro);
     color: var(--text-main);
+    vertical-align: middle;
 }
+
 tr:last-child td { border-bottom: none; }
+
 .item-name { font-weight: 600; }
+
 /* Badges de Status */
 .badge {
     padding: 4px 10px;
     border-radius: 20px;
     font-size: 0.75rem;
     font-weight: 600;
+    display: inline-block;
+    margin-right: 4px;
 }
 .badge.success { background-color: #d1fae5; color: var(--successo); }
 .badge.danger { background-color: #fff1f2; color: var(--aviso); }
+
 /* Ações na Tabela */
 .action-icon-btn {
     background: var(--bg-color);
@@ -75,13 +92,14 @@ tr:last-child td { border-bottom: none; }
     transition: all 0.2s;
     margin-right: 4px;
 }
+
 .action-icon-btn:hover {
     background-color: var(--primary-light);
     color: var(--primary);
     border-color: var(--primary-light);
 }
 
-/* Responsividade da tabela de contatos: Oculta colunas secundárias no celular */
+/* Responsividade da tabela de estoque: Oculta colunas secundárias no celular */
 @media (max-width: 768px) {
     .table-card th:nth-child(2),
     .table-card td:nth-child(2),
@@ -92,6 +110,7 @@ tr:last-child td { border-bottom: none; }
         display: none;
     }
 }
+
 /* Status de ativação do produto */
 .badge.inactive {
     background-color: #e5e7eb;

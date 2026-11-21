@@ -1,4 +1,4 @@
-import type { PoolConnection } from 'mysql2/promise';
+import type { PoolConnection, RowDataPacket, ResultSetHeader } from 'mysql2/promise';
 import * as repo from './estoque.repository';
 import * as regras from './estoque.regras';
 import type {
@@ -14,7 +14,6 @@ import type {
   BaixaFeito,
   ReservaEstoqueInput
 } from './estoque.types';
-
 
 /** Reutiliza a transação do módulo chamador quando fornecida. */
 async function executarComConexao<T>(
@@ -84,11 +83,21 @@ export async function cadastrar(d: CadastroProduto) {
   }
   regras.validarPrecoEEstoqueMinimo(d.preco_produto, d.estoque_minimo);
 
+  if (d.quantidade_inicial !== undefined) {
+    if (typeof d.quantidade_inicial !== 'number' || !Number.isFinite(d.quantidade_inicial) || d.quantidade_inicial < 0) {
+      throw new Error('Quantidade inicial não pode ser negativa ou inválida.');
+    }
+  }
+
   if (d.id_categoria) {
     const valida = await repo.categoriaAtiva(d.id_categoria);
     if (!valida) throw new Error('Categoria informada não existe ou está inativa.');
   }
-  return await repo.cadastrarProduto(d);
+  return await repo.cadastrarProduto({
+    ...d,
+    id_fornecedor: d.id_fornecedor ? Number(d.id_fornecedor) : null,
+    id_receita: d.id_receita ? Number(d.id_receita) : null
+  });
 }
 
 export async function editarProduto(id: number, d: EdicaoProduto) {
@@ -103,14 +112,19 @@ export async function editarProduto(id: number, d: EdicaoProduto) {
     if (!valida) throw new Error('Categoria informada não existe ou está inativa.');
   }
 
-  await repo.atualizarProduto(id, {
-    nome_produto: d.nome_produto,
-    descricao_produto: d.descricao_produto,
-    unidade_medida: d.unidade_medida,
-    preco_produto: d.preco_produto,
-    estoque_minimo: d.estoque_minimo,
-    id_categoria: d.id_categoria
-  });
+  await repo.atualizarProduto(
+    id,
+    {
+      nome_produto: d.nome_produto,
+      descricao_produto: d.descricao_produto,
+      unidade_medida: d.unidade_medida,
+      preco_produto: d.preco_produto,
+      estoque_minimo: d.estoque_minimo,
+      id_categoria: d.id_categoria,
+      id_fornecedor: d.id_fornecedor !== undefined ? (d.id_fornecedor ? Number(d.id_fornecedor) : null) : undefined
+    },
+    d.id_receita ? Number(d.id_receita) : null
+  );
 
   return { mensagem: 'Produto atualizado com sucesso.' };
 }
@@ -135,6 +149,38 @@ export async function alterarStatusProduto(id: number, ativo: boolean) {
   }
   await repo.alterarStatusProduto(id, ativo);
   return { mensagem: `Produto ${ativo ? 'ativado' : 'desativado'} com sucesso.` };
+}
+
+export async function ajustarSaldoFeito(idProdutoFeito: number, novaQuantidade: number, motivo?: string) {
+  if (!regras.inteiroPositivo(idProdutoFeito)) throw new Error('ID do produto inválido.');
+  if (typeof novaQuantidade !== 'number' || !Number.isFinite(novaQuantidade) || novaQuantidade < 0) {
+    throw new Error('Quantidade inválida: informe um valor maior ou igual a zero.');
+  }
+
+  return await repo.executarTransacao(async (conn) => {
+    const produto = await repo.buscarProduto(conn, idProdutoFeito);
+    if (!produto || produto.tipo_produto !== 'FEITO') {
+      throw new Error('Produto FEITO não encontrado ou inativo.');
+    }
+
+    const saldoAnterior = await repo.bloquearEstoqueFeito(conn, idProdutoFeito);
+    const novoSaldo = regras.arredondar(novaQuantidade);
+    const delta = regras.arredondar(novoSaldo - saldoAnterior);
+
+    if (delta === 0) {
+      return { saldo_anterior: saldoAnterior, novo_saldo: novoSaldo };
+    }
+
+    await repo.atualizarEstoqueFeito(conn, idProdutoFeito, novoSaldo);
+    await repo.movimentarFeito(conn, {
+      id_produto_feito: idProdutoFeito,
+      tipo_movimentacao: 'AJUSTE',
+      quantidade: delta,
+      motivo: motivo || 'Ajuste manual de estoque (FEITO)'
+    });
+
+    return { saldo_anterior: saldoAnterior, novo_saldo: novoSaldo };
+  });
 }
 
 export async function criarLote(d: NovoLote) {
@@ -225,8 +271,6 @@ export async function reservarEstoquePedido(d: ReservaEstoqueInput, connExterna?
       saldoValido = lotes.filter((l) => !l.vencido).reduce((acc, l) => acc + Number(l.quantidade_atual), 0);
     }
 
-    // Inclui reservas já feitas para este mesmo pedido, evitando sobre-reserva
-    // quando o pedido contém linhas duplicadas do mesmo produto.
     const jaReservado = await repo.reservadoProduto(conn, d.id_produto);
     const disponivel = regras.saldoDisponivel(saldoValido, jaReservado);
 
@@ -271,7 +315,7 @@ export async function registrarProducaoFeito(d: RegistroProducaoFeito, connExter
     const rendimento = Number(receita.detalhes.rendimento_receita);
     if (rendimento <= 0) throw new Error('Rendimento da receita inválido.');
 
-    const [anteriores] = await conn.query<import('mysql2/promise').RowDataPacket[]>(
+    const [anteriores] = await conn.query<RowDataPacket[]>(
       `SELECT COALESCE(SUM(quantidade_concluida), 0) AS total_concluido
        FROM producoes WHERE id_pedido = ? AND id_produto_feito = ?`,
       [d.id_pedido, d.id_produto_feito]
@@ -285,8 +329,6 @@ export async function registrarProducaoFeito(d: RegistroProducaoFeito, connExter
 
     const totalInsumosPlanejados = regras.arredondar(d.quantidade_produzida + perdas);
 
-    // Primeiro valida TODOS os ingredientes. Assim não existe consumo parcial caso
-    // um ingrediente posterior esteja em falta.
     const planosIngredientes: Array<{
       id_ingrediente: number;
       usos: Array<{ id_lote: number; quantidade: number; saldo_restante: number }>;
@@ -348,7 +390,7 @@ export async function registrarProducaoFeito(d: RegistroProducaoFeito, connExter
 
     const statusProducao = totalBomJaProduzido + d.quantidade_produzida >= qtdPedida ? 'CONCLUIDA' : 'PARCIAL';
 
-    const [insercao] = await conn.execute<import('mysql2/promise').ResultSetHeader>(
+    const [insercao] = await conn.execute<ResultSetHeader>(
       `INSERT INTO producoes (id_pedido, id_produto_feito, quantidade_planejada,
         quantidade_concluida, quantidade_perdida, status_producao, receita_snapshot,
         data_inicio, data_conclusao)
@@ -424,7 +466,7 @@ export async function baixarFeitoPedido(d: BaixaFeito, connExterna?: PoolConnect
     const item = await repo.buscarItemPedidoFeito(conn, d.id_pedido, d.id_produto_feito);
     if (!item || item.tipo_produto !== 'FEITO') throw new Error('Produto não pertence ao pedido.');
 
-    const [anteriores] = await conn.query<import('mysql2/promise').RowDataPacket[]>(
+    const [anteriores] = await conn.query<RowDataPacket[]>(
       `SELECT COALESCE(-SUM(quantidade), 0) AS baixado FROM movimentacoes_feitos
        WHERE id_pedido = ? AND id_produto_feito = ? AND tipo_movimentacao = 'SAIDA'`,
       [d.id_pedido, d.id_produto_feito]
@@ -495,7 +537,7 @@ export async function receberCompra(d: RecebimentoCompra) {
     const itens = await repo.itensDaCompra(conn, d.id_compra);
     if (itens.length === 0) throw new Error('A compra não possui itens para receber.');
 
-    const mapaRecebimento = new Map<number, { data_validade?: string | null; codigo_lote?: string | null }>();
+    const mapaRecebimento = new Map<number, { data_validade?: string | null | undefined; codigo_lote?: string | null | undefined }>();
     if (d.itens) {
       for (const it of d.itens) {
         mapaRecebimento.set(it.id_item_compra, {

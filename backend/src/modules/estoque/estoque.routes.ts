@@ -48,7 +48,6 @@ const numero = (v: unknown) => {
   return Number.isFinite(parsed) ? parsed : undefined;
 };
 
-
 function filtroMovimentacao(
   req: Request,
   idProduto?: number
@@ -71,7 +70,6 @@ function filtroMovimentacao(
     ...(pagina !== undefined && { pagina })
   };
 }
-
 
 // ----- Consultas -----
 router.get('/', async (req, res) => {
@@ -173,6 +171,20 @@ router.post('/movimentacoes', async (req, res) => {
   }
 });
 
+router.patch('/feitos/:id_produto/saldo', async (req, res) => {
+  try {
+    res.json(
+      await service.ajustarSaldoFeito(
+        id(req.params.id_produto),
+        Number(req.body?.quantidade),
+        texto(req.body?.motivo)
+      )
+    );
+  } catch (e) {
+    erro(res, e);
+  }
+});
+
 // ----- Reservas de Estoque -----
 router.post('/pedidos/:id_pedido/reservar', async (req, res) => {
   try {
@@ -205,7 +217,6 @@ router.get('/pedidos/:id_pedido/producoes', async (req, res) => {
   }
 });
 
-
 router.post('/pedidos/:id_pedido/feitos/:id_produto/baixa', async (req, res) => {
   try {
     const resultado = await service.baixarFeitoPedido({
@@ -222,7 +233,6 @@ router.post('/pedidos/:id_pedido/feitos/:id_produto/baixa', async (req, res) => 
     return erro(res, e);
   }
 });
-
 
 // ----- Compras e Pedidos -----
 router.post('/compras/:id_compra/receber', async (req, res) => {

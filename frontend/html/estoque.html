@@ -58,9 +58,9 @@
             <a href="../index.html"><i class="fa-solid fa-house"></i>Início</a>
             <a href="#"><i class="fa-solid fa-box-open"></i> Estoque</a>
             <a href="contatos.html"><i class="fa-solid fa-users"></i> Contatos</a>
-            <a href="#"><i class="fa-solid fa-chart-pie"></i> Financeiro</a>
-            <a href="#"><i class="fa-solid fa-book-open"></i> Receitas</a>
-            <a href="#"><i class="fa-solid fa-list-check"></i> Pedidos</a>
+            <a href="financeiro.html"><i class="fa-solid fa-chart-pie"></i> Financeiro</a>
+            <a href="receitas.html"><i class="fa-solid fa-book-open"></i> Receitas</a>
+            <a href="pedidos.html"><i class="fa-solid fa-list-check"></i> Pedidos</a>
         </div>
     </header>
     <main>
@@ -138,7 +138,6 @@
                     <option value="ingrediente">Ingredientes</option>
                     <option value="feito">Feito (Produzido)</option>
                     <option value="revenda">Revenda</option>
-                    <option value="embalagem">Embalagem</option>
                 </select>
             </div>
         </div>
@@ -283,7 +282,6 @@
                                 <option value="ingrediente">Ingredientes</option>
                                 <option value="feito">Feito (Produzido)</option>
                                 <option value="revenda">Revenda</option>
-                                <option value="embalagem">Embalagem</option>
                             </select>
                         </div>                      
                         <div class="input-group">
@@ -302,6 +300,14 @@
                         </div>
                     </div>
 
+                    <!-- Campo opcional para vincular receita quando categoria for "feito" -->
+                    <div class="input-group" id="recipe-link-group" style="display: none;">
+                        <label for="item-recipe-select">Vincular a uma Receita Salva (Opcional)</label>
+                        <select id="item-recipe-select">
+                            <option value="">Nenhuma receita vinculada</option>
+                        </select>
+                    </div>
+
                     <div class="input-group" id="custom-unit-group" style="display: none;">
                         <label for="item-custom-unit">Digite a Unidade Personalizada</label>
                         <input type="text" id="item-custom-unit" placeholder="Ex: pote, lata">
@@ -312,8 +318,8 @@
                         <input type="number" id="item-price" min="0" step="0.01" value="0" required placeholder="Ex: 15.90">
                     </div>
 
-                    <div class="input-row">
-                        <div class="input-group">
+                    <div class="input-row" id="qty-min-row">
+                        <div class="input-group" id="initial-qty-group">
                             <label for="item-qty">Quantidade Inicial</label>
                             <input type="number" id="item-qty" required step="any" placeholder="10">
                         </div>
@@ -323,7 +329,7 @@
                         </div>
                     </div>
 
-                    <div class="input-group">
+                    <div class="input-group" id="supplier-group">
                         <label for="item-supplier-select">Fornecedor Associado (Opcional)</label>
                         <select id="item-supplier-select">
                             <option value="">Não há fornecedor</option>
@@ -352,7 +358,7 @@
                     
                     <div class="input-group">
                         <label for="edit-item-qty">Nova Quantidade (<span id="edit-item-unit-label">un</span>)</label>
-                        <input type="number" id="edit-item-qty" required step="any" placeholder="Ex: 100">
+                        <input type="number" id="edit-item-qty" required step="any" min="0" placeholder="Ex: 100">
                     </div>
 
                     <div class="modal-footer">

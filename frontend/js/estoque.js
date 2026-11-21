@@ -4,6 +4,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let estoqueData = [];
     let lotesData = [];
     let fornecedoresData = [];
+    let receitasData = [];
 
     // Elementos do DOM
     const tableBody = document.getElementById("inventory-table-body");
@@ -38,7 +39,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const openNewItemModalBtn = document.getElementById("open-new-item-modal");
     const closeModalBtn = document.getElementById("close-modal-btn");
     const itemForm = document.getElementById("item-form");
+    const itemCategorySelect = document.getElementById("item-category");
+    const recipeLinkGroup = document.getElementById("recipe-link-group");
+    const itemRecipeSelect = document.getElementById("item-recipe-select");
+    const supplierGroup = document.getElementById("supplier-group");
     const itemSupplierSelect = document.getElementById("item-supplier-select");
+    const initialQtyGroup = document.getElementById("initial-qty-group");
     const unitSelect = document.getElementById("item-unit-select");
     const customUnitGroup = document.getElementById("custom-unit-group");
     const customUnitInput = document.getElementById("item-custom-unit");
@@ -116,7 +122,7 @@ document.addEventListener("DOMContentLoaded", () => {
     function mapearTipoParaApi(categoriaFront) {
         const c = (categoriaFront || "").toLowerCase().trim();
         if (c === "feito" || c === "produzido") return "FEITO";
-        if (c === "revenda" || c === "embalagem") return "REVENDA";
+        if (c === "revenda") return "REVENDA";
         return "INGREDIENTE";
     }
 
@@ -125,6 +131,25 @@ document.addEventListener("DOMContentLoaded", () => {
         if (t === "FEITO") return "feito";
         if (t === "REVENDA") return "revenda";
         return "ingrediente";
+    }
+
+    function atualizarCamposCategoriaModal() {
+        const isFeito = itemCategorySelect.value === "feito";
+        const isEdicao = Boolean(editItemDbIdInput.value);
+
+        if (recipeLinkGroup) {
+            recipeLinkGroup.style.display = isFeito ? "flex" : "none";
+        }
+        if (supplierGroup) {
+            supplierGroup.style.display = "flex";
+        }
+        if (initialQtyGroup) {
+            const qtyInput = document.getElementById("item-qty");
+            initialQtyGroup.style.display = isEdicao ? "none" : "flex";
+            if (qtyInput) {
+                qtyInput.required = !isEdicao;
+            }
+        }
     }
 
     async function carregarDadosDoBanco() {
@@ -142,12 +167,14 @@ document.addEventListener("DOMContentLoaded", () => {
                 preco: Number(p.preco_produto ?? 0),
                 ativo: Boolean(p.ativo),
                 unidade: p.unidade_medida,
-                fornecedorId: p.id_fornecedor || null
+                fornecedorId: p.id_fornecedor ? Number(p.id_fornecedor) : null
             }));
 
-            // 2. Busca os lotes de cada produto
+            // 2. Busca os lotes de cada produto (exceto FEITO que não usa lotes)
             const promessasLotes = estoqueData.map(item =>
-                apiRequest(`/estoque/lotes/${item.id}`).catch(() => [])
+                item.tipoOriginal === "FEITO"
+                    ? Promise.resolve([])
+                    : apiRequest(`/estoque/lotes/${item.id}`).catch(() => [])
             );
             const resultadosLotes = await Promise.all(promessasLotes);
 
@@ -160,20 +187,34 @@ document.addEventListener("DOMContentLoaded", () => {
                 quantidade: Number(l.quantidade_atual ?? l.quantidade ?? 0)
             }));
 
-            // 3. Busca fornecedores (caso a rota exista)
+            // 3. Busca fornecedores na rota real do módulo Contatos (/api/contatos/fornecedores)
             try {
-                const fornecedoresApi = await apiRequest("/fornecedores");
-                fornecedoresData = fornecedoresApi.map(f => ({
-                    id: f.id_fornecedor || f.id,
-                    nome: f.nome || f.nome_fornecedor,
-                    telefone: f.telefone || ""
+                const fornecedoresApi = await apiRequest("/contatos/fornecedores");
+                fornecedoresData = (Array.isArray(fornecedoresApi) ? fornecedoresApi : [])
+                    .map(f => ({
+                        id: Number(f.id_fornecedor),
+                        nome: f.nome_fornecedor,
+                        telefone: f.telefone_fornecedor || ""
+                    }));
+            } catch (errForn) {
+                console.warn("Não foi possível carregar fornecedores:", errForn);
+                fornecedoresData = [];
+            }
+
+            // 4. Busca receitas salvas no módulo Receitas (/api/receitas)
+            try {
+                const receitasApi = await apiRequest("/receitas");
+                receitasData = (Array.isArray(receitasApi) ? receitasApi : []).map(r => ({
+                    id: Number(r.id_produto_feito || r.id_produto || r.id),
+                    nome: r.nome_produto || r.nome_receita || r.nome || `Receita #${r.id_produto_feito || r.id}`
                 }));
             } catch {
-                fornecedoresData = [];
+                receitasData = [];
             }
 
             carregarDatalistProdutos();
             carregarSelectFornecedores();
+            carregarSelectReceitas();
             renderInventory();
             renderExpiringLots();
         } catch (err) {
@@ -209,6 +250,17 @@ document.addEventListener("DOMContentLoaded", () => {
             opt.value = f.id;
             opt.textContent = f.nome;
             itemSupplierSelect.appendChild(opt);
+        });
+    }
+
+    function carregarSelectReceitas() {
+        if (!itemRecipeSelect) return;
+        itemRecipeSelect.innerHTML = `<option value="">Nenhuma receita vinculada</option>`;
+        receitasData.forEach(r => {
+            const opt = document.createElement("option");
+            opt.value = r.id;
+            opt.textContent = r.nome;
+            itemRecipeSelect.appendChild(opt);
         });
     }
 
@@ -295,20 +347,15 @@ document.addEventListener("DOMContentLoaded", () => {
                 <td style="text-transform: capitalize;">${item.categoria}</td>
                 <td>R$ ${item.preco.toFixed(2).replace(".", ",")}</td>
                 <td style="white-space: nowrap;">
-                    ${item.tipoOriginal === "FEITO" ? `
-                        <strong title="Estoque atualizado pelo registro de produção">${item.quantidade} ${item.unidade}</strong>
-                        <small style="display:block;color:var(--text-muted);">Atualizado pela produção</small>
-                    ` : `
-                        <button class="action-icon-btn remove-qty-btn" title="Diminuir quantidade" data-id="${item.id}">
-                            <i class="fa-solid fa-minus"></i>
-                        </button>
-                        <strong class="edit-qty-direct" title="Clique para alterar a quantidade exata" data-id="${item.id}" style="margin: 0 8px; font-size: 0.95rem; cursor: pointer; text-decoration: underline dotted; color: var(--pink-escuro);">
-                            ${item.quantidade} ${item.unidade}
-                        </strong>
-                        <button class="action-icon-btn add-qty-btn" title="Aumentar quantidade" data-id="${item.id}">
-                            <i class="fa-solid fa-plus"></i>
-                        </button>
-                    `}
+                    <button class="action-icon-btn remove-qty-btn" title="Diminuir quantidade" data-id="${item.id}">
+                        <i class="fa-solid fa-minus"></i>
+                    </button>
+                    <strong class="edit-qty-direct" title="Clique para alterar a quantidade exata" data-id="${item.id}" style="margin: 0 8px; font-size: 0.95rem; cursor: pointer; text-decoration: underline dotted; color: var(--pink-escuro);">
+                        ${item.quantidade} ${item.unidade}
+                    </strong>
+                    <button class="action-icon-btn add-qty-btn" title="Aumentar quantidade" data-id="${item.id}">
+                        <i class="fa-solid fa-plus"></i>
+                    </button>
                 </td>
                 <td>${item.minimo} ${item.unidade}</td>
                 <td>
@@ -334,12 +381,31 @@ document.addEventListener("DOMContentLoaded", () => {
             tableBody.appendChild(tr);
         });
 
-        // Evento: Botão Aumentar Quantidade [+] -> Cria entrada no primeiro lote ou abre modal de lote
+        // Evento: Botão Aumentar Quantidade [+]
         document.querySelectorAll(".add-qty-btn").forEach(btn => {
             btn.addEventListener("click", async (e) => {
                 const id = parseInt(e.currentTarget.getAttribute("data-id"));
                 const item = estoqueData.find(i => i.id === id);
                 if (!item) return;
+
+                const passo = obterPasso(item.unidade);
+
+                if (item.tipoOriginal === "FEITO") {
+                    try {
+                        const novoSaldo = Math.round((item.quantidade + passo) * 1000) / 1000;
+                        await apiRequest(`/estoque/feitos/${item.id}/saldo`, {
+                            method: "PATCH",
+                            body: JSON.stringify({
+                                quantidade: novoSaldo,
+                                motivo: "Ajuste rápido (+)"
+                            })
+                        });
+                        await carregarDadosDoBanco();
+                    } catch (err) {
+                        alert(err.message);
+                    }
+                    return;
+                }
 
                 const lotesDoItem = lotesData.filter(l => l.insumoId === item.id);
                 if (lotesDoItem.length === 0) {
@@ -349,14 +415,14 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
 
                 try {
-                    const passo = obterPasso(item.unidade);
                     await apiRequest("/estoque/movimentacoes", {
                         method: "POST",
                         body: JSON.stringify({
                             id_lote: lotesDoItem[0].id,
                             tipo_movimentacao: "ENTRADA",
                             quantidade: passo,
-                            motivo: "Ajuste rápido (+)"
+                            motivo: "Ajuste rápido (+)",
+                            confirmar_vencido: true
                         })
                     });
                     await carregarDadosDoBanco();
@@ -368,10 +434,28 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Evento: Botão Diminuir Quantidade [-]
         document.querySelectorAll(".remove-qty-btn").forEach(btn => {
-            btn.addEventListener("click", (e) => {
+            btn.addEventListener("click", async (e) => {
                 const id = parseInt(e.currentTarget.getAttribute("data-id"));
                 const item = estoqueData.find(i => i.id === id);
                 if (!item) return;
+
+                if (item.tipoOriginal === "FEITO") {
+                    const passo = obterPasso(item.unidade);
+                    const novoSaldo = Math.max(0, Math.round((item.quantidade - passo) * 1000) / 1000);
+                    try {
+                        await apiRequest(`/estoque/feitos/${item.id}/saldo`, {
+                            method: "PATCH",
+                            body: JSON.stringify({
+                                quantidade: novoSaldo,
+                                motivo: "Ajuste rápido (-)"
+                            })
+                        });
+                        await carregarDadosDoBanco();
+                    } catch (err) {
+                        alert(err.message);
+                    }
+                    return;
+                }
 
                 const lotesDisponiveis = lotesData.filter(l => l.insumoId === item.id && l.quantidade > 0);
                 if (lotesDisponiveis.length === 0) {
@@ -404,15 +488,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 editItemDbIdInput.value = item.id;
                 document.getElementById("item-name").value = item.nome;
-                document.getElementById("item-category").value = item.categoria;
+                itemCategorySelect.value = item.categoria;
                 document.getElementById("item-qty").value = item.quantidade;
                 document.getElementById("item-min").value = item.minimo;
                 document.getElementById("item-price").value = item.preco.toFixed(2);
 
-                if (item.fornecedorId) {
-                    document.getElementById("item-supplier-select").value = item.fornecedorId;
-                } else {
-                    document.getElementById("item-supplier-select").value = "";
+                atualizarCamposCategoriaModal();
+
+                if (itemSupplierSelect) {
+                    itemSupplierSelect.value = item.fornecedorId ? String(item.fornecedorId) : "";
                 }
 
                 if (["un", "kg", "g", "litros", "ml", "cx", "pct"].includes(item.unidade)) {
@@ -477,7 +561,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-        // Submissão da Retirada por Lote (POST /api/estoque/movimentacoes)
+    // Submissão da Retirada por Lote (POST /api/estoque/movimentacoes)
     if (baixaLoteForm) {
         baixaLoteForm.addEventListener("submit", async (e) => {
             e.preventDefault();
@@ -513,7 +597,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // Submissão do Modal de Edição Rápida de Quantidade Direta (AJUSTE)
+    // Submissão do Modal de Edição Rápida de Quantidade Direta
     if (editQtyForm) {
         editQtyForm.addEventListener("submit", async (e) => {
             e.preventDefault();
@@ -522,30 +606,58 @@ document.addEventListener("DOMContentLoaded", () => {
             const item = estoqueData.find(i => i.id === id);
 
             if (!item || isNaN(novaQuantidade) || novaQuantidade < 0) return;
+
             if (item.tipoOriginal === "FEITO") {
-                alert("O saldo de produtos FEITOS é atualizado pelo registro de produção. Não ajuste a quantidade diretamente.");
+                try {
+                    await apiRequest(`/estoque/feitos/${id}/saldo`, {
+                        method: "PATCH",
+                        body: JSON.stringify({
+                            quantidade: novaQuantidade,
+                            motivo: "Ajuste direto de saldo (FEITO)"
+                        })
+                    });
+                    editQtyModal.classList.remove("active");
+                    await carregarDadosDoBanco();
+                } catch (err) {
+                    alert(`Erro ao ajustar quantidade: ${err.message}`);
+                }
                 return;
             }
 
             const lotesDoItem = lotesData.filter(l => l.insumoId === id);
             try {
                 if (lotesDoItem.length > 0) {
-                    await apiRequest("/estoque/movimentacoes", {
-                        method: "POST",
-                        body: JSON.stringify({
-                            id_lote: lotesDoItem[0].id,
-                            tipo_movimentacao: "AJUSTE",
-                            quantidade: novaQuantidade,
-                            motivo: "Ajuste direto de saldo"
-                        })
-                    });
+                    const lotePrincipal = lotesDoItem[0];
+                    const saldoOutrosLotes = lotesDoItem
+                        .slice(1)
+                        .reduce((acc, l) => acc + Number(l.quantidade), 0);
+                    const novoSaldoLotePrincipal = Math.round((novaQuantidade - saldoOutrosLotes) * 1000) / 1000;
+
+                    if (novoSaldoLotePrincipal < 0) {
+                        alert(`A quantidade total não pode ser menor que o saldo dos outros lotes (${saldoOutrosLotes}).`);
+                        return;
+                    }
+
+                    const delta = Math.round((novoSaldoLotePrincipal - lotePrincipal.quantidade) * 1000) / 1000;
+                    if (delta !== 0) {
+                        await apiRequest("/estoque/movimentacoes", {
+                            method: "POST",
+                            body: JSON.stringify({
+                                id_lote: lotePrincipal.id,
+                                tipo_movimentacao: "AJUSTE",
+                                quantidade: delta,
+                                motivo: "Ajuste direto de saldo",
+                                confirmar_vencido: true
+                            })
+                        });
+                    }
                 } else if (novaQuantidade > 0) {
                     await apiRequest("/estoque/lotes", {
                         method: "POST",
                         body: JSON.stringify({
                             id_produto: id,
                             quantidade: novaQuantidade,
-                            codigo_lote: `Lote Inicial`
+                            codigo_lote: "Lote Inicial"
                         })
                     });
                 }
@@ -596,7 +708,7 @@ document.addEventListener("DOMContentLoaded", () => {
     infoAddBatchBtn.addEventListener("click", () => {
         if (!currentSelectedItemForModal) return;
         if (currentSelectedItemForModal.tipoOriginal === "FEITO") {
-            alert("Produtos FEITOS não possuem lotes. Utilize o registro de produção.");
+            alert("Produtos FEITOS não possuem lotes. Utilize o ajuste direto de saldo ou o registro de produção.");
             return;
         }
         infoModal.classList.remove("active");
@@ -609,7 +721,12 @@ document.addEventListener("DOMContentLoaded", () => {
         const fornecedor = fornecedoresData.find(f => f.id === currentSelectedItemForModal.fornecedorId);
 
         if (fornecedor) {
-            alert(`Abrindo contato do fornecedor: ${fornecedor.nome}\nTelefone: ${fornecedor.telefone}`);
+            const numeroLimpo = (fornecedor.telefone || "").replace(/\D/g, "");
+            if (numeroLimpo) {
+                window.open(`https://wa.me/55${numeroLimpo}`, "_blank");
+            } else {
+                alert(`Fornecedor: ${fornecedor.nome} (sem telefone cadastrado).`);
+            }
         } else {
             alert("Aviso do Sistema: Este produto não possui um fornecedor vinculado cadastrado.");
         }
@@ -626,7 +743,7 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
         if (insumoExistente.tipoOriginal === "FEITO") {
-            alert("Produtos do tipo FEITO não recebem lotes diretamente. Registre a produção para atualizar o estoque.");
+            alert("Produtos do tipo FEITO não recebem lotes diretamente. Ajuste o saldo na tabela ou registre a produção.");
             return;
         }
 
@@ -661,10 +778,12 @@ document.addEventListener("DOMContentLoaded", () => {
         const unidadeMedida = unitSelect.value === "outro" ? customUnitInput.value : unitSelect.value;
         const editId = editItemDbIdInput.value;
         const nomeProduto = document.getElementById("item-name").value.trim();
-        const categoriaFront = document.getElementById("item-category").value;
+        const categoriaFront = itemCategorySelect.value;
         const qtdInicial = parseFloat(document.getElementById("item-qty").value) || 0;
         const estoqueMinimo = parseFloat(document.getElementById("item-min").value) || 0;
         const precoProduto = parseFloat(document.getElementById("item-price").value) || 0;
+        const idFornecedor = itemSupplierSelect?.value ? Number(itemSupplierSelect.value) : null;
+        const idReceita = itemRecipeSelect?.value ? Number(itemRecipeSelect.value) : null;
 
         try {
             if (editId) {
@@ -675,26 +794,30 @@ document.addEventListener("DOMContentLoaded", () => {
                         nome_produto: nomeProduto,
                         unidade_medida: unidadeMedida,
                         estoque_minimo: estoqueMinimo,
-                        preco_produto: precoProduto
+                        preco_produto: precoProduto,
+                        id_fornecedor: idFornecedor,
+                        id_receita: categoriaFront === "feito" ? idReceita : null
                     })
                 });
                 alert("Insumo atualizado no banco de dados com sucesso!");
             } else {
+                const tipoNovoProduto = mapearTipoParaApi(categoriaFront);
+
                 // Cadastrar novo item (POST /api/estoque/produtos)
                 const criado = await apiRequest("/estoque/produtos", {
                     method: "POST",
                     body: JSON.stringify({
                         nome_produto: nomeProduto,
-                        tipo_produto: mapearTipoParaApi(categoriaFront),
+                        tipo_produto: tipoNovoProduto,
                         unidade_medida: unidadeMedida,
                         estoque_minimo: estoqueMinimo,
-                        preco_produto: precoProduto
+                        quantidade_inicial: qtdInicial,
+                        preco_produto: precoProduto,
+                        id_fornecedor: idFornecedor,
+                        id_receita: tipoNovoProduto === "FEITO" ? idReceita : null
                     })
                 });
 
-                // Ingredientes e revendas usam lotes. Produtos FEITOS recebem saldo
-                // exclusivamente pelo fluxo de registro de produção.
-                const tipoNovoProduto = mapearTipoParaApi(categoriaFront);
                 const novoId = criado?.id_produto || criado?.id;
                 if (novoId && qtdInicial > 0 && tipoNovoProduto !== "FEITO") {
                     await apiRequest("/estoque/lotes", {
@@ -707,21 +830,22 @@ document.addEventListener("DOMContentLoaded", () => {
                     });
                 }
 
-                if (tipoNovoProduto === "FEITO" && qtdInicial > 0) {
-                    alert("Produto FEITO cadastrado. A quantidade inicial informada não foi lançada: registre a produção para atualizar o estoque.");
-                } else {
-                    alert("Insumo cadastrado no banco de dados com sucesso!");
-                }
+                alert("Insumo cadastrado no banco de dados com sucesso!");
             }
 
             itemForm.reset();
             customUnitGroup.style.display = "none";
+            if (recipeLinkGroup) recipeLinkGroup.style.display = "none";
             itemModal.classList.remove("active");
             await carregarDadosDoBanco();
         } catch (err) {
             alert(`Erro ao salvar insumo: ${err.message}`);
         }
     });
+
+    if (itemCategorySelect) {
+        itemCategorySelect.addEventListener("change", atualizarCamposCategoriaModal);
+    }
 
     if (unitSelect) {
         unitSelect.addEventListener("change", (e) => {
@@ -747,8 +871,9 @@ document.addEventListener("DOMContentLoaded", () => {
         editItemDbIdInput.value = "";
         itemForm.reset();
         customUnitGroup.style.display = "none";
+        atualizarCamposCategoriaModal();
         modalTitleElem.textContent = "Adicionar Novo Insumo";
-        modalDescElem.textContent = "Cadastre um novo ingrediente, produto produzido ou embalagem no seu estoque.";
+        modalDescElem.textContent = "Cadastre um novo ingrediente ou produto no seu estoque.";
         itemModal.classList.add("active");
     });
 

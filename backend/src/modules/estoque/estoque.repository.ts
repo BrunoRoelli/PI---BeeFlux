@@ -11,9 +11,42 @@ import type {
 } from './estoque.types';
 import { paginacaoSegura } from './estoque.regras';
 
+let colunaFornecedorVerificada = false;
 
+async function garantirColunaFornecedor(): Promise<boolean> {
+  if (colunaFornecedorVerificada) return true;
+  try {
+    const [cols] = await pool.query<RowDataPacket[]>(
+      `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+       WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'produtos' AND COLUMN_NAME = 'id_fornecedor'`
+    );
+    if (cols.length === 0) {
+      await pool.execute(`ALTER TABLE produtos ADD COLUMN id_fornecedor INT NULL`);
+    }
+    colunaFornecedorVerificada = true;
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function sincronizarFornecedorProduto(conn: PoolConnection, idProduto: number, idFornecedor: number | null) {
+  try {
+    await conn.execute('DELETE FROM fornecedor_produto WHERE id_produto = ?', [idProduto]);
+    if (idFornecedor && idFornecedor > 0) {
+      await conn.execute(
+        'INSERT INTO fornecedor_produto (id_fornecedor, id_produto) VALUES (?, ?)',
+        [idFornecedor, idProduto]
+      );
+    }
+  } catch {
+    // Ignora caso a tabela auxiliar não exista em algum ambiente
+  }
+}
 
 export async function listarEstoque(tipo?: TipoProduto, incluirInativos = false): Promise<ProdutoEstoque[]> {
+  const temFornecedor = await garantirColunaFornecedor();
+
   const sql = `
     SELECT 
       p.id_produto, 
@@ -22,6 +55,7 @@ export async function listarEstoque(tipo?: TipoProduto, incluirInativos = false)
       p.unidade_medida, 
       p.estoque_minimo,
       p.ativo,
+      ${temFornecedor ? 'p.id_fornecedor,' : 'NULL AS id_fornecedor,'}
       COALESCE(p.preco_produto, 0) AS preco_produto,
       CASE 
         WHEN p.tipo_produto = 'FEITO' THEN COALESCE(ef.quantidade_atual, 0)
@@ -67,6 +101,7 @@ export async function listarEstoque(tipo?: TipoProduto, incluirInativos = false)
       unidade_medida: r.unidade_medida,
       preco_produto: preco,
       ativo: Boolean(r.ativo),
+      id_fornecedor: r.id_fornecedor ? Number(r.id_fornecedor) : null,
       estoque_minimo: minimo,
       saldo_atual: saldo,
       saldo_fisico: fisico,
@@ -170,7 +205,7 @@ export async function listarMovimentacoes(f: FiltroMovimentacao) {
   return rows;
 }
 
-export async function quantidadesEmCompra(): Promise<Map<number, number>> {
+export async function quantidadesEmCompra() {
   const [rows] = await pool.query<RowDataPacket[]>(
     `SELECT ic.id_produto, SUM(ic.quantidade) AS quantidade
      FROM itens_compra ic 
@@ -178,7 +213,7 @@ export async function quantidadesEmCompra(): Promise<Map<number, number>> {
      WHERE c.status_compra = 'PENDENTE' 
      GROUP BY ic.id_produto`
   );
-  return new Map(rows.map((r) => [Number(r.id_produto), Number(r.quantidade)]));
+  return new Map<number, number>(rows.map((r) => [Number(r.id_produto), Number(r.quantidade)]));
 }
 
 export async function categoriaAtiva(idCategoria: number): Promise<boolean> {
@@ -190,8 +225,10 @@ export async function categoriaAtiva(idCategoria: number): Promise<boolean> {
 }
 
 export async function obterProduto(id: number): Promise<Produto | undefined> {
+  const temFornecedor = await garantirColunaFornecedor();
   const [rows] = await pool.query<RowDataPacket[]>(
-    `SELECT id_produto, id_categoria, nome_produto, descricao_produto, tipo_produto,
+    `SELECT id_produto, id_categoria, ${temFornecedor ? 'id_fornecedor,' : 'NULL AS id_fornecedor,'}
+       nome_produto, descricao_produto, tipo_produto,
        unidade_medida, preco_produto, estoque_minimo, ativo
      FROM produtos WHERE id_produto = ?`,
     [id]
@@ -201,6 +238,7 @@ export async function obterProduto(id: number): Promise<Produto | undefined> {
   return {
     id_produto: r.id_produto,
     id_categoria: r.id_categoria,
+    id_fornecedor: r.id_fornecedor ? Number(r.id_fornecedor) : null,
     nome_produto: r.nome_produto,
     descricao_produto: r.descricao_produto,
     tipo_produto: r.tipo_produto,
@@ -211,29 +249,120 @@ export async function obterProduto(id: number): Promise<Produto | undefined> {
   };
 }
 
+export async function vincularReceitaAoFeito(conn: PoolConnection, idProdutoFeito: number, idReceitaOrigem: number) {
+  const [detalhes] = await conn.query<RowDataPacket[]>(
+    `SELECT tempo_preparo_minutos, rendimento_receita, instrucoes,
+            custos_fixos, custo_mao_obra, margem_lucro, status_receita
+     FROM detalhes_receita
+     WHERE id_produto_feito = ?`,
+    [idReceitaOrigem]
+  );
+  if (!detalhes[0]) return;
+
+  const r = detalhes[0];
+  await conn.execute(
+    `INSERT INTO detalhes_receita (id_produto_feito, tempo_preparo_minutos, rendimento_receita, instrucoes,
+       custos_fixos, custo_mao_obra, margem_lucro, status_receita)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+     ON DUPLICATE KEY UPDATE
+       tempo_preparo_minutos = VALUES(tempo_preparo_minutos),
+       rendimento_receita = VALUES(rendimento_receita),
+       instrucoes = VALUES(instrucoes),
+       custos_fixos = VALUES(custos_fixos),
+       custo_mao_obra = VALUES(custo_mao_obra),
+       margem_lucro = VALUES(margem_lucro),
+       status_receita = VALUES(status_receita)`,
+    [
+      idProdutoFeito,
+      r.tempo_preparo_minutos,
+      r.rendimento_receita,
+      r.instrucoes,
+      r.custos_fixos,
+      r.custo_mao_obra,
+      r.margem_lucro,
+      r.status_receita
+    ]
+  );
+
+  const [ingredientes] = await conn.query<RowDataPacket[]>(
+    `SELECT id_ingrediente, quantidade FROM receita_ingrediente WHERE id_produto_feito = ?`,
+    [idReceitaOrigem]
+  );
+
+  if (ingredientes.length > 0) {
+    await conn.execute(`DELETE FROM receita_ingrediente WHERE id_produto_feito = ?`, [idProdutoFeito]);
+    for (const ing of ingredientes) {
+      await conn.execute(
+        `INSERT INTO receita_ingrediente (id_produto_feito, id_ingrediente, quantidade) VALUES (?, ?, ?)`,
+        [idProdutoFeito, ing.id_ingrediente, ing.quantidade]
+      );
+    }
+  }
+}
+
 export async function cadastrarProduto(d: CadastroProduto) {
+  const temFornecedor = await garantirColunaFornecedor();
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
     const preco = d.preco_produto ?? 0;
-    const [result] = await conn.execute<ResultSetHeader>(
-      `INSERT INTO produtos (nome_produto, tipo_produto, unidade_medida, preco_produto,
-       estoque_minimo, descricao_produto, id_categoria)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [
-        d.nome_produto,
-        d.tipo_produto,
-        d.unidade_medida,
-        preco,
-        d.estoque_minimo ?? 0,
-        d.descricao_produto ?? null,
-        d.id_categoria ?? null
-      ]
-    );
+    const idFornecedor = d.id_fornecedor ? Number(d.id_fornecedor) : null;
+
+    let result: ResultSetHeader;
+    if (temFornecedor) {
+      [result] = await conn.execute<ResultSetHeader>(
+        `INSERT INTO produtos (nome_produto, tipo_produto, unidade_medida, preco_produto,
+         estoque_minimo, descricao_produto, id_categoria, id_fornecedor)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          d.nome_produto,
+          d.tipo_produto,
+          d.unidade_medida,
+          preco,
+          d.estoque_minimo ?? 0,
+          d.descricao_produto ?? null,
+          d.id_categoria ?? null,
+          idFornecedor
+        ]
+      );
+    } else {
+      [result] = await conn.execute<ResultSetHeader>(
+        `INSERT INTO produtos (nome_produto, tipo_produto, unidade_medida, preco_produto,
+         estoque_minimo, descricao_produto, id_categoria)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [
+          d.nome_produto,
+          d.tipo_produto,
+          d.unidade_medida,
+          preco,
+          d.estoque_minimo ?? 0,
+          d.descricao_produto ?? null,
+          d.id_categoria ?? null
+        ]
+      );
+    }
+
+    await sincronizarFornecedorProduto(conn, result.insertId, idFornecedor);
 
     if (d.tipo_produto === 'FEITO') {
+      const qtdInicial = d.quantidade_inicial && d.quantidade_inicial > 0 ? Number(d.quantidade_inicial) : 0;
       await conn.execute('INSERT INTO feitos (id_produto, tipo_produto) VALUES (?, "FEITO")', [result.insertId]);
-      await conn.execute('INSERT INTO estoque_feitos (id_produto_feito, quantidade_atual) VALUES (?, 0)', [result.insertId]);
+      await conn.execute(
+        'INSERT INTO estoque_feitos (id_produto_feito, quantidade_atual) VALUES (?, ?)',
+        [result.insertId, qtdInicial]
+      );
+
+      if (qtdInicial > 0) {
+        await conn.execute(
+          `INSERT INTO movimentacoes_feitos (id_produto_feito, tipo_movimentacao, quantidade, motivo)
+           VALUES (?, 'ENTRADA', ?, 'Saldo inicial no cadastro')`,
+          [result.insertId, qtdInicial]
+        );
+      }
+
+      if (d.id_receita && Number(d.id_receita) > 0 && Number(d.id_receita) !== result.insertId) {
+        await vincularReceitaAoFeito(conn, result.insertId, Number(d.id_receita));
+      }
     }
 
     await conn.commit();
@@ -252,16 +381,19 @@ const COLUNAS_EDITAVEIS = [
   'unidade_medida',
   'preco_produto',
   'estoque_minimo',
-  'id_categoria'
+  'id_categoria',
+  'id_fornecedor'
 ] as const;
 
-export type CamposProduto = Partial<Record<typeof COLUNAS_EDITAVEIS[number], string | number | null>>;
+export type CamposProduto = Partial<Record<typeof COLUNAS_EDITAVEIS[number], string | number | null | undefined>>;
 
-export async function atualizarProduto(id: number, campos: CamposProduto): Promise<void> {
+export async function atualizarProduto(id: number, campos: CamposProduto, idReceita?: number | null): Promise<void> {
+  const temFornecedor = await garantirColunaFornecedor();
   const sets: string[] = [];
   const valores: Array<string | number | null> = [];
 
   for (const coluna of COLUNAS_EDITAVEIS) {
+    if (coluna === 'id_fornecedor' && !temFornecedor) continue;
     const v = campos[coluna];
     if (v !== undefined) {
       sets.push(`${coluna} = ?`);
@@ -269,9 +401,26 @@ export async function atualizarProduto(id: number, campos: CamposProduto): Promi
     }
   }
 
-  if (sets.length === 0) return;
-  valores.push(id);
-  await pool.execute(`UPDATE produtos SET ${sets.join(', ')} WHERE id_produto = ?`, valores);
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+    if (sets.length > 0) {
+      valores.push(id);
+      await conn.execute(`UPDATE produtos SET ${sets.join(', ')} WHERE id_produto = ?`, valores);
+    }
+    if (campos.id_fornecedor !== undefined) {
+      await sincronizarFornecedorProduto(conn, id, campos.id_fornecedor ? Number(campos.id_fornecedor) : null);
+    }
+    if (idReceita && Number(idReceita) > 0 && Number(idReceita) !== id) {
+      await vincularReceitaAoFeito(conn, id, Number(idReceita));
+    }
+    await conn.commit();
+  } catch (e) {
+    await conn.rollback();
+    throw e;
+  } finally {
+    conn.release();
+  }
 }
 
 export async function saldoFisicoTotalProduto(idProduto: number): Promise<number> {
@@ -364,7 +513,13 @@ export async function inserirLote(
 }
 
 export async function atualizarLote(conn: PoolConnection, idLote: number, quantidade: number) {
-  await conn.execute('UPDATE lotes_estoque SET quantidade_atual = ? WHERE id_lote = ?', [quantidade, idLote]);
+  await conn.execute(
+    `UPDATE lotes_estoque 
+     SET quantidade_atual = ?, 
+         quantidade_inicial = GREATEST(quantidade_inicial, ?) 
+     WHERE id_lote = ?`,
+    [quantidade, quantidade, idLote]
+  );
 }
 
 export async function registrarMovimentacao(
@@ -372,13 +527,13 @@ export async function registrarMovimentacao(
   d: {
     id_produto: number;
     tipo_produto: TipoProduto;
-    id_lote?: number | null;
+    id_lote?: number | null | undefined;
     tipo_movimentacao: TipoMovimentacao;
     quantidade: number;
-    motivo?: string;
-    id_user?: number;
-    id_item_compra?: number;
-    id_pedido?: number;
+    motivo?: string | undefined;
+    id_user?: number | undefined;
+    id_item_compra?: number | undefined;
+    id_pedido?: number | undefined;
   }
 ) {
   const [r] = await conn.execute<ResultSetHeader>(
@@ -547,7 +702,9 @@ export async function obterReceitaProdutoFeito(conn: PoolConnection, idProdutoFe
 export async function buscarItemPedidoFeito(conn: PoolConnection, idPedido: number, idFeito: number) {
   const [rows] = await conn.query<RowDataPacket[]>(
     `SELECT ip.quantidade, ip.tipo_produto FROM item_pedido ip
-     WHERE ip.id_pedido = ? AND ip.id_produto = ? FOR UPDATE`, [idPedido, idFeito]);
+     WHERE ip.id_pedido = ? AND ip.id_produto = ? FOR UPDATE`,
+    [idPedido, idFeito]
+  );
   return rows[0] as { quantidade: string; tipo_produto: TipoProduto } | undefined;
 }
 
@@ -568,11 +725,11 @@ export async function movimentarFeito(
   conn: PoolConnection,
   d: {
     id_produto_feito: number;
-    id_producao?: number;
-    id_pedido?: number;
+    id_producao?: number | undefined;
+    id_pedido?: number | undefined;
     tipo_movimentacao: TipoMovimentacao;
     quantidade: number;
-    motivo?: string;
+    motivo?: string | undefined;
   }
 ) {
   await conn.execute(
@@ -658,7 +815,7 @@ export async function inserirPendencia(
   conn: PoolConnection,
   d: {
     id_pedido: number;
-    id_producao?: number;
+    id_producao?: number | undefined;
     id_produto: number;
     quantidade: number;
     motivo: string;
@@ -677,9 +834,9 @@ export async function registrarHistoricoPedido(
   d: {
     id_pedido: number;
     tipo_evento: 'CRIACAO' | 'ALTERACAO_VALOR' | 'ALTERACAO_STATUS' | 'CANCELAMENTO' | 'CONCLUSAO' | 'OUTRO';
-    status_anterior?: string | null;
-    status_novo?: string | null;
-    valor_historico?: number | null;
+    status_anterior?: string | null | undefined;
+    status_novo?: string | null | undefined;
+    valor_historico?: number | null | undefined;
     descricao_historico: string;
   }
 ) {
@@ -697,7 +854,6 @@ export async function registrarHistoricoPedido(
   );
 }
 
-
 export async function atualizarStatusPedido(conn: PoolConnection, idPedido: number, statusNovo: string) {
   await conn.execute('UPDATE pedidos SET status_pedido = ? WHERE id_pedido = ?', [statusNovo, idPedido]);
 }
@@ -711,5 +867,4 @@ export async function listarProducoes(idPedido: number) {
     [idPedido]
   );
   return rows;
-
 }

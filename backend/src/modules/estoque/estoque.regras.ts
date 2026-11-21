@@ -57,13 +57,10 @@ export function calcularDelta(tipo: TipoMovimentacao, quantidade: number): numbe
   return tipo === 'ENTRADA' ? Math.abs(quantidade) : -Math.abs(quantidade);
 }
 
-export function calcularNovoSaldo(atual: number, inicial: number, delta: number): number {
+export function calcularNovoSaldo(atual: number, _inicial: number, delta: number): number {
   const novo = arredondar(atual + delta);
   if (novo < 0) {
     throw new Error('Estoque insuficiente neste lote.');
-  }
-  if (novo > inicial) {
-    throw new Error('A movimentação ultrapassa a capacidade inicial deste lote.');
   }
   return novo;
 }
