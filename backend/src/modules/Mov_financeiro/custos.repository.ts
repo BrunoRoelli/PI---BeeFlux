@@ -34,7 +34,7 @@ export async function listarMovimentacoes(filtro: FiltroFinanceiro): Promise<Mov
 
   const [rows] = await pool.query<MovimentacaoRow[]>(sql, params);
   return rows.map(row => ({
-    data_mov: row.data_mov,
+    data_mov: row.data_mov instanceof Date ? row.data_mov.toISOString() : String(row.data_mov),
     tipo: row.tipo,
     categoria: row.categoria,
     valor: Number(row.valor),
@@ -50,11 +50,11 @@ export async function obterResumo(de?: string, ate?: string) {
   if (de) { where.push('data_mov >= ?'); params.push(`${de} 00:00:00`); }
   if (ate) { where.push('data_mov < DATE_ADD(?, INTERVAL 1 DAY)'); params.push(ate); }
 
-  const [rows] = await pool.query<RowDataPacket[]>(
+const [rows] = await pool.query<RowDataPacket[]>(
     `SELECT
-       COALESCE(SUM(CASE WHEN tipo = 'ENTRADA' THEN valor ELSE 0 END), 0) AS total_entradas,
-       COALESCE(SUM(CASE WHEN tipo = 'SAIDA' THEN valor ELSE 0 END), 0) AS total_saidas,
-       COALESCE(SUM(CASE WHEN tipo = 'ENTRADA' THEN valor WHEN tipo = 'SAIDA' THEN -valor ELSE 0 END), 0) AS saldo_periodo,
+       COALESCE(SUM(CASE WHEN tipo COLLATE utf8mb4_general_ci = 'ENTRADA' THEN valor ELSE 0 END), 0) AS total_entradas,
+       COALESCE(SUM(CASE WHEN tipo COLLATE utf8mb4_general_ci = 'SAIDA' THEN valor ELSE 0 END), 0) AS total_saidas,
+       COALESCE(SUM(CASE WHEN tipo COLLATE utf8mb4_general_ci = 'ENTRADA' THEN valor WHEN tipo COLLATE utf8mb4_general_ci = 'SAIDA' THEN -valor ELSE 0 END), 0) AS saldo_periodo,
        COUNT(*) AS quantidade_movimentacoes
      FROM vw_movimentacoes_financeiras
      ${where.length ? `WHERE ${where.join(' AND ')}` : ''}`,
@@ -67,11 +67,11 @@ export async function obterResumo(de?: string, ate?: string) {
   );
 
   const row = rows[0] ?? {};
-  return {
-    total_entradas: Number(row.total_entradas ?? 0),
-    total_saidas: Number(row.total_saidas ?? 0),
-    saldo_periodo: Number(row.saldo_periodo ?? 0),
-    quantidade_movimentacoes: Number(row.quantidade_movimentacoes ?? 0),
+ return {
+    total_entradas: Number(rows[0]?.total_entradas ?? 0),
+    total_saidas: Number(rows[0]?.total_saidas ?? 0),
+    saldo_periodo: Number(rows[0]?.saldo_periodo ?? 0),
+    quantidade_movimentacoes: Number(rows[0]?.quantidade_movimentacoes ?? 0),
     despesas_pendentes: Number(despesasPend[0]?.total_pendente ?? 0)
   };
 }
@@ -145,7 +145,7 @@ export async function excluirDespesa(idDespesa: number) {
 
 export async function marcarDespesaComoPaga(idDespesa: number) {
   const [result] = await pool.execute<ResultSetHeader>(
-    `UPDATE despesas SET status_pagamento = 'PAGO'
+    `UPDATE despesas SET status_pagamento = 'PAGO', data_pagamento = CURRENT_TIMESTAMP
      WHERE id_despesa = ? AND status_pagamento = 'PENDENTE'`,
     [idDespesa]
   );

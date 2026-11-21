@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from 'express';
 import * as service from './custos.service';
-import type { CategoriaDespesa, StatusDespesa, TipoMovimentacaoFinanceira } from './custos.types';
+import type { AtualizarDespesaInput, CategoriaDespesa, FiltroFinanceiro, StatusDespesa, TipoMovimentacaoFinanceira } from './custos.types';
 
 export const custosController = {
   async resumo(req: Request, res: Response, next: NextFunction) {
@@ -10,15 +10,17 @@ export const custosController = {
     } catch (err) { next(err); }
   },
 
-  async movimentacoes(req: Request, res: Response, next: NextFunction) {
+async movimentacoes(req: Request, res: Response, next: NextFunction) {
     try {
       const { de, ate, tipo, categoria } = req.query;
-      res.json(await service.consultarMovimentacoes({
-        de: typeof de === 'string' ? de : undefined,
-        ate: typeof ate === 'string' ? ate : undefined,
-        tipo: typeof tipo === 'string' ? tipo as TipoMovimentacaoFinanceira : undefined,
-        categoria: typeof categoria === 'string' ? categoria : undefined
-      }));
+      
+      const filtro: FiltroFinanceiro = {};
+      if (typeof de === 'string') filtro.de = de;
+      if (typeof ate === 'string') filtro.ate = ate;
+      if (typeof tipo === 'string') filtro.tipo = tipo as TipoMovimentacaoFinanceira;
+      if (typeof categoria === 'string') filtro.categoria = categoria;
+
+      res.json(await service.consultarMovimentacoes(filtro));
     } catch (err) { next(err); }
   },
 
@@ -44,18 +46,20 @@ export const custosController = {
     } catch (err) { next(err); }
   },
 
-  async editarDespesa(req: Request, res: Response, next: NextFunction) {
+async editarDespesa(req: Request, res: Response, next: NextFunction) {
     try {
       const id = Number(req.params.id);
       const body = req.body ?? {};
-      const result = await service.editarDespesa(id, {
-        descricao_despesa: body.descricao_despesa,
-        categoria_despesa: body.categoria_despesa,
-        valor_despesa: body.valor_despesa !== undefined ? Number(body.valor_despesa) : undefined,
-        data_despesa: body.data_despesa,
-        data_vencimento: body.data_vencimento,
-        observacao: body.observacao
-      });
+      
+      const payload: AtualizarDespesaInput = {};
+      if (body.descricao_despesa !== undefined) payload.descricao_despesa = body.descricao_despesa;
+      if (body.categoria_despesa !== undefined) payload.categoria_despesa = body.categoria_despesa;
+      if (body.valor_despesa !== undefined) payload.valor_despesa = Number(body.valor_despesa);
+      if (body.data_despesa !== undefined) payload.data_despesa = body.data_despesa;
+      if (body.data_vencimento !== undefined) payload.data_vencimento = body.data_vencimento;
+      if (body.observacao !== undefined) payload.observacao = body.observacao;
+
+      const result = await service.editarDespesa(id, payload);
       res.json(result);
     } catch (err) { next(err); }
   },
@@ -76,8 +80,14 @@ export const custosController = {
   async criarRetirada(req: Request, res: Response, next: NextFunction) {
     try {
       const body = req.body ?? {};
+      const idUser = Number(body.id_user);
+      
+      if (!idUser || isNaN(idUser)) {
+        return res.status(400).json({ mensagem: 'ID do usuário é obrigatório e deve ser válido para registrar retiradas.' });
+      }
+
       const result = await service.cadastrarRetirada({
-        id_user: Number(body.id_user) || 1,
+        id_user: idUser,
         valor_retirada: Number(body.valor_retirada),
         descricao_retirada: body.descricao_retirada ?? null,
         data_retirada: body.data_retirada
