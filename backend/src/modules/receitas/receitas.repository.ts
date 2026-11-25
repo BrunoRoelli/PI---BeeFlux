@@ -83,16 +83,18 @@ export async function listar() {
 }
 
 export async function salvar(conn: PoolConnection, d: SalvarReceita, atualizar: boolean) {
+  const instrucoesTexto = d.instrucoes?.trim() || 'Sem instruções adicionais.';
+
   if (atualizar) {
     const [result] = await conn.execute<ResultSetHeader>(
       `UPDATE detalhes_receita
        SET tempo_preparo_minutos = ?, rendimento_receita = ?, instrucoes = ?, custos_fixos = ?,
-           custo_mao_obra = ?, margem_lucro = ?,
-           WHERE id_produto_feito = ?`,
+           custo_mao_obra = ?, margem_lucro = ?
+       WHERE id_produto_feito = ?`,
       [
         d.tempo_preparo_minutos,
         d.rendimento_receita,
-        d.instrucoes,
+        instrucoesTexto,
         d.custos_fixos,
         d.custo_mao_obra,
         d.margem_lucro,
@@ -102,7 +104,6 @@ export async function salvar(conn: PoolConnection, d: SalvarReceita, atualizar: 
     if (result.affectedRows === 0) throw new Error('Receita não encontrada.');
     await conn.execute('DELETE FROM receita_ingrediente WHERE id_produto_feito = ?', [d.id_produto_feito]);
   } else {
-    // Parâmetro d.instrucoes ajustado com alinhamento das 8 colunas e 7 placeholders + status
     await conn.execute(
       `INSERT INTO detalhes_receita
         (id_produto_feito, tempo_preparo_minutos, rendimento_receita, instrucoes, custos_fixos, custo_mao_obra, margem_lucro, status_receita)
@@ -111,7 +112,7 @@ export async function salvar(conn: PoolConnection, d: SalvarReceita, atualizar: 
         d.id_produto_feito,
         d.tempo_preparo_minutos,
         d.rendimento_receita,
-        d.instrucoes,
+        instrucoesTexto,
         d.custos_fixos,
         d.custo_mao_obra,
         d.margem_lucro
@@ -136,7 +137,6 @@ export async function mudarStatus(conn: PoolConnection, id: number, status: 'ATI
   return r.affectedRows;
 }
 
-// Busca saldo disponível real (lotes não vencidos menos reservas ativas)
 export async function saldosDisponiveisIngredientes(conn: PoolConnection, idsIngredientes: number[]) {
   if (!idsIngredientes.length) return new Map<number, number>();
   const [rows] = await conn.query<RowDataPacket[]>(
@@ -170,7 +170,6 @@ export async function saldosDisponiveisIngredientes(conn: PoolConnection, idsIng
   return mapa;
 }
 
-// Busca último custo de compra real para precificação automática
 export async function custosRecentesIngredientes(conn: PoolConnection, idsIngredientes: number[]) {
   if (!idsIngredientes.length) return new Map<number, number>();
   const [rows] = await conn.query<RowDataPacket[]>(
@@ -192,7 +191,6 @@ export async function custosRecentesIngredientes(conn: PoolConnection, idsIngred
   return mapa;
 }
 
-// Consulta de disponibilidade para Cardápio
 export async function saldoFeitoPronto(conn: PoolConnection, idProdutoFeito: number) {
   const [rows] = await conn.query<RowDataPacket[]>(
     `SELECT 

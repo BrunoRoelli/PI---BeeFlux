@@ -95,8 +95,8 @@ export async function cadastrar(d: CadastroProduto) {
   }
   return await repo.cadastrarProduto({
     ...d,
-    id_fornecedor: d.id_fornecedor ? Number(d.id_fornecedor) : null,
-    id_receita: d.id_receita ? Number(d.id_receita) : null
+    id_fornecedor: d.tipo_produto === 'FEITO' ? null : (d.id_fornecedor ? Number(d.id_fornecedor) : null),
+    id_receita: null
   });
 }
 
@@ -112,6 +112,15 @@ export async function editarProduto(id: number, d: EdicaoProduto) {
     if (!valida) throw new Error('Categoria informada não existe ou está inativa.');
   }
 
+  const fornecedorFinal =
+    atual.tipo_produto === 'FEITO'
+      ? null
+      : d.id_fornecedor !== undefined
+        ? d.id_fornecedor
+          ? Number(d.id_fornecedor)
+          : null
+        : undefined;
+
   await repo.atualizarProduto(
     id,
     {
@@ -121,9 +130,9 @@ export async function editarProduto(id: number, d: EdicaoProduto) {
       preco_produto: d.preco_produto,
       estoque_minimo: d.estoque_minimo,
       id_categoria: d.id_categoria,
-      id_fornecedor: d.id_fornecedor !== undefined ? (d.id_fornecedor ? Number(d.id_fornecedor) : null) : undefined
+      id_fornecedor: fornecedorFinal
     },
-    d.id_receita ? Number(d.id_receita) : null
+    null
   );
 
   return { mensagem: 'Produto atualizado com sucesso.' };

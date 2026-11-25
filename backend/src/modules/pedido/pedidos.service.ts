@@ -1,7 +1,5 @@
 import * as repo from './pedidos.repository';
 import * as regras from './pedidos.regras';
-// Corrigido:
-// Corrigido:
 import * as agendamentoRepo from './agendamentos/agendamentos.repository';
 import * as estoqueService from '../estoque/estoque.service';
 import type {
@@ -21,7 +19,6 @@ export async function obterPorId(idPedido: number): Promise<PedidoCompleto> {
   if (!regras.inteiroPositivo(idPedido)) {
     throw new Error('ID do pedido inválido.');
   }
-  // Usa repo com transação padrão (sem conn, usa pool)
   const pedido = await repo.buscarPedidoCompleto(idPedido);
   if (!pedido) {
     throw new Error('Pedido não encontrado.');
@@ -72,8 +69,12 @@ export async function criarPedido(
       if (quantidadeNormalizada <= 0) {
         throw new Error(`Quantidade inválida para o produto "${prod.nome_produto}".`);
       }
-      if (['un', 'und', 'unid', 'unidade', 'unidades', 'pç', 'pc', 'peça', 'peças', 'g', 'gr', 'grama', 'gramas'].includes(prod.unidade_medida.trim().toLowerCase())
-          && !Number.isInteger(item.quantidade)) {
+      if (
+        ['un', 'und', 'unid', 'unidade', 'unidades', 'pç', 'pc', 'peça', 'peças', 'g', 'gr', 'grama', 'gramas'].includes(
+          prod.unidade_medida.trim().toLowerCase()
+        ) &&
+        !Number.isInteger(item.quantidade)
+      ) {
         throw new Error(`O produto "${prod.nome_produto}" é vendido por unidade inteira.`);
       }
 
@@ -126,7 +127,6 @@ export async function criarPedido(
       });
     }
 
-    // Correção 3: Inserção de agendamento usando o repositório de agendamentos
     if (dados.agendamento) {
       await agendamentoRepo.inserirAgendamentoRepo(conn, {
         id_pedido: idPedido,
@@ -161,6 +161,48 @@ export async function criarPedido(
         valor_historico: valorPagamento,
         descricao_historico: `Pagamento integral de R$ ${valorPagamento.toFixed(2)} confirmado via ${dados.pagamento.forma_pagamento}.`
       });
+    }
+
+    // Dá baixa imediata no estoque ao criar pedido IMEDIATO (tanto REVENDA quanto FEITO)
+    if (dados.tipo_pedido === 'IMEDIATO') {
+      const temRevenda = itensProcessados.some((it) => it.tipo_produto === 'REVENDA');
+      if (temRevenda) {
+        await estoqueService.baixarRevendaPedido(idPedido, false, dados.id_user, conn);
+      }
+
+      for (const it of itensProcessados) {
+        if (it.tipo_produto === 'FEITO') {
+          await estoqueService.baixarFeitoPedido(
+            {
+              id_pedido: idPedido,
+              id_produto_feito: it.id_produto,
+              quantidade: it.quantidade,
+              id_user: dados.id_user
+            },
+            conn
+          );
+        }
+      }
+
+      await repo.atualizarStatus(conn, idPedido, 'CONFIRMADO');
+      await repo.registrarHistorico(conn, {
+        id_pedido: idPedido,
+        tipo_evento: 'ALTERACAO_STATUS',
+        status_anterior: 'PENDENTE',
+        status_novo: 'CONFIRMADO',
+        descricao_historico: 'Pedido imediato confirmado automaticamente com baixa no estoque.'
+      });
+    } else if (dados.tipo_pedido === 'AGENDADO') {
+      for (const it of itensProcessados) {
+        await estoqueService.reservarEstoquePedido(
+          {
+            id_pedido: idPedido,
+            id_produto: it.id_produto,
+            quantidade: it.quantidade
+          },
+          conn
+        );
+      }
     }
 
     return {
@@ -218,8 +260,12 @@ export async function atualizarItensPedido(
       if (quantidadeNormalizada <= 0) {
         throw new Error(`Quantidade inválida para o produto "${prod.nome_produto}".`);
       }
-      if (['un', 'und', 'unid', 'unidade', 'unidades', 'pç', 'pc', 'peça', 'peças', 'g', 'gr', 'grama', 'gramas'].includes(prod.unidade_medida.trim().toLowerCase())
-          && !Number.isInteger(item.quantidade)) {
+      if (
+        ['un', 'und', 'unid', 'unidade', 'unidades', 'pç', 'pc', 'peça', 'peças', 'g', 'gr', 'grama', 'gramas'].includes(
+          prod.unidade_medida.trim().toLowerCase()
+        ) &&
+        !Number.isInteger(item.quantidade)
+      ) {
         throw new Error(`O produto "${prod.nome_produto}" é vendido por unidade inteira.`);
       }
 
@@ -233,7 +279,7 @@ export async function atualizarItensPedido(
     }
 
     const taxa = dados.taxa_entrega !== undefined ? dados.taxa_entrega : Number(pedido.taxa_entrega);
-    const { valorItens, valorTotal } = regras.calcularTotaisPedido(itensProcessados, taxa);
+    const { valorTotal } = regras.calcularTotaisPedido(itensProcessados, taxa);
 
     await repo.removerItensDoPedido(conn, idPedido);
     for (const it of itensProcessados) {
@@ -317,19 +363,20 @@ export async function registrarPagamento(
       throw new Error('Este pedido já possui um pagamento integral confirmado no sistema.');
     }
 
-    regras.validarValorPagamento(dados.valor_pagamento, Number(pedido.valor_total));
+    const valorPago = dados.valor_pagamento ?? Number(pedido.valor_total);
+    regras.validarValorPagamento(valorPago, Number(pedido.valor_total));
 
     await repo.inserirPagamento(conn, {
       id_pedido: idPedido,
-      valor_pagamento: dados.valor_pagamento,
+      valor_pagamento: valorPago,
       forma_pagamento: dados.forma_pagamento
     });
 
     await repo.registrarHistorico(conn, {
       id_pedido: idPedido,
       tipo_evento: 'ALTERACAO_VALOR',
-      valor_historico: dados.valor_pagamento,
-      descricao_historico: `Pagamento integral de R$ ${dados.valor_pagamento.toFixed(2)} registrado por ${usuario.nome_user} via ${dados.forma_pagamento}. Situação financeira: PAGO.`
+      valor_historico: valorPago,
+      descricao_historico: `Pagamento integral de R$ ${valorPago.toFixed(2)} registrado por ${usuario.nome_user} via ${dados.forma_pagamento}. Situação financeira: PAGO.`
     });
 
     return { mensagem: 'Pagamento integral registrado com sucesso.' };
@@ -357,22 +404,26 @@ export async function atualizarStatus(
 
     regras.validarTransicaoStatus(pedido.status_pedido, dados.status_pedido);
 
-    if (pedido.status_pedido === 'PENDENTE' && dados.status_pedido === 'CONFIRMADO') {
-      // Correção 4: Passa a conexão ativa `conn` para buscarPedidoCompleto dentro da transação
-      const itens = await repo.buscarPedidoCompleto(idPedido, conn);
-      if (itens) {
-        for (const it of itens.itens) {
-          if (pedido.tipo_pedido === 'AGENDADO') {
-            await estoqueService.reservarEstoquePedido({
-              id_pedido: idPedido,
-              id_produto: it.id_produto,
-              quantidade: it.quantidade
-            }, conn);
-          }
-        }
-
-        if (pedido.tipo_pedido === 'IMEDIATO') {
+    // Baixa física de estoque quando pedido AGENDADO é concluído
+    if (pedido.tipo_pedido === 'AGENDADO' && dados.status_pedido === 'CONCLUIDO') {
+      const pedidoCompleto = await repo.buscarPedidoCompleto(idPedido, conn);
+      if (pedidoCompleto) {
+        const temRevenda = pedidoCompleto.itens.some((it) => it.tipo_produto === 'REVENDA');
+        if (temRevenda) {
           await estoqueService.baixarRevendaPedido(idPedido, false, dados.id_user, conn);
+        }
+        for (const it of pedidoCompleto.itens) {
+          if (it.tipo_produto === 'FEITO') {
+            await estoqueService.baixarFeitoPedido(
+              {
+                id_pedido: idPedido,
+                id_produto_feito: it.id_produto,
+                quantidade: it.quantidade,
+                id_user: dados.id_user
+              },
+              conn
+            );
+          }
         }
       }
     }
@@ -428,7 +479,6 @@ export async function cancelarPedido(
       });
     }
 
-    // Correção 1: Atualiza efetivamente o status do pedido para CANCELADO na tabela de pedidos
     await repo.atualizarStatus(conn, idPedido, 'CANCELADO');
 
     await repo.registrarHistorico(conn, {

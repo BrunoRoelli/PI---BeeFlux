@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BeeFlux | Estoque</title>
+    <title>BeeFlux - Estoque</title>
 
     <link rel="stylesheet" href="../css/global.css">
     <link rel="stylesheet" href="../css/estoque.css">
@@ -223,7 +223,7 @@
                     <div style="margin-top: 10px; font-size: 0.95rem; line-height: 1.8;">
                         <p><strong>Quantidade atual:</strong> <span id="info-item-qty">0</span></p>
                         <p><strong>Estoque mínimo:</strong> <span id="info-item-min">0 un.</span></p>
-                        <p><strong>Fornecedor:</strong> <span id="info-item-supplier" style="font-weight: 600;">Não há fornecedor</span></p>
+                        <p id="info-supplier-row"><strong>Fornecedor:</strong> <span id="info-item-supplier" style="font-weight: 600;">Não há fornecedor</span></p>
                     </div>
                 </div>
 
@@ -300,14 +300,6 @@
                         </div>
                     </div>
 
-                    <!-- Campo opcional para vincular receita quando categoria for "feito" -->
-                    <div class="input-group" id="recipe-link-group" style="display: none;">
-                        <label for="item-recipe-select">Vincular a uma Receita Salva (Opcional)</label>
-                        <select id="item-recipe-select">
-                            <option value="">Nenhuma receita vinculada</option>
-                        </select>
-                    </div>
-
                     <div class="input-group" id="custom-unit-group" style="display: none;">
                         <label for="item-custom-unit">Digite a Unidade Personalizada</label>
                         <input type="text" id="item-custom-unit" placeholder="Ex: pote, lata">
@@ -315,7 +307,7 @@
 
                     <div class="input-group">
                         <label for="item-price">Preço (R$)</label>
-                        <input type="number" id="item-price" min="0" step="0.01" value="0" required placeholder="Ex: 15.90">
+                        <input type="number" id="item-price" min="0" step="0.01" required placeholder="Ex: 15.90">
                     </div>
 
                     <div class="input-row" id="qty-min-row">

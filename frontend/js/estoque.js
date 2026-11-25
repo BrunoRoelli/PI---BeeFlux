@@ -4,7 +4,6 @@ document.addEventListener("DOMContentLoaded", () => {
     let estoqueData = [];
     let lotesData = [];
     let fornecedoresData = [];
-    let receitasData = [];
 
     // Elementos do DOM
     const tableBody = document.getElementById("inventory-table-body");
@@ -29,6 +28,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const infoItemName = document.getElementById("info-item-name");
     const infoItemQty = document.getElementById("info-item-qty");
     const infoItemMin = document.getElementById("info-item-min");
+    const infoSupplierRow = document.getElementById("info-supplier-row");
     const infoItemSupplier = document.getElementById("info-item-supplier");
     const infoItemLotsBody = document.getElementById("info-item-lots-body");
     const infoAddBatchBtn = document.getElementById("info-add-batch-btn");
@@ -40,10 +40,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const closeModalBtn = document.getElementById("close-modal-btn");
     const itemForm = document.getElementById("item-form");
     const itemCategorySelect = document.getElementById("item-category");
-    const recipeLinkGroup = document.getElementById("recipe-link-group");
-    const itemRecipeSelect = document.getElementById("item-recipe-select");
     const supplierGroup = document.getElementById("supplier-group");
     const itemSupplierSelect = document.getElementById("item-supplier-select");
+    const itemPriceInput = document.getElementById("item-price");
     const initialQtyGroup = document.getElementById("initial-qty-group");
     const unitSelect = document.getElementById("item-unit-select");
     const customUnitGroup = document.getElementById("custom-unit-group");
@@ -137,12 +136,14 @@ document.addEventListener("DOMContentLoaded", () => {
         const isFeito = itemCategorySelect.value === "feito";
         const isEdicao = Boolean(editItemDbIdInput.value);
 
-        if (recipeLinkGroup) {
-            recipeLinkGroup.style.display = isFeito ? "flex" : "none";
-        }
+        // Oculta completamente o campo de fornecedor quando for FEITO (Produzido)
         if (supplierGroup) {
-            supplierGroup.style.display = "flex";
+            supplierGroup.style.display = isFeito ? "none" : "flex";
+            if (isFeito && itemSupplierSelect) {
+                itemSupplierSelect.value = "";
+            }
         }
+
         if (initialQtyGroup) {
             const qtyInput = document.getElementById("item-qty");
             initialQtyGroup.style.display = isEdicao ? "none" : "flex";
@@ -201,20 +202,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 fornecedoresData = [];
             }
 
-            // 4. Busca receitas salvas no módulo Receitas (/api/receitas)
-            try {
-                const receitasApi = await apiRequest("/receitas");
-                receitasData = (Array.isArray(receitasApi) ? receitasApi : []).map(r => ({
-                    id: Number(r.id_produto_feito || r.id_produto || r.id),
-                    nome: r.nome_produto || r.nome_receita || r.nome || `Receita #${r.id_produto_feito || r.id}`
-                }));
-            } catch {
-                receitasData = [];
-            }
-
             carregarDatalistProdutos();
             carregarSelectFornecedores();
-            carregarSelectReceitas();
             renderInventory();
             renderExpiringLots();
         } catch (err) {
@@ -250,17 +239,6 @@ document.addEventListener("DOMContentLoaded", () => {
             opt.value = f.id;
             opt.textContent = f.nome;
             itemSupplierSelect.appendChild(opt);
-        });
-    }
-
-    function carregarSelectReceitas() {
-        if (!itemRecipeSelect) return;
-        itemRecipeSelect.innerHTML = `<option value="">Nenhuma receita vinculada</option>`;
-        receitasData.forEach(r => {
-            const opt = document.createElement("option");
-            opt.value = r.id;
-            opt.textContent = r.nome;
-            itemRecipeSelect.appendChild(opt);
         });
     }
 
@@ -491,11 +469,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 itemCategorySelect.value = item.categoria;
                 document.getElementById("item-qty").value = item.quantidade;
                 document.getElementById("item-min").value = item.minimo;
-                document.getElementById("item-price").value = item.preco.toFixed(2);
+                itemPriceInput.value = item.preco > 0 ? item.preco.toFixed(2) : "";
 
                 atualizarCamposCategoriaModal();
 
-                if (itemSupplierSelect) {
+                if (itemSupplierSelect && item.categoria !== "feito") {
                     itemSupplierSelect.value = item.fornecedorId ? String(item.fornecedorId) : "";
                 }
 
@@ -676,14 +654,19 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!item) return;
 
         currentSelectedItemForModal = item;
+        const isFeito = item.tipoOriginal === "FEITO";
 
         infoItemName.textContent = item.nome;
         infoItemQty.textContent = `${item.quantidade} ${item.unidade}`;
         infoItemMin.textContent = `${item.minimo} ${item.unidade}`;
 
+        if (infoSupplierRow) {
+            infoSupplierRow.style.display = isFeito ? "none" : "block";
+        }
         const fornecedor = fornecedoresData.find(f => f.id === item.fornecedorId);
         infoItemSupplier.textContent = fornecedor ? fornecedor.nome : "Não há fornecedor";
-        infoContactSupplierBtn.style.display = "flex";
+        infoContactSupplierBtn.style.display = isFeito ? "none" : "flex";
+        infoAddBatchBtn.style.display = isFeito ? "none" : "flex";
 
         infoItemLotsBody.innerHTML = "";
         const lotesDoItem = lotesData.filter(l => l.insumoId === item.id);
@@ -779,11 +762,11 @@ document.addEventListener("DOMContentLoaded", () => {
         const editId = editItemDbIdInput.value;
         const nomeProduto = document.getElementById("item-name").value.trim();
         const categoriaFront = itemCategorySelect.value;
+        const isFeito = categoriaFront === "feito";
         const qtdInicial = parseFloat(document.getElementById("item-qty").value) || 0;
         const estoqueMinimo = parseFloat(document.getElementById("item-min").value) || 0;
-        const precoProduto = parseFloat(document.getElementById("item-price").value) || 0;
-        const idFornecedor = itemSupplierSelect?.value ? Number(itemSupplierSelect.value) : null;
-        const idReceita = itemRecipeSelect?.value ? Number(itemRecipeSelect.value) : null;
+        const precoProduto = parseFloat(itemPriceInput.value) || 0;
+        const idFornecedor = !isFeito && itemSupplierSelect?.value ? Number(itemSupplierSelect.value) : null;
 
         try {
             if (editId) {
@@ -795,8 +778,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         unidade_medida: unidadeMedida,
                         estoque_minimo: estoqueMinimo,
                         preco_produto: precoProduto,
-                        id_fornecedor: idFornecedor,
-                        id_receita: categoriaFront === "feito" ? idReceita : null
+                        id_fornecedor: idFornecedor
                     })
                 });
                 alert("Insumo atualizado no banco de dados com sucesso!");
@@ -813,8 +795,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         estoque_minimo: estoqueMinimo,
                         quantidade_inicial: qtdInicial,
                         preco_produto: precoProduto,
-                        id_fornecedor: idFornecedor,
-                        id_receita: tipoNovoProduto === "FEITO" ? idReceita : null
+                        id_fornecedor: idFornecedor
                     })
                 });
 
@@ -834,8 +815,8 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             itemForm.reset();
+            if (itemPriceInput) itemPriceInput.value = "";
             customUnitGroup.style.display = "none";
-            if (recipeLinkGroup) recipeLinkGroup.style.display = "none";
             itemModal.classList.remove("active");
             await carregarDadosDoBanco();
         } catch (err) {
@@ -870,10 +851,11 @@ document.addEventListener("DOMContentLoaded", () => {
     openNewItemModalBtn.addEventListener("click", () => {
         editItemDbIdInput.value = "";
         itemForm.reset();
+        if (itemPriceInput) itemPriceInput.value = "";
         customUnitGroup.style.display = "none";
         atualizarCamposCategoriaModal();
         modalTitleElem.textContent = "Adicionar Novo Insumo";
-        modalDescElem.textContent = "Cadastre um novo ingrediente ou produto no seu estoque.";
+        modalDescElem.textContent = "Cadastre um novo ingrediente, produto produzido ou embalagem no seu estoque.";
         itemModal.classList.add("active");
     });
 

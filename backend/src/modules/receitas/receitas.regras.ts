@@ -21,8 +21,8 @@ export function validarReceita(d: unknown): asserts d is SalvarReceita {
     throw new Error('Rendimento e tempo de preparo devem ser maiores que zero.');
   }
 
-  if (typeof r.instrucoes !== 'string' || !r.instrucoes.trim()) {
-    throw new Error('Instruções são obrigatórias.');
+  if (r.instrucoes !== undefined && r.instrucoes !== null && typeof r.instrucoes !== 'string') {
+    throw new Error('Instruções inválidas.');
   }
 
   if (!Array.isArray(r.ingredientes) || r.ingredientes.length === 0) {
