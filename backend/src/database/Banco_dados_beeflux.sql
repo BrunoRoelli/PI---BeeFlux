@@ -39,12 +39,12 @@ CREATE TABLE clientes (
     nome_cliente VARCHAR(100) NOT NULL,
     telefone_cliente VARCHAR(20) NOT NULL,
     email_cliente VARCHAR(150),
+    data_nascimento DATE NULL,
     observacao VARCHAR(500),
     criado_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     INDEX idx_clientes_telefone (telefone_cliente)
 );
-
 
 -- =========================================================
 -- 3. CATEGORIAS
