@@ -974,28 +974,61 @@ LEFT JOIN pagamentos pg ON pg.id_pedido = pe.id_pedido
 WHERE pe.status_pedido <> 'CANCELADO'
 GROUP BY pe.id_pedido, pe.status_pedido, pe.valor_total;
 
+-- =========================================================
+-- VIEW: MOVIMENTACOES FINANCEIRAS
+-- =========================================================
+
 CREATE VIEW vw_movimentacoes_financeiras AS
-SELECT data_pagamento AS data_mov, 'ENTRADA' AS tipo,
-       'VENDA' AS categoria, valor_pagamento AS valor,
-       'PAGAMENTO' AS origem, id_pagamento AS id_referencia,
-       id_pedido AS id_pedido
+
+-- Entradas provenientes dos pedidos
+SELECT
+    data_pagamento AS data_mov,
+    'ENTRADA' AS tipo,
+    'VENDA' AS categoria,
+    valor_pagamento AS valor,
+    'PAGAMENTO' AS origem,
+    id_pagamento AS id_referencia,
+    id_pedido AS id_pedido
 FROM pagamentos
 WHERE status_pagamento = 'CONFIRMADO'
+
 UNION ALL
-SELECT data_pagamento, 'SAIDA', 'COMPRA_ESTOQUE', valor_pagamento,
-       'PAGAMENTO_COMPRA' AS origem,
-       id_pagamento_compra AS id_referencia,
-       NULL AS id_pedido
+
+-- Saídas provenientes das compras
+SELECT
+    data_pagamento,
+    'SAIDA',
+    'COMPRA_ESTOQUE',
+    valor_pagamento,
+    'PAGAMENTO_COMPRA',
+    id_pagamento_compra,
+    NULL
 FROM pagamentos_compra
 WHERE status_pagamento = 'CONFIRMADO'
+
 UNION ALL
-SELECT COALESCE(data_pagamento, CAST(data_despesa AS DATETIME)), 'SAIDA', categoria_despesa,
-       valor_despesa, 'DESPESA' AS origem, id_despesa AS id_referencia,
-       NULL AS id_pedido
+
+-- Despesas pagas
+SELECT
+    COALESCE(data_pagamento, CAST(data_despesa AS DATETIME)),
+    'SAIDA',
+    categoria_despesa,
+    valor_despesa,
+    'DESPESA',
+    id_despesa,
+    NULL
 FROM despesas
 WHERE status_pagamento = 'PAGO'
+
 UNION ALL
-SELECT data_retirada, 'SAIDA', 'RETIRADA_PROPRIETARIO', valor_retirada,
-       'RETIRADA' AS origem, id_retirada AS id_referencia,
-       NULL AS id_pedido
+
+-- Retiradas do proprietário
+SELECT
+    data_retirada,
+    'SAIDA',
+    'RETIRADA_PROPRIETARIO',
+    valor_retirada,
+    'RETIRADA',
+    id_retirada,
+    NULL
 FROM retiradas;
