@@ -21,12 +21,14 @@ describe('Regras de Negócio de Pedidos (pedidos.regras)', () => {
     expect(() => regras.validarTransicaoStatus('EM_PREPARACAO', 'PRONTO')).not.toThrow();
     expect(() => regras.validarTransicaoStatus('PRONTO', 'CONCLUIDO')).not.toThrow();
     expect(() => regras.validarTransicaoStatus('CONFIRMADO', 'CANCELADO')).not.toThrow();
+    expect(() => regras.validarTransicaoStatus('PENDENTE', 'CONCLUIDO')).not.toThrow();
+    expect(() => regras.validarTransicaoStatus('PENDENTE', 'PRONTO')).not.toThrow();
   });
 
   it('deve rejeitar transições ilegais', () => {
     expect(() => regras.validarTransicaoStatus('CONCLUIDO', 'PENDENTE')).toThrow();
     expect(() => regras.validarTransicaoStatus('CANCELADO', 'CONFIRMADO')).toThrow();
-    expect(() => regras.validarTransicaoStatus('PENDENTE', 'CONCLUIDO')).toThrow();
+      expect(() => regras.validarTransicaoStatus('PRONTO', 'CONFIRMADO')).toThrow();
   });
 
   it('deve exigir pagamento integral e recusar pagamentos parciais', () => {
