@@ -35,7 +35,7 @@ async function carregarPedidos() {
         const res = await fetch(API_PEDIDOS_URL);
         if (!res.ok) throw new Error('Falha ao buscar pedidos da API.');
         listaPedidos = await res.json();
-        renderizarTabela(listaPedidos);
+        await filtrarPedidos();
         atualizarMetricas(listaPedidos);
         await atualizarContadorProntos();
         renderizarAgenda();
@@ -150,7 +150,7 @@ async function atualizarContadorProntos() {
     }
 }
 
-function filtrarPedidos() {
+async function filtrarPedidos() {
     const elBusca = document.getElementById('filtro-busca');
     const elTipo = document.getElementById('filtro-tipo');
     const elStatus = document.getElementById('filtro-status');
@@ -159,16 +159,35 @@ function filtrarPedidos() {
     const tipo = elTipo ? elTipo.value : '';
     const status = elStatus ? elStatus.value : '';
 
-    const filtrados = listaPedidos.filter(p => {
+    // Sem status: usa a lista de pedidos ativos já carregada.
+    // Com status (ex.: CANCELADO): consulta a API, pois a listagem padrão
+    // do backend não traz pedidos CONCLUIDO/CANCELADO.
+    let base = listaPedidos;
+    if (status) {
+        try {
+            const res = await fetch(`${API_PEDIDOS_URL}?status=${encodeURIComponent(status)}&limite=100`);
+            if (!res.ok) throw new Error('Falha ao buscar pedidos por status.');
+            base = await res.json();
+        } catch (e) {
+            const tbody = document.getElementById('tabela-pedidos-body');
+            if (tbody) {
+                tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 24px;">${e.message}</td></tr>`;
+            }
+            return;
+        }
+    }
+
+    const filtrados = base.filter(p => {
         const matchTermo = (p.nome_cliente && p.nome_cliente.toLowerCase().includes(termo)) ||
                            (p.numero_exibicao && p.numero_exibicao.toLowerCase().includes(termo)) ||
                            String(p.id_pedido).includes(termo);
         const matchTipo = !tipo || p.tipo_pedido === tipo;
-        const matchStatus = !status || p.status_pedido === status;
 
-        return matchTermo && matchTipo && matchStatus;
+        return matchTermo && matchTipo;
     });
 
+    renderizarTabela(filtrados);
+}
     renderizarTabela(filtrados);
 }
 
