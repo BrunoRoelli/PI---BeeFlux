@@ -368,6 +368,24 @@
                 <span>Total: <strong id="modal-ped-total" style="color: var(--pink-escuro, #be123c);">R$ 0,00</strong></span>
             </div>
 
+            <!-- REGISTRAR PAGAMENTO (pedido com situação financeira pendente) -->
+<div id="modal-pagamento-bloco" style="display: none; margin-top: 16px; padding: 12px; border: 1px dashed #f43f5e; border-radius: 8px; background: #fff8f9;">
+    <label for="modal-pagamento-forma" style="font-weight: 600; display: block; margin-bottom: 6px;">Registrar pagamento</label>
+    <div style="display: flex; gap: 8px;">
+        <select id="modal-pagamento-forma" style="flex: 1;">
+            <option value="">Forma de pagamento...</option>
+            <option value="DINHEIRO">Dinheiro</option>
+            <option value="PIX">PIX</option>
+            <option value="CARTAO_DEBITO">Cartão de débito</option>
+            <option value="CARTAO_CREDITO">Cartão de crédito</option>
+            <option value="OUTRO">Outro</option>
+        </select>
+        <button type="button" class="botao-primario" id="modal-pagamento-btn">
+            <i class="fa-solid fa-money-bill-wave"></i> Confirmar pagamento
+        </button>
+    </div>
+</div>
+            
             <div class="modal-footer" style="margin-top: 20px; display: flex; justify-content: space-between;">
                 <div id="modal-acoes-status"></div>
                 <button class="btn-secondary" onclick="fecharModalDetalhes()">Fechar</button>
