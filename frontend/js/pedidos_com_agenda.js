@@ -419,6 +419,16 @@ async function abrirDetalhesPedido(idPedido) {
             `;
         }
 
+        // Pagamento posterior: pedido ainda sem pagamento confirmado
+            const blocoPagamento = document.getElementById('modal-pagamento-bloco');
+            const formaPagEl = document.getElementById('modal-pagamento-forma');
+            const btnPagamento = document.getElementById('modal-pagamento-btn');
+            const podePagar = p.status_financeiro === 'PENDENTE' && p.status_pedido !== 'CANCELADO';
+
+            if (blocoPagamento) blocoPagamento.style.display = podePagar ? 'block' : 'none';
+            if (formaPagEl) formaPagEl.value = '';
+            if (btnPagamento) btnPagamento.onclick = () => registrarPagamentoPedido(p.id_pedido, Number(p.valor_total));
+
         const modal = document.getElementById('modal-detalhes-pedido');
         if (modal) {
             modal.style.display = 'flex';
@@ -465,6 +475,35 @@ async function atualizarStatus(idPedido, novoStatus) {
 
         fecharModalDetalhes();
         carregarPedidos();
+    } catch (e) {
+        alert(e.message);
+    }
+}
+
+async function registrarPagamentoPedido(idPedido, valorTotal) {
+    const formaEl = document.getElementById('modal-pagamento-forma');
+    const forma = formaEl ? formaEl.value : '';
+    if (!forma) return alert('Selecione a forma de pagamento.');
+
+    if (!confirm(`Confirmar pagamento integral de R$ ${valorTotal.toFixed(2)}?`)) return;
+
+    try {
+        const idUser = Number(localStorage.getItem('beeflux_usuario_id')) || 1;
+        const res = await fetch(`${API_PEDIDOS_URL}/${idPedido}/pagamentos`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                forma_pagamento: forma,
+                valor_pagamento: valorTotal,
+                id_user: idUser
+            })
+        });
+        const dados = await res.json();
+        if (!res.ok) throw new Error(dados.mensagem || 'Erro ao registrar pagamento.');
+
+        alert(dados.mensagem || 'Pagamento registrado com sucesso!');
+        await carregarPedidos();
+        abrirDetalhesPedido(idPedido);   // reabre o modal já como PAGO
     } catch (e) {
         alert(e.message);
     }
