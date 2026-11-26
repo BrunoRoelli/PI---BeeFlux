@@ -452,15 +452,21 @@ async function atualizarStatus(idPedido, novoStatus) {
 }
 
 async function cancelarPedido(idPedido) {
-    const motivo = prompt('Informe o motivo do cancelamento:');
-    if (motivo === null) return;
+    if (!confirm('Deseja realmente cancelar este pedido?')) return;
+
+    // O motivo é opcional: se vazio ou se clicar em "Cancelar", segue sem motivo.
+    const motivoDigitado = prompt('Motivo do cancelamento (opcional):', '');
+    const motivo = motivoDigitado ? motivoDigitado.trim() : '';
 
     try {
         const idUser = Number(localStorage.getItem('beeflux_usuario_id')) || 1;
+        const corpo = { id_user: idUser };
+        if (motivo) corpo.motivo = motivo;
+
         const res = await fetch(`${API_PEDIDOS_URL}/${idPedido}/cancelar`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ motivo, id_user: idUser })
+            body: JSON.stringify(corpo)
         });
         const dados = await res.json();
         if (!res.ok) throw new Error(dados.mensagem || 'Erro ao cancelar pedido.');
@@ -471,7 +477,6 @@ async function cancelarPedido(idPedido) {
         alert(e.message);
     }
 }
-
 // ==========================================
 // CONTROLE DO PAINEL LATERAL DE NOVO PEDIDO
 // ==========================================
