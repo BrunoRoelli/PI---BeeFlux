@@ -17,8 +17,14 @@
     <div class="login-container">
         <div class="login-card">
             <div class="login-header">
-                <div class="logo-icone">&#x1F41D;</div>
-                <h1>Criar Conta</h1>
+                <a href="#" class="logo">
+                    <div class="logo-icone">
+                        <img src="../assets/logo.png" alt="Logo do BeeFlux">
+                        <img src="../assets/logo-hover.png" alt="" class="logo-hover">
+                    </div>
+                    <span class="logo-texto">BeeFlux</span>
+                </a>
+                <p><b style = "font-size: larger; color: black;">Criar conta</b></p>
                 <p>Junte-se ao BeeFlux e potencialize sua confeitaria</p>
             </div>
 
@@ -41,7 +47,7 @@
                     <input
                         type="password"
                         id="senha"
-                        placeholder="Crie uma senha segura"
+                        placeholder="Deve ter pelo menos 8 caracteres"
                         minlength="8"
                         pattern="(?=.*[A-Z])(?=.*[^A-Za-z0-9]).{8,}"
                         title="A senha deve ter pelo menos 8 caracteres, uma letra maiúscula e um símbolo."

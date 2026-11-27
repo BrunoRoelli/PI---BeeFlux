@@ -21,12 +21,12 @@ body {
 .login-header {
     text-align: center;
     margin-bottom: 30px;
+    align-items: center;
+    justify-content: center;
 }
 .login-header .logo-icone {
     width: 4rem;
     height: 4rem;
-    border-radius: 50%;
-    background-color: var(--Yellow, #ffd166);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -34,9 +34,8 @@ body {
     margin: 0 auto 15px auto;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
 }
-.login-header h1 {
+.login-header h1, .login-header .logo-texto {
     font-size: 3rem;
-    color: var(--Black);
     letter-spacing: -0.025em;
     margin-bottom: 5px;
 }
