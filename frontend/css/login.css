@@ -74,6 +74,9 @@ body {
     background-color: var(--cor-botao);
     box-shadow: 0 0 0 3px rgba(255, 143, 171, 0.15);
 }
+.input-group input:focus::placeholder {
+    color: transparent;
+}
 .btn-submit {
     width: 100%;
     padding: 14px;
