@@ -188,9 +188,6 @@ async function filtrarPedidos() {
 
     renderizarTabela(filtrados);
 }
-    renderizarTabela(filtrados);
-}
-
 // ==========================================================
 // AGENDA PERSONALIZADA DO BEEFLUX (TEMPO REAL)
 // ==========================================================
